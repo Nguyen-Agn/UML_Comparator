@@ -13,10 +13,13 @@ func TestParseAttribute(t *testing.T) {
 		input    string
 		expected domain.ProcessedAttribute
 	}{
-		{"- name : String", domain.ProcessedAttribute{Scope: "-", Name: "name", Type: "String"}},
-		{"+ age: int = 10", domain.ProcessedAttribute{Scope: "+", Name: "age", Type: "int"}},
-		{"# isValid : boolean", domain.ProcessedAttribute{Scope: "#", Name: "isValid", Type: "boolean"}},
-		{"id: UUID", domain.ProcessedAttribute{Scope: "+", Name: "id", Type: "UUID"}}, // default scope
+		{"- name : String", domain.ProcessedAttribute{Scope: "-", Name: "name", Type: "String", Kind: "normal"}},
+		{"+ age: int = 10", domain.ProcessedAttribute{Scope: "+", Name: "age", Type: "int", Kind: "normal"}},
+		{"# isValid : boolean", domain.ProcessedAttribute{Scope: "#", Name: "isValid", Type: "boolean", Kind: "normal"}},
+		{"id: UUID", domain.ProcessedAttribute{Scope: "+", Name: "id", Type: "UUID", Kind: "normal"}}, // default scope
+		{"{static} - count : int", domain.ProcessedAttribute{Scope: "-", Name: "count", Type: "int", Kind: "static"}},
+		{"# const VERSION : string = \"1.0\"", domain.ProcessedAttribute{Scope: "#", Name: "VERSION", Type: "string", Kind: "final"}},
+		{"+ static final INSTANCE : App", domain.ProcessedAttribute{Scope: "+", Name: "INSTANCE", Type: "App", Kind: "static-final"}},
 	}
 
 	for _, tt := range tests {
@@ -47,6 +50,7 @@ func TestParseMethod(t *testing.T) {
 					{Name: "a", Type: "int"},
 					{Name: "b", Type: "int"},
 				},
+				Kind: "normal",
 			},
 		},
 		{
@@ -58,6 +62,7 @@ func TestParseMethod(t *testing.T) {
 				Type:   "constructor",
 				Output: "",
 				Inputs: []domain.MethodParam{},
+				Kind:   "normal",
 			},
 		},
 		{
@@ -67,47 +72,75 @@ func TestParseMethod(t *testing.T) {
 				Scope:  "+",
 				Name:   "doSomething",
 				Type:   "custom",
-				Output: "",
+				Output: "void",
 				Inputs: []domain.MethodParam{
 					{Name: "data", Type: "string"},
 				},
+				Kind: "normal",
 			},
 		},
 		{
 			"User",
 			"+ getName() : string",
 			domain.ProcessedMethod{
-				Scope: "+",
-				Name: "getName",
-				Type: "getter",
+				Scope:  "+",
+				Name:   "getName",
+				Type:   "getter",
 				Output: "string",
 				Inputs: []domain.MethodParam{},
+				Kind:   "normal",
 			},
 		},
 		{
 			"User",
 			"+ setName(name: string)",
 			domain.ProcessedMethod{
-				Scope: "+",
-				Name: "setName",
-				Type: "setter",
-				Output: "",
+				Scope:  "+",
+				Name:   "setName",
+				Type:   "setter",
+				Output: "void",
 				Inputs: []domain.MethodParam{
 					{Name: "name", Type: "string"},
 				},
+				Kind: "normal",
 			},
 		},
 		{
 			"User",
 			"+ user(id: int)", // Constructor with args, case insensitive match
 			domain.ProcessedMethod{
-				Scope: "+",
-				Name: "user",
-				Type: "constructor",
+				Scope:  "+",
+				Name:   "user",
+				Type:   "constructor",
 				Output: "",
 				Inputs: []domain.MethodParam{
 					{Name: "id", Type: "int"},
 				},
+				Kind: "normal",
+			},
+		},
+		{
+			"Shape",
+			"+ {abstract} draw()",
+			domain.ProcessedMethod{
+				Scope:  "+",
+				Name:   "draw",
+				Type:   "custom",
+				Output: "void",
+				Inputs: []domain.MethodParam{},
+				Kind:   "abstract",
+			},
+		},
+		{
+			"User",
+			"+ name : string {getter}",
+			domain.ProcessedMethod{
+				Scope:  "+",
+				Name:   "name",
+				Type:   "getter",
+				Output: "string",
+				Inputs: []domain.MethodParam{},
+				Kind:   "normal",
 			},
 		},
 	}
@@ -168,13 +201,11 @@ func TestProcessGraph(t *testing.T) {
 				Name: "Dog",
 				Type: "Class",
 				Attributes: []string{
-					"- breed : String",
+					"- breed : String {getter, setter}",
 				},
 				Methods: []string{
 					"+ makeSound() : void",
 					"+ fetch(item: String) : boolean",
-					"+ getBreed() : String",
-					"+ setBreed(b: String)",
 				},
 			},
 		},
@@ -218,7 +249,27 @@ func TestProcessGraph(t *testing.T) {
 	}
 
 	if len(dogNode.Methods) != 4 {
-		t.Errorf("Expected 4 methods, got %d", len(dogNode.Methods))
+		t.Errorf("Expected 4 methods (makeSound, fetch, getBreed, setBreed), got %d", len(dogNode.Methods))
+		for _, m := range dogNode.Methods {
+			t.Logf("Method: %s (%s)", m.Name, m.Type)
+		}
+	}
+
+	// Verify getBreed and setBreed were generated
+	var hasGetBreed, hasSetBreed bool
+	for _, m := range dogNode.Methods {
+		if m.Name == "getBreed" && m.Type == "getter" && m.Output == "String" {
+			hasGetBreed = true
+		}
+		if m.Name == "setBreed" && m.Type == "setter" && m.Output == "void" {
+			hasSetBreed = true
+		}
+	}
+	if !hasGetBreed {
+		t.Error("Missing generated getBreed method")
+	}
+	if !hasSetBreed {
+		t.Error("Missing generated setBreed method")
 	}
 
 	// ArchWeight check

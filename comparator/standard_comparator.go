@@ -116,13 +116,22 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 	}
 
 	// --- Methods ---
-	// Split into Getters/Setters vs Normal/Constructors
-	solGS, solNormal := c.splitMethods(sol.Methods)
-	stuGS, stuNormal := c.splitMethods(stu.Methods)
+	// Split into Getters, Setters, vs Normal/Constructors
+	solG, solS, solNormal := c.splitMethods(sol.Methods)
+	stuG, stuS, stuNormal := c.splitMethods(stu.Methods)
 
-	// Check Getter/Setter Count
-	if len(solGS) != len(stuGS) {
-		report.MethodErrors = append(report.MethodErrors, fmt.Sprintf("Class %s: Expected %d Getter/Setter methods, found %d", sol.Name, len(solGS), len(stuGS)))
+	// Check Getter Count (skip if either side has shortcut Bit 0)
+	if (sol.Shortcut&1) == 0 && (stu.Shortcut&1) == 0 {
+		if len(solG) != len(stuG) {
+			report.MethodErrors = append(report.MethodErrors, fmt.Sprintf("Class %s: Expected %d Getter methods, found %d", sol.Name, len(solG), len(stuG)))
+		}
+	}
+
+	// Check Setter Count (skip if either side has shortcut Bit 1)
+	if (sol.Shortcut&2) == 0 && (stu.Shortcut&2) == 0 {
+		if len(solS) != len(stuS) {
+			report.MethodErrors = append(report.MethodErrors, fmt.Sprintf("Class %s: Expected %d Setter methods, found %d", sol.Name, len(solS), len(stuS)))
+		}
 	}
 
 	// Compare Constructors & Normal Methods
@@ -157,12 +166,16 @@ func (c *StandardComparator) matchAttribute(sol domain.ProcessedAttribute, stu d
 	if c.translateType(sol.Type, typeMap) != stu.Type {
 		return false
 	}
+	// Kind check: static, final, static-final, normal must match
+	if sol.Kind != stu.Kind {
+		return false
+	}
 	// Name check: Similarity >= 0.5 OR Contains
 	if c.fuzzyMatcher.Compare(sol.Name, stu.Name) >= 0.5 {
 		return true
 	}
-	if strings.Contains(strings.ToLower(stu.Name), strings.ToLower(sol.Name)) || 
-	   strings.Contains(strings.ToLower(sol.Name), strings.ToLower(stu.Name)) {
+	if strings.Contains(strings.ToLower(stu.Name), strings.ToLower(sol.Name)) ||
+		strings.Contains(strings.ToLower(sol.Name), strings.ToLower(stu.Name)) {
 		return true
 	}
 	return false
@@ -172,11 +185,12 @@ func (c *StandardComparator) isConstructor(m domain.ProcessedMethod, className s
 	return strings.EqualFold(m.Name, className) || strings.EqualFold(m.Name, "init")
 }
 
-func (c *StandardComparator) splitMethods(methods []domain.ProcessedMethod) (gs []domain.ProcessedMethod, normal []domain.ProcessedMethod) {
+func (c *StandardComparator) splitMethods(methods []domain.ProcessedMethod) (g []domain.ProcessedMethod, s []domain.ProcessedMethod, normal []domain.ProcessedMethod) {
 	for _, m := range methods {
-		lower := strings.ToLower(m.Name)
-		if strings.HasPrefix(lower, "get") || strings.HasPrefix(lower, "set") {
-			gs = append(gs, m)
+		if m.Type == "getter" {
+			g = append(g, m)
+		} else if m.Type == "setter" {
+			s = append(s, m)
 		} else {
 			normal = append(normal, m)
 		}
@@ -201,14 +215,19 @@ func (c *StandardComparator) matchMethod(sol domain.ProcessedMethod, stu domain.
 		return false
 	}
 
-	// 3. Return Type (except for constructors)
+	// 3. Kind check: static, abstract, normal must match
+	if sol.Kind != stu.Kind {
+		return false
+	}
+
+	// 4. Return Type (except for constructors)
 	if !isCtor {
 		if c.translateType(sol.Output, typeMap) != stu.Output {
 			return false
 		}
 	}
 
-	// 4. Params
+	// 5. Params
 	if len(sol.Inputs) != len(stu.Inputs) {
 		return false
 	}

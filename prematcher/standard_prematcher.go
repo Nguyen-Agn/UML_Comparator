@@ -75,22 +75,67 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 		}
 
 		for _, attr := range node.Attributes {
-			parsedAttr := p.parseAttribute(cleanText(attr))
+			raw := cleanText(attr)
+			if isPureShortcut(raw) {
+				lower := strings.ToLower(raw)
+				if strings.Contains(lower, "getter") {
+					pNode.Shortcut |= 1
+				}
+				if strings.Contains(lower, "setter") {
+					pNode.Shortcut |= 2
+				}
+				continue
+			}
+
+			parsedAttr := p.parseAttribute(raw)
 			pNode.Attributes = append(pNode.Attributes, parsedAttr)
+
+			// Proactively implement shortcuts: if attribute has {getter} or {setter}
+			lowerRaw := strings.ToLower(raw)
+			if strings.Contains(lowerRaw, "getter") {
+				pNode.Methods = append(pNode.Methods, p.generateGetter(parsedAttr))
+			}
+			if strings.Contains(lowerRaw, "setter") {
+				pNode.Methods = append(pNode.Methods, p.generateSetter(parsedAttr))
+			}
 
 			// Simple heuristic: if type contains <, it might be a custom type
 			if strings.Contains(parsedAttr.Type, "<") {
 				customTypeCount++
 			}
-			// In UML, static attributes are visually underlined. We might not have that info in string,
-			// but we can check if it contains the word static or {static}
-			if strings.Contains(strings.ToLower(parsedAttr.Name), "static") || strings.Contains(strings.ToLower(parsedAttr.Type), "static") {
+			// Kind identification
+			if parsedAttr.Kind == "static" || parsedAttr.Kind == "static-final" {
 				staticMembersCount++
 			}
 		}
 
 		for _, method := range node.Methods {
-			parsedMethod := p.parseMethod(cleanText(method), pNode.Name)
+			raw := cleanText(method)
+			if isPureShortcut(raw) {
+				lower := strings.ToLower(raw)
+				if strings.Contains(lower, "getter") {
+					pNode.Shortcut |= 1
+				}
+				if strings.Contains(lower, "setter") {
+					pNode.Shortcut |= 2
+				}
+				continue
+			}
+			lowerRaw := strings.ToLower(raw)
+
+			// Check for shortcuts in the methods list as well
+			if (strings.Contains(lowerRaw, "getter") || strings.Contains(lowerRaw, "setter")) && !strings.Contains(raw, "(") {
+				attr := p.parseAttribute(raw)
+				if strings.Contains(lowerRaw, "getter") {
+					pNode.Methods = append(pNode.Methods, p.generateGetter(attr))
+				}
+				if strings.Contains(lowerRaw, "setter") {
+					pNode.Methods = append(pNode.Methods, p.generateSetter(attr))
+				}
+				continue
+			}
+
+			parsedMethod := p.parseMethod(raw, pNode.Name)
 			pNode.Methods = append(pNode.Methods, parsedMethod)
 
 			if strings.Contains(parsedMethod.Type, "<") || strings.Contains(parsedMethod.Output, "<") {
@@ -102,7 +147,7 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 				}
 			}
 
-			if strings.Contains(strings.ToLower(parsedMethod.Name), "static") {
+			if parsedMethod.Kind == "static" {
 				staticMembersCount++
 			}
 		}
@@ -134,14 +179,29 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 }
 
 func (p *StandardPreMatcher) parseAttribute(raw string) domain.ProcessedAttribute {
-	// Fallback default
 	attr := domain.ProcessedAttribute{
 		Scope: "+", // Default scope
-		Name:  raw, // Fallback if no colon
-		Type:  "",
+		Kind:  "normal",
 	}
 
-	matches := p.attrRegex.FindStringSubmatch(raw)
+	// 1. Identify Kind and handle annotations
+	lowerRaw := strings.ToLower(raw)
+	isStatic := strings.Contains(lowerRaw, "static") || strings.Contains(lowerRaw, "{static}")
+	isFinal := strings.Contains(lowerRaw, "final") || strings.Contains(lowerRaw, "const") || strings.Contains(lowerRaw, "{readonly}")
+
+	if isStatic && isFinal {
+		attr.Kind = "static-final"
+	} else if isStatic {
+		attr.Kind = "static"
+	} else if isFinal {
+		attr.Kind = "final"
+	}
+
+	// 2. Clean the string for structural parsing (remove keywords and annotations)
+	working := cleanMemberString(raw)
+
+	// 3. Apply regex or simple fallback to the cleaned string
+	matches := p.attrRegex.FindStringSubmatch(working)
 	if len(matches) > 0 {
 		if matches[1] != "" {
 			attr.Scope = matches[1]
@@ -153,9 +213,23 @@ func (p *StandardPreMatcher) parseAttribute(raw string) domain.ProcessedAttribut
 			typePart = strings.TrimSpace(typePart[:idx])
 		}
 		attr.Type = typePart
-	} else if idx := strings.Index(raw, ":"); idx != -1 { // simple fallback
-		attr.Name = strings.TrimSpace(raw[:idx])
-		attr.Type = strings.TrimSpace(raw[idx+1:])
+	} else if idx := strings.Index(working, ":"); idx != -1 {
+		namePart := strings.TrimSpace(working[:idx])
+		if len(namePart) > 0 && isScopeChar(namePart[0]) {
+			attr.Scope = string(namePart[0])
+			attr.Name = strings.TrimSpace(namePart[1:])
+		} else {
+			attr.Name = namePart
+		}
+		attr.Type = strings.TrimSpace(working[idx+1:])
+	} else {
+		// Even simpler fallback: look for scope at start
+		if len(working) > 0 && isScopeChar(working[0]) {
+			attr.Scope = string(working[0])
+			attr.Name = strings.TrimSpace(working[1:])
+		} else {
+			attr.Name = working
+		}
 	}
 
 	return attr
@@ -168,9 +242,36 @@ func (p *StandardPreMatcher) parseMethod(raw string, className string) domain.Pr
 		Type:   "",
 		Output: "",
 		Inputs: []domain.MethodParam{},
+		Kind:   "normal",
 	}
 
-	matches := p.methodRegex.FindStringSubmatch(raw)
+	lowerRaw := strings.ToLower(raw)
+
+	// Identify Kind
+	if strings.Contains(lowerRaw, "static") || strings.Contains(lowerRaw, "{static}") {
+		method.Kind = "static"
+	} else if strings.Contains(lowerRaw, "abstract") || strings.Contains(lowerRaw, "{abstract}") {
+		method.Kind = "abstract"
+	}
+
+	// Shortcut check (no parentheses)
+	if (strings.Contains(lowerRaw, "getter") || strings.Contains(lowerRaw, "setter")) && !strings.Contains(raw, "(") {
+		attr := p.parseAttribute(raw)
+		method.Scope = attr.Scope
+		method.Name = attr.Name
+		method.Output = attr.Type
+		if strings.Contains(lowerRaw, "getter") {
+			method.Type = "getter"
+		} else {
+			method.Type = "setter"
+		}
+		return method
+	}
+
+	// Clean string for structural parsing
+	working := cleanMemberString(raw)
+
+	matches := p.methodRegex.FindStringSubmatch(working)
 	if len(matches) > 0 {
 		if matches[1] != "" {
 			method.Scope = matches[1]
@@ -192,7 +293,7 @@ func (p *StandardPreMatcher) parseMethod(raw string, className string) domain.Pr
 					param.Name = strings.TrimSpace(part[:idx])
 					param.Type = strings.TrimSpace(part[idx+1:])
 				} else {
-					param.Name = part // Only name or type provided
+					param.Name = part
 				}
 				method.Inputs = append(method.Inputs, param)
 			}
@@ -203,13 +304,25 @@ func (p *StandardPreMatcher) parseMethod(raw string, className string) domain.Pr
 		}
 	} else {
 		// Simple fallback
-		if openIdx := strings.Index(raw, "("); openIdx != -1 {
-			method.Name = strings.TrimSpace(raw[:openIdx])
+		if openIdx := strings.Index(working, "("); openIdx != -1 {
+			method.Name = strings.TrimSpace(working[:openIdx])
+			if len(working) > 0 && isScopeChar(method.Name[0]) {
+				method.Scope = string(method.Name[0])
+				method.Name = strings.TrimSpace(method.Name[1:])
+			}
+		} else {
+			if len(working) > 0 && isScopeChar(working[0]) {
+				method.Scope = string(working[0])
+				method.Name = strings.TrimSpace(working[1:])
+			} else {
+				method.Name = working
+			}
 		}
 	}
 
 	// Classify the Method Type
 	lowerName := strings.ToLower(method.Name)
+
 	if lowerName == strings.ToLower(className) || lowerName == "constructor" || lowerName == "init" {
 		method.Type = "constructor"
 	} else if strings.HasPrefix(lowerName, "get") && len(method.Inputs) <= 1 {
@@ -220,7 +333,72 @@ func (p *StandardPreMatcher) parseMethod(raw string, className string) domain.Pr
 		method.Type = "custom"
 	}
 
+	// Default return type to "void" if empty and not a constructor
+	if method.Output == "" && method.Type != "constructor" {
+		method.Output = "void"
+	}
+
 	return method
+}
+
+func (p *StandardPreMatcher) generateGetter(attr domain.ProcessedAttribute) domain.ProcessedMethod {
+	capitalized := strings.ToUpper(attr.Name[:1]) + attr.Name[1:]
+	return domain.ProcessedMethod{
+		Scope:  "+",
+		Name:   "get" + capitalized,
+		Type:   "getter",
+		Output: attr.Type,
+		Inputs: []domain.MethodParam{},
+		Kind:   "normal",
+	}
+}
+
+func (p *StandardPreMatcher) generateSetter(attr domain.ProcessedAttribute) domain.ProcessedMethod {
+	capitalized := strings.ToUpper(attr.Name[:1]) + attr.Name[1:]
+	return domain.ProcessedMethod{
+		Scope:  "+",
+		Name:   "set" + capitalized,
+		Type:   "setter",
+		Output: "void",
+		Inputs: []domain.MethodParam{
+			{Name: attr.Name, Type: attr.Type},
+		},
+		Kind: "normal",
+	}
+}
+
+func cleanMemberString(s string) string {
+	// 1. Remove all { ... } annotations
+	reAnn := regexp.MustCompile(`\{[^}]*\}`)
+	res := reAnn.ReplaceAllString(s, "")
+
+	// 2. Remove other keywords
+	keywords := []string{"static", "final", "const", "abstract"}
+	for _, kw := range keywords {
+		re := regexp.MustCompile("(?i)\\b" + kw + "\\b")
+		res = re.ReplaceAllString(res, "")
+	}
+	return strings.TrimSpace(res)
+}
+
+func isScopeChar(c byte) bool {
+	return c == '+' || c == '-' || c == '#' || c == '~'
+}
+
+func isPureShortcut(s string) bool {
+	s = strings.TrimLeft(strings.TrimSpace(s), "+-#~ ")
+	clean := strings.ReplaceAll(strings.ToLower(cleanMemberString(s)), "/", " ")
+	tokens := strings.Fields(clean)
+	if len(tokens) == 0 {
+		return false
+	}
+	// If all tokens are getter/setter related, it's a pure shortcut
+	for _, t := range tokens {
+		if t != "getter" && t != "setter" && t != "getters" && t != "setters" && t != "and" {
+			return false
+		}
+	}
+	return true
 }
 
 // calculateArchWeight uses bitwise shifting to pack structural info into a single uint32

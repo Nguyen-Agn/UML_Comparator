@@ -13,7 +13,7 @@ Biến đổi mô hình `domain.UMLGraph` (dạng chuỗi thô) thành `domain.P
 - `*domain.UMLGraph`: Đồ thị UML thô thu được từ module Builder.
 
 ## Expected Output
-- `*domain.ProcessedUMLGraph`: Đồ thị đã qua tiền xử lý, các chuỗi text được bóc tách thành struct.
+- `*domain.ProcessedUMLGraph`: Đồ thị đã qua tiền xử lý, các chuỗi text được bóc tách thành struct. Mỗi node có `ArchWeight` (bitmask kiến trúc) và `Shortcut` (bitmask hướng dẫn: Bit 0=getters, Bit 1=setters).
 
 ## Execution Approach
 1. **Node Processing**: Duyệt qua danh sách Nodes trong `UMLGraph`.

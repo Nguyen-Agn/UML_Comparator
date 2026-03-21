@@ -48,7 +48,16 @@ func main() {
 	allIssues := append(solErrs, stuErrs...)
 
 	hardErrors := domain.FilterErrors(allIssues)
-	warnings := domain.FilterWarns(allIssues)
+	rawWarnings := domain.FilterWarns(allIssues)
+	warnings := []domain.IntegrityError{}
+	for _, w := range rawWarnings {
+		// Suppress warnings for pure shortcuts like "+ getters / setters"
+		lowerMsg := strings.ToLower(w.Message)
+		if w.Code == "INCOMPLETE_ATTRIBUTE" && (strings.Contains(lowerMsg, "getters") || strings.Contains(lowerMsg, "setters")) {
+			continue
+		}
+		warnings = append(warnings, w)
+	}
 
 	if len(warnings) > 0 {
 		fmt.Printf("%s⚠️  UML Quality Warnings (%d) — comparison continues:%s\n", Yellow+Bold, len(warnings), Reset)
@@ -167,12 +176,28 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 
 			solMeths := []string{}
 			for _, m := range solNode.Methods {
+				// Skip displaying getter/setter if shortcut exists
+				if m.Type == "getter" && ((solNode.Shortcut&1) != 0 || (stuNode.Shortcut&1) != 0) {
+					continue
+				}
+				if m.Type == "setter" && ((solNode.Shortcut&2) != 0 || (stuNode.Shortcut&2) != 0) {
+					continue
+				}
+
 				params := []string{}
 				for _, p := range m.Inputs { params = append(params, p.Type) }
 				solMeths = append(solMeths, fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
 			}
 			stuMeths := []string{}
 			for _, m := range stuNode.Methods {
+				// Skip displaying getter/setter if shortcut exists
+				if m.Type == "getter" && ((solNode.Shortcut&1) != 0 || (stuNode.Shortcut&1) != 0) {
+					continue
+				}
+				if m.Type == "setter" && ((solNode.Shortcut&2) != 0 || (stuNode.Shortcut&2) != 0) {
+					continue
+				}
+
 				params := []string{}
 				for _, p := range m.Inputs { params = append(params, p.Type) }
 				stuMeths = append(stuMeths, fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))

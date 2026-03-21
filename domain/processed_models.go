@@ -13,6 +13,7 @@ type ProcessedNode struct {
 	Name       string
 	Type       string   // Class, Interface, etc.
 	ArchWeight uint32   // Bitwise description of architecture (e.g., has Singleton, has Factory)
+	Shortcut   uint32   // Bitwise: Bit 0 (1): getters, Bit 1 (2): setters
 	Inherits   string   // ID of the parent class
 	Implements []string // IDs of implemented interfaces
 	Attributes []ProcessedAttribute
@@ -24,6 +25,7 @@ type ProcessedAttribute struct {
 	Name  string
 	Scope string // +, -, #
 	Type  string
+	Kind  string // static, final, normal, static-final,
 }
 
 // ProcessedMethod provides granular signature info.
@@ -33,6 +35,7 @@ type ProcessedMethod struct {
 	Type   string // Original full type string
 	Output string // Formal return type
 	Inputs []MethodParam
+	Kind   string // static, normal, abstract
 }
 
 // MethodParam represents a single method parameter.

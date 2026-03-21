@@ -1,7 +1,3 @@
-# Build artifacts
-*.exe
-CompareUML_CLI
-
 # Test cases (Large files)
 UMLs_testcase/
 
