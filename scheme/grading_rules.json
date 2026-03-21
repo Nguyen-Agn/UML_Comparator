@@ -1,0 +1,15 @@
+{
+  "_comment": "File cấu hình điểm cho IGrader (RuleBasedGrader). Chỉnh sửa các giá trị penalty phù hợp với thang điểm môn học.",
+  "MaxScore": 10.0,
+  "Penalties": {
+    "MissingNodePerItem": 1.0,
+    "MissingEdgePerItem": 0.5,
+    "WrongAttributePerItem": 0.25,
+    "WrongMethodPerItem": 0.25,
+    "WrongDirectionPerItem": 0.5,
+    "TypoNodeName": 0.0
+  },
+  "Bonuses": {
+    "ExtraCorrectEdge": 0.0
+  }
+}

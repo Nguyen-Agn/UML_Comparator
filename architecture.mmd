@@ -1,0 +1,139 @@
+classDiagram
+    %% ==========================================
+    %% CORE DOMAIN MODELS (Data Structures)
+    %% ==========================================
+    class UMLGraph {
+        +String ID
+        +List~UMLNode~ Nodes
+        +List~UMLEdge~ Edges
+    }
+    
+    class UMLNode {
+        +String ID
+        +String Name
+        +String Type
+        +List~String~ Attributes
+        +List~String~ Methods
+    }
+    
+    class UMLEdge {
+        +String SourceID
+        +String TargetID
+        +String RelationType
+        +String SourceLabel
+        +String TargetLabel
+    }
+    
+    class DiffReport {
+        +List~String~ MissingNodes
+        +List~String~ MissingEdges
+        +List~String~ WrongAttributes
+        +float MatchPercentage
+    }
+
+    class GradeResult {
+        +float TotalScore
+        +List~String~ Feedbacks
+    }
+
+    %% ==========================================
+    %% INTERFACES (SOLID: Dependency Inversion)
+    %% ==========================================
+    class IFileParser {
+        <<interface>>
+        +Parse(filePath: String) RawXMLData
+    }
+
+    class IModelBuilder {
+        <<interface>>
+        +Build(rawData: RawModelData) UMLGraph
+    }
+
+    class IPreMatcher {
+        <<interface>>
+        +Process(graph: UMLGraph) ProcessedUMLGraph
+    }
+
+    class IEntityMatcher {
+        <<interface>>
+        +Match(solution: ProcessedUMLGraph, student: ProcessedUMLGraph) MappingTable
+    }
+
+    class IComparator {
+        <<interface>>
+        +Compare(solution: ProcessedUMLGraph, student: ProcessedUMLGraph, mapping: MappingTable) DiffReport
+    }
+
+    class IGrader {
+        <<interface>>
+        +Grade(report: DiffReport, criteria: GradingRules) GradeResult
+    }
+
+    class IVisualizer {
+        <<interface>>
+        +VisualizeDiff(report: DiffReport, solution: UMLGraph, student: UMLGraph) Image
+        +ExportReport(report: DiffReport) String
+    }
+
+    %% ==========================================
+    %% CONCRETE IMPLEMENTATIONS (SOLID: Single Responsibility)
+    %% ==========================================
+    class DrawioParser {
+        +Parse(filePath: String) RawXMLData
+    }
+    
+    class StandardModelBuilder {
+        +Build(rawData: RawXMLData) UMLGraph
+    }
+
+    class TextSimilarityMatcher {
+        +Match(solution: UMLGraph, student: UMLGraph) MappingTable
+    }
+
+    class StrictComparator {
+        +Compare(solution: UMLGraph, student: UMLGraph, mapping: MappingTable) DiffReport
+    }
+
+    class RuleBasedGrader {
+        +Grade(report: DiffReport, criteria: GradingRules) GradeResult
+    }
+
+    class HTMLVisualizer {
+        +VisualizeDiff(report: DiffReport, solution: UMLGraph, student: UMLGraph) Image
+        +ExportReport(report: DiffReport) String
+    }
+
+    %% Relationships: Implementations
+    IFileParser <|.. DrawioParser
+    IModelBuilder <|.. StandardModelBuilder
+    IEntityMatcher <|.. TextSimilarityMatcher
+    IComparator <|.. StrictComparator
+    IGrader <|.. RuleBasedGrader
+    IVisualizer <|.. HTMLVisualizer
+
+    %% ==========================================
+    %% SYSTEM FACADE / CONTROLLER
+    %% ==========================================
+    class UMLCompareSystem {
+        -IFileParser parser
+        -IModelBuilder builder
+        -IEntityMatcher matcher
+        -IComparator comparator
+        -IGrader grader
+        -IVisualizer visualizer
+        +RunComparison(solutionPath: String, studentPath: String, rulesPath: String) GradeResult
+    }
+
+    %% Relationships: Dependency Injection
+    UMLCompareSystem o--> IFileParser
+    UMLCompareSystem o--> IModelBuilder
+    UMLCompareSystem o--> IEntityMatcher
+    UMLCompareSystem o--> IComparator
+    UMLCompareSystem o--> IGrader
+    UMLCompareSystem o--> IVisualizer
+
+    %% Relationships: Data flow
+    IModelBuilder ..> UMLGraph : produces
+    IPreMatcher ..> ProcessedUMLGraph : produces
+    IComparator ..> DiffReport : produces
+    IGrader ..> GradeResult : produces

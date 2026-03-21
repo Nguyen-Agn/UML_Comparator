@@ -1,0 +1,78 @@
+Một kỹ sư của Anthropic chia sẻ cách họ sử dụng “skills” trong Claude Code và chúng ta có thể tùy chỉnh theo mục tiêu sử dụng dự án cá nhân! Từ prompt-based usage sang skill-based execution
+
+    Tư duy gốc: Skills không phải “mẹo prompt”, mà là tài sản vận hành Phần lớn mọi người đang dùng AI theo kiểu: • hỏi • nhận câu trả lời • chỉnh lại prompt • thử lại Cách này phù hợp cho tác vụ ngắn, đơn lẻ, ít rủi ro. Nhưng khi công việc bắt đầu có: • nhiều bước • nhiều nguồn dữ liệu • nhiều tiêu chí đúng/sai • yêu cầu tái sử dụng • yêu cầu kiểm chứng • yêu cầu mở rộng cho team thì prompt không còn đủ nữa. Lúc đó, thứ cần xây không phải là “prompt tốt hơn”, mà là một hệ skill có cấu trúc, nơi agent không chỉ đọc hướng dẫn mà còn: • hiểu ngữ cảnh • gọi đúng tri thức • chạy đúng quy trình • dùng đúng script • kiểm tra đầu ra • tự cải thiện sau mỗi lỗi Nói cách khác: Prompt là câu lệnh tạm thời. Skill là năng lực đóng gói. Skill system là bộ nhớ vận hành của cá nhân hoặc tổ chức.
+    Mô hình nền tảng: 5 lớp của một hệ Skill hoàn chỉnh Tôi đề xuất mô hình 5 lớp để áp dụng cho cá nhân và dự án: Lớp 1: Intent Layer - Mục tiêu cần đạt Đây là lớp xác định: • bài toán là gì • đầu ra nào được xem là hoàn thành • tiêu chuẩn đúng/sai là gì • phạm vi được phép xử lý đến đâu Nếu không rõ lớp này, AI sẽ sinh nhiều thứ “có vẻ đúng” nhưng không giải quyết đúng việc. Ví dụ: • Viết proposal đào tạo cho doanh nghiệp • Tạo outline khóa học cho nhóm sale • Phân tích use case AI cho phòng HR • Tạo landing page outline cho sản phẩm AI • Sinh code module upload file có kiểm thử Intent Layer trả lời: Ta đang muốn hoàn thành điều gì, trong tiêu chuẩn nào? Lớp 2: Knowledge Layer - Tri thức để hành động Đây là nơi chứa: • domain knowledge • business rules • best practices • style guide • API references • framework nội bộ • brand voice • template chuẩn Ví dụ với cá nhân: • phong cách viết bài LinkedIn của bạn • framework đào tạo AI cho doanh nghiệp • mẫu proposal chuẩn enterprise • checklist xây system prompt • tiêu chí đánh giá use case AI Ví dụ với dự án: • tài liệu sản phẩm • tài liệu database • API docs • quy tắc coding • quy trình release • sơ đồ hệ thống Knowledge Layer trả lời: Muốn làm đúng thì cần biết gì? Lớp 3: Execution Layer - Cách thực thi Đây là phần nhiều người bỏ qua nhất. Skill không nên chỉ nói “làm thế nào”, mà còn nên chứa thứ agent có thể dùng trực tiếp: • script • command • workflow • query mẫu • file template • automation • scaffold code • checklist thao tác Ví dụ: • file script để tạo cấu trúc dự án • template PRD • command deploy • SQL query kiểm tra data • prompt-template để generate case study • Python script parse file CSV • template agenda cho workshop Execution Layer trả lời: Làm bằng cách nào, theo từng bước có thể chạy được? Lớp 4: Verification Layer - Kiểm chứng trước khi xong Đây là lớp quan trọng nhất. Rất nhiều hệ AI thất bại không phải vì “không sinh ra được”, mà vì: • không test • không đối chiếu • không mô phỏng • không xác thực với thực tế • không có tiêu chí pass/fail rõ ràng Một skill mạnh phải có: • expected output • test cases • anti-patterns • checklist kiểm tra • simulation steps • sanity checks • compare expected vs actual Ví dụ: • Proposal có đủ các phần bắt buộc chưa? • Code có chạy test không? • Nội dung đào tạo có đúng đối tượng non-tech không? • Prompt có tạo đầu ra theo đúng format không? • Agent có xử lý được edge case khi input thiếu không? Verification Layer trả lời: Làm sao biết thứ vừa tạo ra là đúng, dùng được, và đáng tin? Lớp 5: Evolution Layer - Học từ lỗi và nâng cấp skill Skill không phải tài liệu bất động. Mỗi lần xảy ra: • lỗi • hallucination • output sai format • xử lý thiếu bước • hiểu sai business rule • vấp edge case • phải sửa tay nhiều thì đó là dữ liệu để cập nhật skill. Evolution Layer gồm: • gotchas.md • failure cases • edge cases • lessons learned • changelog • version history • improvement notes Evolution Layer trả lời: Sau mỗi lần dùng, hệ skill thông minh hơn ở đâu?
+    Khung chuẩn: 8 loại skill nên có Để tránh tạo skill ngẫu nhiên, nên phân skill theo vai trò. 3.1. Knowledge Skills Dùng để cung cấp tri thức nền. Ví dụ: • doanh_nghiep-unicharm-overview • brand-voice-nguyen-tiep • genai-training-framework • enterprise-proposal-standards Phù hợp cho: • viết nội dung • phân tích • tư vấn • đào tạo • thiết kế chiến lược 3.2. Verification Skills Dùng để kiểm tra đầu ra. Ví dụ: • verify-proposal-completeness • verify-training-outline-fit-nontech • verify-code-quality • verify-slide-structure • verify-agent-output-format Đây là nhóm skill tạo ra khác biệt lớn nhất giữa “AI trả lời hay” và “AI làm việc đáng tin”. 3.3. Data Skills Dùng để đọc, xử lý, phân tích dữ liệu. Ví dụ: • analyze-excel-sales-report • clean-customer-list • extract-insights-from-survey • compare-training-needs-by-department 3.4. Automation Skills Dùng để thực thi các chuỗi thao tác lặp lại. Ví dụ: • create-proposal-folder-structure • generate-client-kickoff-pack • summarize-meeting-and-create-actions • publish-content-multi-platform 3.5. Scaffolding Skills Dùng để dựng khung ban đầu. Ví dụ: • scaffold-laravel-project • scaffold-training-proposal • scaffold-course-outline • scaffold-agent-skill-folder 3.6. Review Skills Dùng để phản biện và nâng chất lượng. Ví dụ: • review-business-logic • review-strategy-deck • review-copywriting-clarity • review-system-prompt 3.7. Runbook Skills Dùng cho các tình huống vận hành rõ quy trình. Ví dụ: • runbook-client-onboarding • runbook-bug-triage • runbook-training-delivery-day • runbook-demo-preparation 3.8. Infra / CI / Delivery Skills Dùng cho triển khai kỹ thuật và kiểm soát chất lượng hệ thống. Ví dụ: • deploy-vercel-app • run-pre-release-checks • setup-firebase-auth • ci-checklist-agent-project
+    Nguyên tắc vàng khi thiết kế skill Nguyên tắc 1: Một skill = một nhiệm vụ duy nhất Không nhồi nhiều việc vào một skill. Sai: • “skill_viết_bài_kiểm_tra_đăng_facebook_tạo_ảnh” Đúng: • write-facebook-post • verify-facebook-post • generate-cover-image-brief • publish-social-content Một skill càng đơn nhiệm, agent càng dễ chọn đúng và dùng đúng. Nguyên tắc 2: Skill là folder, không phải chỉ là 1 file Một folder skill có thể chứa: • hướng dẫn • examples • scripts • templates • test cases • data mẫu • changelog Điều này quan trọng vì context tốt không đến từ một đoạn text dài, mà đến từ cấu trúc rõ. Ví dụ: skills/ write-enterprise-proposal/ SKILL.md templates/ proposal-outline.md pricing-table.md examples/ sample-proposal-1.md verification/ checklist.md assets/ company-profile-summary.md changelog.md Skill như vậy mạnh hơn rất nhiều so với một prompt dài 500 dòng. Nguyên tắc 3: Luôn có verification đi kèm Không có verification thì skill chỉ là generator. Muốn skill trở thành năng lực thực thi đáng tin, phải có: • checklist • tiêu chí đạt • test case • lỗi thường gặp • cách đối chiếu Nguyên tắc 4: Cấu trúc tốt hơn kiểm soát cứng Sai lầm lớn là cố chỉ đạo agent từng bước nhỏ: • bước 1 làm cái này • bước 2 làm cái kia • bước 3 không được lệch • bước 4 bắt buộc câu này • bước 5 không được khác Cách này làm agent bị “ngộp”, thiếu linh hoạt, xử lý kém khi gặp biến thể. Thay vào đó: • xác định mục tiêu • cung cấp context chuẩn • đưa công cụ phù hợp • định nghĩa tiêu chuẩn xác minh • cho agent đủ không gian để thích nghi Tư duy đúng là: Đừng cố điều khiển từng cử động của AI. Hãy thiết kế môi trường để AI hành động tốt.
+    Personal Skill OS: Hệ điều hành skill cho cá nhân Với mục tiêu cá nhân, tôi đề xuất chia thành 6 cụm: Cụm 1: Thinking Skills Phục vụ tư duy, phân tích, viết lách. Ví dụ: • think-strategically • break-down-complex-problem • synthesize-long-report • write-in-my-voice • build-framework-from-ideas Ứng dụng cho bạn rất mạnh ở: • viết bài chia sẻ AI • phân tích xu hướng công nghệ • bóc tách framework doanh nghiệp • viết bài theo giọng văn cá nhân Cụm 2: Content Skills Phục vụ sáng tạo nội dung. Ví dụ: • write-facebook-post • write-linkedin-article • write-training-proposal-summary • write-seo-article • create-video-script-shortform Cụm 3: Teaching Skills Phục vụ đào tạo, thiết kế chương trình. Ví dụ: • design-nontech-ai-training • build-case-study-by-department • create-hands-on-exercises • adapt-content-for-executives • generate-training-assessment Cụm 4: Consulting Skills Phục vụ tư vấn, khảo sát, phân tích nhu cầu. Ví dụ: • diagnose-enterprise-ai-readiness • build-ai-usecase-map • design-interview-question-bank • write-prd-for-client • design-ai-roadmap Cụm 5: Build Skills Phục vụ làm sản phẩm, prototype, hệ thống. Ví dụ: • scaffold-agent-project • build-laravel-module • create-database-schema • create-n8n-workflow-spec • setup-rag-structure Cụm 6: Operating Skills Phục vụ vận hành cá nhân và team. Ví dụ: • meeting-note-to-actions • weekly-review-and-planning • create-client-delivery-checklist • update-knowledge-from-lessons • postmortem-after-project
+    Project Skill OS: Hệ thống skill cho từng dự án Khi áp dụng cho dự án, hãy coi mỗi dự án như một “mini operating system”. Cấu trúc đề xuất: project/ context/ business_goal.md stakeholders.md scope.md terminology.md skills/ knowledge/ verification/ automation/ scaffolding/ review/ runbooks/ infra/ templates/ data/ scripts/ outputs/ logs/ lessons/ Ý nghĩa từng khu: • context/: để agent hiểu bài toán • skills/: các năng lực đóng gói • templates/: mẫu tài liệu, mẫu code, mẫu output • data/: dữ liệu mẫu, schema, mapping • scripts/: phần chạy được • outputs/: nơi lưu kết quả • logs/: theo dõi quá trình thực thi • lessons/: lưu bài học để nâng cấp hệ thống
+    Phương pháp áp dụng thực chiến: quy trình 7 bước Bước 1: Xác định các tác vụ lặp lại có giá trị cao Hãy bắt đầu từ những việc: • bạn làm nhiều lần • dễ sai • tốn thời gian • có format lặp lại • có thể chuẩn hóa Ví dụ: • viết proposal • tạo outline đào tạo • phân tích khảo sát nhu cầu • review slide • tạo system prompt • scaffold dự án webapp • viết bài chia sẻ AI Đây là vùng tốt nhất để biến thành skill. Bước 2: Tách từng tác vụ thành unit độc lập Ví dụ thay vì tạo skill “làm proposal”, hãy tách thành: • analyze-client-need • generate-proposal-outline • write-proposal-executive-summary • build-pricing-options • verify-proposal-completeness Mỗi unit rõ ràng hơn, tái sử dụng tốt hơn. Bước 3: Đóng gói skill dưới dạng folder Mỗi skill nên có tối thiểu: skill-name/ SKILL.md examples/ templates/ verification/ changelog.md Nếu là skill kỹ thuật thì thêm: scripts/ test-data/ Bước 4: Viết SKILL.md theo cấu trúc chuẩn Một file SKILL.md nên có: . Mục đích Skill này dùng để làm gì . Khi nào dùng Trigger hoặc tình huống sử dụng . Input cần có Dữ liệu đầu vào tối thiểu . Output mong muốn Định nghĩa rõ đầu ra . Quy trình thực hiện Không quá vi mô, nhưng đủ rõ . Tiêu chí chất lượng Đầu ra tốt nghĩa là gì . Verification Cách kiểm tra . Edge cases Những tình huống dễ sai . Examples Ví dụ tốt/xấu . Changelog Những thay đổi gần đây
+    Mẫu SKILL.md chuẩn
+
+SKILL: write-enterprise-proposal
+Purpose
+Tạo proposal đào tạo/tư vấn chuẩn enterprise, rõ logic, phù hợp lãnh đạo doanh nghiệp.
+Use When
+
+    Cần viết proposal cho khách hàng doanh nghiệp
+    Cần chuẩn hóa cấu trúc đề xuất
+    Cần giữ phong cách chuyên nghiệp, chiến lược
+
+Required Inputs
+
+    Tên khách hàng
+    Bối cảnh / nhu cầu
+    Đối tượng học viên
+    Mục tiêu chương trình
+    Thời lượng dự kiến
+    Yêu cầu đặc thù
+
+Expected Output
+
+    Proposal có cấu trúc hoàn chỉnh
+    Ngôn ngữ rõ, thuyết phục, không quá học thuật
+    Có logic: bối cảnh -> vấn đề -> mục tiêu -> chương trình -> phương pháp -> kết quả kỳ vọng
+
+Execution Approach
+
+    Phân tích bối cảnh doanh nghiệp
+    Nhóm nhu cầu thành 3–5 trục chính
+    Thiết kế chương trình theo mức độ phù hợp đối tượng
+    Viết proposal theo cấu trúc chuẩn
+    Kiểm tra độ rõ, tính khả thi, tính thuyết phục
+
+Quality Criteria
+
+    Không lan man
+    Đúng ngữ cảnh ngành
+    Phù hợp đối tượng non-tech nếu được chỉ định
+    Có outcome cụ thể
+    Không dùng ngôn ngữ quá chung chung
+
+Verification
+
+    Có đủ các phần bắt buộc chưa?
+    Mỗi phần có gắn với nhu cầu thực tế không?
+    Đề xuất có logic triển khai không?
+    Có nội dung nào quá generic không?
+
+Edge Cases
+
+    Khách hàng mô tả nhu cầu mơ hồ
+    Yêu cầu quá rộng so với thời lượng
+    Đối tượng học viên rất không đồng đều
+    Muốn “thực chiến” nhưng chưa có dữ liệu thực tế
+
+References
+
+    templates/proposal-outline.md
+    examples/sample-proposal-b2b.md
+    verification/checklist.md
+
+Changelog
+
+    v1.2: thêm phần outcome theo phòng ban
+    v1.3: thêm kiểm tra độ phù hợp non-tech 9, Cơ chế verification: phần bắt buộc trong mọi skill Tôi đề xuất framework kiểm chứng 4C: . Correctness: Có đúng không? • Đúng logic? • Đúng dữ kiện? • Đúng quy trình? • Đúng format? . Completeness: Có đủ không? • Đủ phần chưa? • Đủ đầu vào chưa? • Có bỏ sót bước quan trọng không? . Context-fit: Có hợp ngữ cảnh không? • Đúng ngành chưa? • Đúng đối tượng chưa? • Đúng mục tiêu chưa? • Đúng mức độ kỹ thuật chưa? . Consequence: Dùng thật có ổn không? • Nếu đem đi gửi khách hàng thì có vấn đề gì? • Nếu chạy script thật có gây lỗi gì? • Nếu giao cho team thì có hiểu sai không? Mọi skill đều nên đi kèm câu hỏi cuối: Nếu kết quả này được dùng ngay trong thực tế, rủi ro lớn nhất là gì? Đây là cách nâng chất lượng từ “có vẻ ổn” lên “đủ tin cậy để dùng”.
+    Cách custom framework này cho mục đích cá nhân của bạn Dựa trên định hướng của bạn, tôi đề xuất custom thành 4 trục chính: Trục 1: Skill cho tư duy và viết chiến lược AI Dành cho: • viết bài chia sẻ AI • phân tích xu hướng • chuyển nghiên cứu thành nội dung thực tiễn • viết theo giọng văn riêng Skill gợi ý: • translate-research-into-business-insight • write-ai-article-in-my-voice • build-framework-from-research • summarize-report-with-insights • write-facebook-short-version Trục 2: Skill cho đào tạo doanh nghiệp Dành cho: • thiết kế chương trình • proposal • case study • bài tập thực hành • phân nhóm theo phòng ban Skill gợi ý: • design-enterprise-ai-training • adapt-content-for-nontech • create-department-usecases • write-training-proposal • verify-training-flow • build-executive-version Trục 3: Skill cho sản phẩm/agent/project Dành cho: • skill.md • agent.md • prompt system • webapp • automation • RAG • AI assistant Skill gợi ý: • scaffold-agent-skill-system • design-system-prompt • build-rag-folder-structure • define-agent-tools-and-constraints • verify-agent-behavior • document-lessons-from-failures Trục 4: Skill cho vận hành kinh doanh và triển khai Dành cho: • họp khách hàng • khảo sát nhu cầu • phân tích đầu bài • chuyển yêu cầu thành tài liệu triển khai Skill gợi ý: • client-brief-to-prd • meeting-notes-to-action-plan • diagnose-ai-readiness • generate-interview-question-set • create-proposal-followup-email
+    Lộ trình triển khai 30 ngày Giai đoạn 1: Gom lại các tác vụ lặp lại Chọn 10 tác vụ bạn làm nhiều nhất. Giai đoạn 2: Chuẩn hóa 5 skill đầu tiên Ưu tiên: • 2 skill viết nội dung • 2 skill đào tạo/tư vấn • 1 skill verification Giai đoạn 3: Gắn template + examples + checklist Đây là bước biến skill từ “hướng dẫn” thành “module dùng được”. Giai đoạn 4: Dùng thật trên 5–10 bài toán Theo dõi: • skill nào giúp tiết kiệm thời gian nhất • skill nào output chưa ổn • lỗi lặp lại ở đâu Giai đoạn 5: Tạo gotchas và cập nhật version Sau mỗi lần vấp lỗi, cập nhật skill ngay.
+    Công thức vận hành ngắn gọn Có thể nhớ hệ này bằng công thức: SCOPE → SKILL → EXECUTE → VERIFY → EVOLVE SCOPE Xác định bài toán, mục tiêu, đầu ra SKILL Chọn hoặc tạo module phù hợp EXECUTE Cho agent thực thi với tri thức + công cụ + workflow VERIFY Kiểm tra bằng checklist, test, đối chiếu EVOLVE Cập nhật skill từ lỗi và edge case Đây là vòng lặp tạo ra năng lực tích lũy. Skill system giúp bạn mở rộng năng lực cá nhân và tổ chức!

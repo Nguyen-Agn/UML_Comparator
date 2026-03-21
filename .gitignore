@@ -1,0 +1,18 @@
+# Build artifacts
+*.exe
+CompareUML_CLI
+
+# Test cases (Large files)
+UMLs_testcase/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Workspace settings
+.vscode/
+.idea/
+
+# Local logs
+*.log
+test_output.txt

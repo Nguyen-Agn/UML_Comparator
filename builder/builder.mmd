@@ -1,0 +1,65 @@
+classDiagram
+    direction TB
+
+    %% ── Factory & Interface ──────────────────────────────────────────────────
+
+    class IModelBuilder {
+        <<interface>>
+        +Build(rawData) UMLGraph, error
+    }
+
+    class BuilderFactory {
+        <<factory>>
+        +GetBuilder(sourceType) IModelBuilder
+    }
+
+    %% ── Drawio Implementation ────────────────────────────────────────────────
+
+    class DrawioModelBuilder {
+        <<orchestrator>>
+        -parser  IXMLParser
+        -san     ITextSanitizer
+        -types   ITypeDetector
+        -members IMemberParser
+        +Build(rawData) UMLGraph, error
+    }
+
+    %% ── Internal Interfaces (Drawio Specific) ────────────────────────────────
+
+    class IXMLParser {
+        <<interface>>
+        +parse(raw) []mxCell
+    }
+
+    class ITextSanitizer {
+        <<interface>>
+        +clean(raw) string
+        +extractCleanName(sanitized) string
+    }
+
+    class ITypeDetector {
+        <<interface>>
+        +nodeType(style, value) string
+    }
+
+    class IMemberParser {
+        <<interface>>
+        +parseChildren(children) attrs, methods
+    }
+
+    %% ── Relationships ────────────────────────────────────────────────────────
+
+    BuilderFactory ..> IModelBuilder : creates
+    DrawioModelBuilder ..|> IModelBuilder : implements
+
+    DrawioModelBuilder --> IXMLParser
+    DrawioModelBuilder --> ITextSanitizer
+    DrawioModelBuilder --> ITypeDetector
+    DrawioModelBuilder --> IMemberParser
+
+    %% ── Other Future Builders ────────────────────────────────────────────────
+    class JsonModelBuilder {
+        <<future>>
+    }
+    JsonModelBuilder ..|> IModelBuilder : implements
+    BuilderFactory ..> JsonModelBuilder : creates
