@@ -24,10 +24,10 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 | Module | Chức năng |
 | :--- | :--- |
 | **Parser** | Đọc và giải mã XML từ tệp `.drawio` (Base64/Inflate). |
-| **Builder** | Chuyển đổi dữ liệu XML thô thành đồ thị `UMLGraph`. |
-| **Pre-Matcher** | Tiền xử lý dữ liệu, phân loại và chuẩn hóa các thực thể. |
-| **Matcher** | So khớp các node giữa hai bản vẽ dựa trên độ tương đồng văn bản. |
-| **Comparator** | So sánh chi tiết thuộc tính, phương thức và các liên kết mũi tên. |
+| **Builder** | Chuyển đổi dữ liệu XML thô thành đồ thị `UMLGraph` (String-Based). |
+| **Pre-Matcher** | Tiền xử lý dữ liệu, phân loại và chuẩn hóa các thực thể (Struct-Based). |
+| **Matcher** | So khớp các node giữa hai bản vẽ dựa trên độ tương đồng văn bản (Mapping). |
+| **Comparator(💱 hiện tại)** | So sánh chi tiết thuộc tính, phương thức và các liên kết mũi tên. |
 | **Grader** | Áp dụng luật chấm điểm (JSON) để tính toán điểm số cuối cùng. |
 | **Visualizer** | Xuất báo cáo trực quan dưới dạng CLI Dashboard hoặc hình ảnh màu. |
 
