@@ -116,8 +116,9 @@ func ValidateGraph(g *UMLGraph, label string) []IntegrityError {
 		}
 
 		// Incomplete attributes: attribute has no `:` (no type declared)
+		// Skip for Enums as constants usually don't have types in UML
 		for _, attr := range n.Attributes {
-			if !strings.Contains(attr, ":") && attr != "" {
+			if !strings.Contains(attr, ":") && attr != "" && !strings.EqualFold(n.Type, "Enum") {
 				errs = append(errs, IntegrityError{
 					Code:     "INCOMPLETE_ATTRIBUTE",
 					Severity: "WARN",

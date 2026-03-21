@@ -35,4 +35,5 @@ if "%~1"=="" (
 ) else (
     %EXE% %*
 )
+goto get_sol
 endlocal

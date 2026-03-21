@@ -8,10 +8,11 @@ import (
 	"os"
 	"strings"
 	"uml_compare/builder"
+	"uml_compare/comparator"
 	"uml_compare/domain"
+	"uml_compare/matcher"
 	"uml_compare/parser"
 	"uml_compare/prematcher"
-	"uml_compare/matcher"
 )
 
 const (
@@ -53,7 +54,7 @@ func main() {
 	for _, w := range rawWarnings {
 		// Suppress warnings for pure shortcuts like "+ getters / setters"
 		lowerMsg := strings.ToLower(w.Message)
-		if w.Code == "INCOMPLETE_ATTRIBUTE" && (strings.Contains(lowerMsg, "getters") || strings.Contains(lowerMsg, "setters")) {
+		if w.Code == "INCOMPLETE_ATTRIBUTE" && (strings.Contains(lowerMsg, "getter") || strings.Contains(lowerMsg, "setter")) {
 			continue
 		}
 		warnings = append(warnings, w)
@@ -78,15 +79,18 @@ func main() {
 		fmt.Printf("%s⚠️  Continuing with warnings — results may be partially inaccurate%s\n", Yellow, Reset)
 	}
 
-
 	// ── AI Matcher Integration ───────────────────────────────────
 	preMatcher := prematcher.NewStandardPreMatcher()
 	solProc, _ := preMatcher.Process(solutionGraph)
 	stuProc, _ := preMatcher.Process(studentGraph)
-	
+
 	fuzzy := matcher.NewLevenshteinMatcher()
 	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, 0.8)
 	mapping, _ := entityMatcher.Match(solProc, stuProc)
+
+	// ── Advanced Comparator ──────────────────────────────────────
+	comp := comparator.NewStandardComparator(fuzzy)
+	diffReport, _ := comp.Compare(solProc, stuProc, mapping)
 
 	// ── Side-by-side Node Comparison ─────────────────────────────
 	fmt.Printf("\n%s── [COMPARE] Nodes Side-by-Side ────────────────────────────%s\n", Cyan+Bold, Reset)
@@ -95,6 +99,10 @@ func main() {
 	// ── Edge Comparison ──────────────────────────────────────────
 	fmt.Printf("\n%s── [COMPARE] Edges (Relations) ──────────────────────────────%s\n", Cyan+Bold, Reset)
 	printEdgeComparison(solProc, stuProc, mapping)
+
+	// ── Detailed Report ──────────────────────────────────────────
+	fmt.Printf("\n%s── [REPORT] Detailed Diff ─────────────────────────────────%s\n", Cyan+Bold, Reset)
+	printDiffReport(diffReport)
 
 	// ── Summary ──────────────────────────────────────────────────
 	fmt.Printf("\n%s── [SUMMARY] Quick Stats ────────────────────────────────────%s\n", Cyan+Bold, Reset)
@@ -132,7 +140,7 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 	for i := range sol.Nodes {
 		solNode := &sol.Nodes[i]
 		solPart := fmt.Sprintf("[%s] %s (%dA/%dM)", solNode.Type[:1], solNode.Name, len(solNode.Attributes), len(solNode.Methods))
-		
+
 		var stuNode *domain.ProcessedNode
 		stuPart := ""
 		matchMark := "✗ "
@@ -156,11 +164,12 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 		}
 
 		color := Reset
-		if matchMark == "✔ " {
+		switch matchMark {
+		case "✔ ":
 			color = Green
-		} else if matchMark == "≈ " {
+		case "≈ ":
 			color = Yellow
-		} else {
+		default:
 			color = Red
 		}
 
@@ -169,40 +178,40 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 		// Print mismatched members side-by-side
 		if stuNode != nil {
 			solAttrs := []string{}
-			for _, a := range solNode.Attributes { solAttrs = append(solAttrs, fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name)) }
+			for _, a := range solNode.Attributes {
+				solAttrs = append(solAttrs, fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name))
+			}
 			stuAttrs := []string{}
-			for _, a := range stuNode.Attributes { stuAttrs = append(stuAttrs, fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name)) }
-			printMismatchedMembers("Attr", solAttrs, stuAttrs, col)
+			for _, a := range stuNode.Attributes {
+				stuAttrs = append(stuAttrs, fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name))
+			}
+			printAllMembers("Attr", solAttrs, stuAttrs, col)
 
 			solMeths := []string{}
 			for _, m := range solNode.Methods {
-				// Skip displaying getter/setter if shortcut exists
-				if m.Type == "getter" && ((solNode.Shortcut&1) != 0 || (stuNode.Shortcut&1) != 0) {
-					continue
-				}
-				if m.Type == "setter" && ((solNode.Shortcut&2) != 0 || (stuNode.Shortcut&2) != 0) {
+				if m.Type == "getter" || m.Type == "setter" {
 					continue
 				}
 
 				params := []string{}
-				for _, p := range m.Inputs { params = append(params, p.Type) }
+				for _, p := range m.Inputs {
+					params = append(params, p.Type)
+				}
 				solMeths = append(solMeths, fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
 			}
 			stuMeths := []string{}
 			for _, m := range stuNode.Methods {
-				// Skip displaying getter/setter if shortcut exists
-				if m.Type == "getter" && ((solNode.Shortcut&1) != 0 || (stuNode.Shortcut&1) != 0) {
-					continue
-				}
-				if m.Type == "setter" && ((solNode.Shortcut&2) != 0 || (stuNode.Shortcut&2) != 0) {
+				if m.Type == "getter" || m.Type == "setter" {
 					continue
 				}
 
 				params := []string{}
-				for _, p := range m.Inputs { params = append(params, p.Type) }
+				for _, p := range m.Inputs {
+					params = append(params, p.Type)
+				}
 				stuMeths = append(stuMeths, fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
 			}
-			printMismatchedMembers("Meth", solMeths, stuMeths, col)
+			printAllMembers("Meth", solMeths, stuMeths, col)
 		}
 	}
 
@@ -223,22 +232,26 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 func printEdgeComparison(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
 	// Create lookup for node names
 	solNames := make(map[string]string)
-	for _, n := range sol.Nodes { solNames[n.ID] = n.Name }
+	for _, n := range sol.Nodes {
+		solNames[n.ID] = n.Name
+	}
 	stuNames := make(map[string]string)
-	for _, n := range stu.Nodes { stuNames[n.ID] = n.Name }
+	for _, n := range stu.Nodes {
+		stuNames[n.ID] = n.Name
+	}
 
 	fmt.Println("  Solution edges (mapped to student names if available):")
 	for _, se := range sol.Edges {
 		status := "  "
 		mappedSrc := ""
 		mappedTgt := ""
-		
+
 		// Find if this edge exists in student graph via mapping
 		if mSrc, ok1 := mapping[se.SourceID]; ok1 {
 			if mTgt, ok2 := mapping[se.TargetID]; ok2 {
 				mappedSrc = mSrc.StudentID
 				mappedTgt = mTgt.StudentID
-				
+
 				for _, ste := range stu.Edges {
 					if ste.SourceID == mappedSrc && ste.TargetID == mappedTgt && ste.RelationType == se.RelationType {
 						status = "✔ "
@@ -275,10 +288,14 @@ func printEdgeComparison(sol, stu *domain.ProcessedUMLGraph, mapping domain.Mapp
 							}
 						}
 					}
-					if found { break }
+					if found {
+						break
+					}
 				}
 			}
-			if found { break }
+			if found {
+				break
+			}
 		}
 
 		if !found {
@@ -291,7 +308,7 @@ func printEdgeComparison(sol, stu *domain.ProcessedUMLGraph, mapping domain.Mapp
 
 func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
 	nodeHit := len(mapping)
-	
+
 	edgeHit := 0
 	for _, se := range sol.Edges {
 		if mSrc, ok1 := mapping[se.SourceID]; ok1 {
@@ -306,11 +323,11 @@ func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTabl
 		}
 	}
 
-	nodePct := 0.0
+	nodePct := 1.0
 	if len(sol.Nodes) > 0 {
 		nodePct = float64(nodeHit) / float64(len(sol.Nodes)) * 100
 	}
-	edgePct := 0.0
+	edgePct := 100.0
 	if len(sol.Edges) > 0 {
 		edgePct = float64(edgeHit) / float64(len(sol.Edges)) * 100
 	}
@@ -327,6 +344,65 @@ func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTabl
 		color = Red
 	}
 	fmt.Printf("  %sOverall match : %.1f%%%s\n", color, overall, Reset)
+}
+
+func printDiffReport(report *domain.DiffReport) {
+	hasIssues := false
+
+	if len(report.MissedClass) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s🚨 [MISSED CLASSES]%s\n", Red+Bold, Reset)
+		for _, m := range report.MissedClass {
+			fmt.Printf("   ❌ %s\n", m)
+		}
+	}
+	if len(report.MissingNodes) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s🚨 [MISSED NODES]%s\n", Red+Bold, Reset)
+		for _, m := range report.MissingNodes {
+			fmt.Printf("   ❌ %s\n", m)
+		}
+	}
+	if len(report.MissingEdges) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s🚨 [MISSED EDGES]%s\n", Red+Bold, Reset)
+		for _, m := range report.MissingEdges {
+			fmt.Printf("   ❌ %s\n", m)
+		}
+	}
+	if len(report.MissingMembers) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s🚨 [MISSED MEMBERS]%s\n", Red+Bold, Reset)
+		for _, m := range report.MissingMembers {
+			fmt.Printf("   ❌ %s\n", m)
+		}
+	}
+
+	if len(report.AttributeErrors) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s⚠️ [ATTRIBUTE ERRORS]%s\n", Yellow+Bold, Reset)
+		for _, m := range report.AttributeErrors {
+			fmt.Printf("   %s🔸%s %s\n", Yellow, Reset, m)
+		}
+	}
+	if len(report.MethodErrors) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s⚠️ [METHOD ERRORS]%s\n", Yellow+Bold, Reset)
+		for _, m := range report.MethodErrors {
+			fmt.Printf("   %s🔸%s %s\n", Yellow, Reset, m)
+		}
+	}
+	if len(report.NodeEdgeErrors) > 0 {
+		hasIssues = true
+		fmt.Printf("\n%s⚠️ [RELATIONSHIP ERRORS]%s\n", Yellow+Bold, Reset)
+		for _, m := range report.NodeEdgeErrors {
+			fmt.Printf("   %s🔸%s %s\n", Yellow, Reset, m)
+		}
+	}
+
+	if !hasIssues {
+		fmt.Printf("\n%s✅ NO ISSUES FOUND — Perfect structural match!%s\n", Green+Bold, Reset)
+	}
 }
 
 func nodeNames(g *domain.UMLGraph) []string {
@@ -364,55 +440,42 @@ func max(a, b int) int {
 	return b
 }
 
-func printMismatchedMembers(label string, solList, stuList []string, col int) {
-	missing := []string{}
+func printAllMembers(label string, solList, stuList []string, col int) {
+	// Create a map to track which student members have been matched
+	matchedStu := make(map[int]bool)
+
+	// Interleave matched and mismatched from solution perspective
 	for _, s := range solList {
-		found := false
-		for _, st := range stuList {
-			// clean strings for comparison to be robust
+		foundIdx := -1
+		for i, st := range stuList {
+			if matchedStu[i] {
+				continue
+			}
+			// Exact match (including scope)
 			if strings.TrimSpace(s) == strings.TrimSpace(st) {
-				found = true
+				foundIdx = i
 				break
 			}
 		}
-		if !found {
-			missing = append(missing, s)
-		}
-	}
 
-	extra := []string{}
-	for _, st := range stuList {
-		found := false
-		for _, s := range solList {
-			if strings.TrimSpace(s) == strings.TrimSpace(st) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			extra = append(extra, st)
-		}
-	}
-
-	maxLines := max(len(missing), len(extra))
-	for i := 0; i < maxLines; i++ {
-		solPart := ""
-		stuPart := ""
-		if i < len(missing) {
-			solPart = "    - [" + label + "] " + missing[i]
+		if foundIdx != -1 {
+			// Matched: Both Green
+			matchedStu[foundIdx] = true
+			fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, "    ✔ ["+label+"] "+s, Reset, Green, col, " ✔ ["+label+"] "+s, Reset)
+		} else {
+			// Not in student: Left Red
+			solPart := "    ✗ [" + label + "] " + s
 			if len(solPart) > col-1 {
 				solPart = solPart[:col-4] + "..."
 			}
+			fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, solPart, Reset, col, "")
 		}
-		if i < len(extra) {
-			stuPart = "    + [" + label + "] " + extra[i]
-		}
-		
-		solColor := Red
-		stuColor := Green
-		if solPart == "" { solColor = Reset }
-		if stuPart == "" { stuColor = Reset }
+	}
 
-		fmt.Printf("%s%-*s%s│  %s%-*s%s\n", solColor, col, solPart, Reset, stuColor, col, stuPart, Reset)
+	// Print remaining student members (extra ones)
+	for i, st := range stuList {
+		if !matchedStu[i] {
+			fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, " ✗ ["+label+"] "+st, Reset)
+		}
 	}
 }

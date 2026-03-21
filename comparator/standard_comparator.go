@@ -108,6 +108,11 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 		}
 
 		if foundIdx != -1 {
+			matchingStu := stuAttrs[foundIdx]
+			// Check scope mismatch
+			if sAttr.Scope != matchingStu.Scope {
+				report.AttributeErrors = append(report.AttributeErrors, fmt.Sprintf("Class %s, Attribute %s: Scope mismatch (Solution: %s, Student: %s)", sol.Name, sAttr.Name, sAttr.Scope, matchingStu.Scope))
+			}
 			// Remove found to avoid duplicates
 			stuAttrs = append(stuAttrs[:foundIdx], stuAttrs[foundIdx+1:]...)
 		} else {
@@ -146,6 +151,11 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 		}
 
 		if foundIdx != -1 {
+			matchingStu := stuNormal[foundIdx]
+			// Check scope mismatch
+			if sMethod.Scope != matchingStu.Scope {
+				report.MethodErrors = append(report.MethodErrors, fmt.Sprintf("Class %s, Method %s: Scope mismatch (Solution: %s, Student: %s)", sol.Name, sMethod.Name, sMethod.Scope, matchingStu.Scope))
+			}
 			stuNormal = append(stuNormal[:foundIdx], stuNormal[foundIdx+1:]...)
 		} else {
 			if isCtor {
@@ -158,10 +168,10 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 }
 
 func (c *StandardComparator) matchAttribute(sol domain.ProcessedAttribute, stu domain.ProcessedAttribute, typeMap map[string]string) bool {
-	// Scope check
-	if sol.Scope != stu.Scope {
-		return false
-	}
+	// Scope check - REMOVED (checked after matching)
+	// if sol.Scope != stu.Scope {
+	// 	return false
+	// }
 	// Type check (Translated)
 	if c.translateType(sol.Type, typeMap) != stu.Type {
 		return false
@@ -187,11 +197,12 @@ func (c *StandardComparator) isConstructor(m domain.ProcessedMethod, className s
 
 func (c *StandardComparator) splitMethods(methods []domain.ProcessedMethod) (g []domain.ProcessedMethod, s []domain.ProcessedMethod, normal []domain.ProcessedMethod) {
 	for _, m := range methods {
-		if m.Type == "getter" {
+		switch m.Type {
+		case "getter":
 			g = append(g, m)
-		} else if m.Type == "setter" {
+		case "setter":
 			s = append(s, m)
-		} else {
+		default:
 			normal = append(normal, m)
 		}
 	}
@@ -209,12 +220,6 @@ func (c *StandardComparator) matchMethod(sol domain.ProcessedMethod, stu domain.
 			return false
 		}
 	}
-
-	// 2. Scope check
-	if sol.Scope != stu.Scope {
-		return false
-	}
-
 	// 3. Kind check: static, abstract, normal must match
 	if sol.Kind != stu.Kind {
 		return false

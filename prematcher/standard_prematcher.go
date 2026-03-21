@@ -88,6 +88,10 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 			}
 
 			parsedAttr := p.parseAttribute(raw)
+			// Enums: default missing type to "void"
+			if parsedAttr.Type == "" && strings.EqualFold(pNode.Type, "Enum") {
+				parsedAttr.Type = "void"
+			}
 			pNode.Attributes = append(pNode.Attributes, parsedAttr)
 
 			// Proactively implement shortcuts: if attribute has {getter} or {setter}

@@ -116,7 +116,56 @@ func TestComparatorScopeAndFuzzy(t *testing.T) {
 	}
 
 	report, _ := comp.Compare(sol, stu, mapping)
-	if len(report.MissingMembers) == 0 {
-		t.Errorf("Expected Attribute Missing/Error due to wrong scope")
+	if len(report.AttributeErrors) == 0 {
+		t.Errorf("Expected AttributeError due to wrong scope, got 0")
+	}
+}
+
+func TestComparatorScopeMismatch(t *testing.T) {
+	fz := matcher.NewLevenshteinMatcher()
+	comp := NewStandardComparator(fz)
+
+	mapping := domain.MappingTable{"S1": {StudentID: "Stu1", Similarity: 1.0}}
+
+	solGraph := &domain.ProcessedUMLGraph{
+		Nodes: []domain.ProcessedNode{
+			{
+				ID:   "S1",
+				Name: "Employee",
+				Attributes: []domain.ProcessedAttribute{
+					{Name: "empId", Scope: "-", Type: "int"},
+				},
+				Methods: []domain.ProcessedMethod{
+					{Name: "work", Scope: "+", Output: "void"},
+				},
+			},
+		},
+	}
+
+	stuGraph := &domain.ProcessedUMLGraph{
+		Nodes: []domain.ProcessedNode{
+			{
+				ID:   "Stu1",
+				Name: "Employee",
+				Attributes: []domain.ProcessedAttribute{
+					{Name: "empId", Scope: "+", Type: "int"}, // WRONG SCOPE
+				},
+				Methods: []domain.ProcessedMethod{
+					{Name: "work", Scope: "-", Output: "void"}, // WRONG SCOPE
+				},
+			},
+		},
+	}
+
+	report, _ := comp.Compare(solGraph, stuGraph, mapping)
+
+	if len(report.AttributeErrors) != 1 {
+		t.Errorf("Expected 1 AttributeError due to scope mismatch, got %d", len(report.AttributeErrors))
+	}
+	if len(report.MethodErrors) != 1 {
+		t.Errorf("Expected 1 MethodError due to scope mismatch, got %d", len(report.MethodErrors))
+	}
+	if len(report.MissingMembers) != 0 {
+		t.Errorf("Expected 0 MissingMembers as they should be matched but with errors, got %d", len(report.MissingMembers))
 	}
 }

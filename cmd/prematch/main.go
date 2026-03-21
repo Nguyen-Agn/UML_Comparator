@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -11,69 +10,120 @@ import (
 	"uml_compare/prematcher"
 )
 
+const (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Blue   = "\033[34m"
+	Cyan   = "\033[36m"
+	Bold   = "\033[1m"
+)
+
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run cmd/prematch/main.go <file.drawio>")
-		fmt.Println("Example: go run cmd/prematch/main.go UMLs_testcase/problem1.drawio")
+		fmt.Printf("%sUsage: go run cmd/prematch/main.go <file.drawio>%s\n", Yellow, Reset)
+		fmt.Printf("Example: go run cmd/prematch/main.go UMLs_testcase/problem1.drawio\n")
 		os.Exit(1)
 	}
 
 	filePath := os.Args[1]
 
-	fmt.Println("=== Prematcher Module Demo ===")
-	fmt.Printf("Input File: %s\n", filePath)
+	fmt.Printf("%s╔══════════════════════════════════════════════════════════╗%s\n", Blue, Reset)
+	fmt.Printf("%s║           UML Prematcher — Detail Extraction             ║%s\n", Blue+Bold, Reset)
+	fmt.Printf("%s╚══════════════════════════════════════════════════════════╝%s\n", Blue, Reset)
+	fmt.Printf("Input File: %s%s%s\n\n", Cyan, filePath, Reset)
 
 	// 1. Initialize Pipeline
-	fmt.Println("[1] Initializing Pipeline...")
+	fmt.Printf("%s[1] Initializing Pipeline...%s\n", Blue, Reset)
 	p := parser.NewDrawioParser()
 	b := builder.NewStandardModelBuilder()
 	pm := prematcher.NewStandardPreMatcher()
 
 	// 2. Parse File
-	fmt.Println("[2] Parsing .drawio file...")
+	fmt.Printf("%s[2] Parsing .drawio file...%s\n", Blue, Reset)
 	rawXML, err := p.Parse(filePath)
 	if err != nil {
-		log.Fatalf("Parser error: %v", err)
+		log.Fatalf("%s❌ Parser error: %v%s", Red, err, Reset)
 	}
 
 	// 3. Build Graph
-	fmt.Println("[3] Building UML Graph...")
+	fmt.Printf("%s[3] Building UML Graph...%s\n", Blue, Reset)
 	graph, err := b.Build(rawXML)
 	if err != nil {
-		log.Fatalf("Builder error: %v", err)
+		log.Fatalf("%s❌ Builder error: %v%s", Red, err, Reset)
 	}
 
 	// 4. Process with Prematcher
-	fmt.Println("[4] Running Prematcher (Bóc tách chi tiết & ArchWeight)...")
+	fmt.Printf("%s[4] Running Prematcher (Detailed Extraction & ArchWeight)...%s\n", Blue, Reset)
 	processedGraph, err := pm.Process(graph)
 	if err != nil {
-		log.Fatalf("Error processing graph: %v", err)
+		log.Fatalf("%s❌ Error processing graph: %v%s", Red, err, Reset)
 	}
 
-	// Pretty print JSON output
-	outputBytes, err := json.MarshalIndent(processedGraph, "", "  ")
-	if err != nil {
-		log.Fatalf("Error marshaling JSON: %v", err)
-	}
-
-	fmt.Println("\nProcessed UML Graph Output:")
-	fmt.Println(string(outputBytes))
-
-	fmt.Println("\nArchWeight Analysis:")
+	fmt.Printf("\n%s── [RESULTS] Processed Nodes & ArchWeights ──────────────────%s\n", Cyan+Bold, Reset)
 	for _, n := range processedGraph.Nodes {
-		fmt.Printf("- Node: %s (Type: %s, Shortcut: %d)\n", n.Name, n.Type, n.Shortcut)
-		fmt.Printf("  -> ArchWeight: %d (Binary: %032b)\n", n.ArchWeight, n.ArchWeight)
+		fmt.Printf("\n%s● NODE: %s%s (Type: %s%s%s)\n", Bold+Cyan, n.Name, Reset, Yellow, n.Type, Reset)
+		
+		fmt.Printf("  %s├─ ArchWeight:%s %d\n", Blue, Reset, n.ArchWeight)
+		printArchWeightBreakdown(n.ArchWeight)
+
+		if n.Shortcut != 0 {
+			fmt.Printf("  %s├─ Shortcuts:%s ", Blue, Reset)
+			if (n.Shortcut & 1) != 0 { fmt.Printf("[Getters] ") }
+			if (n.Shortcut & 2) != 0 { fmt.Printf("[Setters] ") }
+			fmt.Println()
+		}
+
 		if len(n.Attributes) > 0 {
-			fmt.Println("     Attributes:")
+			fmt.Printf("  %s├─ Attributes (%d):%s\n", Blue, len(n.Attributes), Reset)
 			for _, a := range n.Attributes {
-				fmt.Printf("       • %s %s : %s [%s]\n", a.Scope, a.Name, a.Type, a.Kind)
+				fmt.Printf("  │  • %s %s%-15s%s : %s%-10s%s [%s]\n", a.Scope, Bold, a.Name, Reset, Yellow, a.Type, Reset, a.Kind)
 			}
 		}
+		
 		if len(n.Methods) > 0 {
-			fmt.Println("     Methods:")
+			fmt.Printf("  %s└─ Methods (%d):%s\n", Blue, len(n.Methods), Reset)
 			for _, m := range n.Methods {
-				fmt.Printf("       • %s %s() : %s [%s] (Type: %s)\n", m.Scope, m.Name, m.Output, m.Kind, m.Type)
+				mColor := Reset
+				if m.Type == "getter" || m.Type == "setter" {
+					mColor = Green
+				} else if m.Type == "constructor" {
+					mColor = Yellow + Bold
+				}
+				fmt.Printf("     • %s %s%-20s%s : %s%-10s%s (Type: %s%s%s)\n", m.Scope, mColor, m.Name+"()", Reset, Yellow, m.Output, Reset, Cyan, m.Type, Reset)
 			}
 		}
 	}
+
+	fmt.Printf("\n%s── Summary: %d nodes processed successfully ──%s\n", Green+Bold, len(processedGraph.Nodes), Reset)
+}
+
+func printArchWeightBreakdown(weight uint32) {
+	// Bit 29-31: Loại Class (3 bit - 0: Unknown, 1: Class, 2: Interface, 3: Abstract, 4: Enum)
+	typeVal := (weight >> 29) & 0x7
+	typeName := "Unknown"
+	switch typeVal {
+	case 1: typeName = "Class"
+	case 2: typeName = "Interface"
+	case 3: typeName = "Abstract"
+	case 4: typeName = "Enum"
+	}
+
+	// Bit 28: Thừa kế
+	hasInherit := (weight >> 28) & 0x1
+
+	// Bit 24-27: Interface
+	numIntf := (weight >> 24) & 0xF
+
+	// Bit 18-23: Method
+	numMeth := (weight >> 18) & 0x3F
+
+	// Bit 13-17: Attribute
+	numAttr := (weight >> 13) & 0x1F
+
+	fmt.Printf("  %s│  └─ Binary:%s %032b\n", Blue, Reset, weight)
+	fmt.Printf("  %s│     [Bits 29-31] Type: %s%-10s%s | [Bit 28] Inherit: %v\n", Blue, Yellow, typeName, Reset, hasInherit != 0)
+	fmt.Printf("  %s│     [Bits 24-27] Intf: %-10d | [Bits 18-23] Meth: %-2d\n", Blue, numIntf, numMeth)
+	fmt.Printf("  %s│     [Bits 13-17] Attr: %-10d\n", Blue, numAttr)
 }

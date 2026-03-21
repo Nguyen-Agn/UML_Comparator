@@ -32,10 +32,10 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 | **Visualizer** | Xuất báo cáo trực quan dưới dạng CLI Dashboard hoặc hình ảnh màu. |
 
 ---
-
 # 🚀 Hướng dẫn sử dụng nhanh
 
 ### 1. Sử dụng công cụ CompareUML_CLI (Dành cho người dùng cuối)
+#### Dùng cho cả CompareUML_CLI và ExtractorUML
 Nếu bạn sử dụng Windows, hãy sử dụng tệp đóng gói sẵn:
 
 - **Chế độ tương tác:** 
@@ -47,12 +47,13 @@ Nếu bạn sử dụng Windows, hãy sử dụng tệp đóng gói sẵn:
   + Mở CMD hoặc PowerShell tại thư mục chứa file .exe.
   ```bash
   ./CompareUML_CLI.exe <solution.drawio> <student.drawio>
+  ./ExtractorUML.exe <uml.drawio>
   ```
 
 ### 2. Dành cho lập trình viên (Go)
 Để chạy từ mã nguồn:
 ```bash
-go run ./cmd/compare/main.go <solution.drawio> <student.drawio>
+go run ./cmd/<module name>/main.go <solution.drawio> <student.drawio>
 ```
 
 ---
