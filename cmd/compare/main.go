@@ -129,7 +129,7 @@ func loadGraph(filePath, label string) *domain.UMLGraph {
 }
 
 func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
-	const col = 38
+	const col = 60
 	header := fmt.Sprintf("%s  %-*s│  %-*s%s", Bold+Blue, col, "SOLUTION (đáp án)", col, "STUDENT (bài nộp)", Reset)
 	fmt.Println(strings.Repeat("─", col*2+4))
 	fmt.Println(header)
@@ -308,7 +308,6 @@ func printEdgeComparison(sol, stu *domain.ProcessedUMLGraph, mapping domain.Mapp
 
 func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
 	nodeHit := len(mapping)
-
 	edgeHit := 0
 	for _, se := range sol.Edges {
 		if mSrc, ok1 := mapping[se.SourceID]; ok1 {
@@ -323,7 +322,7 @@ func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTabl
 		}
 	}
 
-	nodePct := 1.0
+	nodePct := 100.0
 	if len(sol.Nodes) > 0 {
 		nodePct = float64(nodeHit) / float64(len(sol.Nodes)) * 100
 	}
@@ -332,8 +331,6 @@ func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTabl
 		edgePct = float64(edgeHit) / float64(len(sol.Edges)) * 100
 	}
 
-	fmt.Printf("  Nodes matched : %d / %d (%.0f%%)\n", nodeHit, len(sol.Nodes), nodePct)
-	fmt.Printf("  Edges matched : %d / %d (%.0f%%)\n", edgeHit, len(sol.Edges), edgePct)
 	overall := (nodePct + edgePct) / 2
 	color := Cyan
 	if overall >= 90 {
@@ -343,66 +340,101 @@ func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTabl
 	} else {
 		color = Red
 	}
-	fmt.Printf("  %sOverall match : %.1f%%%s\n", color, overall, Reset)
+
+	fmt.Printf("  Stats: Nodes %d/%d (%.0f%%), Edges %d/%d (%.0f%%) → %sOverall: %.1f%%%s\n",
+		nodeHit, len(sol.Nodes), nodePct, edgeHit, len(sol.Edges), edgePct, color, overall, Reset)
 }
 
 func printDiffReport(report *domain.DiffReport) {
-	hasIssues := false
+	printDetailSection("🚨 [MISSING DETAILS]", report.MissingDetail, Red+Bold)
+	printDetailSection("⚠️ [WRONG/MISMATCHED DETAILS]", report.WrongDetail, Yellow+Bold)
+	printDetailSection("➕ [EXTRA DETAILS]", report.ExtraDetail, Cyan+Bold)
+	printDetailSection("✅ [CORRECT DETAILS]", report.CorrectDetail, Green+Bold)
 
-	if len(report.MissedClass) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s🚨 [MISSED CLASSES]%s\n", Red+Bold, Reset)
-		for _, m := range report.MissedClass {
-			fmt.Printf("   ❌ %s\n", m)
-		}
-	}
-	if len(report.MissingNodes) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s🚨 [MISSED NODES]%s\n", Red+Bold, Reset)
-		for _, m := range report.MissingNodes {
-			fmt.Printf("   ❌ %s\n", m)
-		}
-	}
-	if len(report.MissingEdges) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s🚨 [MISSED EDGES]%s\n", Red+Bold, Reset)
-		for _, m := range report.MissingEdges {
-			fmt.Printf("   ❌ %s\n", m)
-		}
-	}
-	if len(report.MissingMembers) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s🚨 [MISSED MEMBERS]%s\n", Red+Bold, Reset)
-		for _, m := range report.MissingMembers {
-			fmt.Printf("   ❌ %s\n", m)
-		}
-	}
-
-	if len(report.AttributeErrors) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s⚠️ [ATTRIBUTE ERRORS]%s\n", Yellow+Bold, Reset)
-		for _, m := range report.AttributeErrors {
-			fmt.Printf("   %s🔸%s %s\n", Yellow, Reset, m)
-		}
-	}
-	if len(report.MethodErrors) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s⚠️ [METHOD ERRORS]%s\n", Yellow+Bold, Reset)
-		for _, m := range report.MethodErrors {
-			fmt.Printf("   %s🔸%s %s\n", Yellow, Reset, m)
-		}
-	}
-	if len(report.NodeEdgeErrors) > 0 {
-		hasIssues = true
-		fmt.Printf("\n%s⚠️ [RELATIONSHIP ERRORS]%s\n", Yellow+Bold, Reset)
-		for _, m := range report.NodeEdgeErrors {
-			fmt.Printf("   %s🔸%s %s\n", Yellow, Reset, m)
-		}
-	}
+	hasIssues := len(report.MissingDetail.Class) > 0 || len(report.MissingDetail.Method) > 0 || len(report.MissingDetail.Attribute) > 0 || len(report.MissingDetail.Edge) > 0 ||
+		len(report.WrongDetail.Class) > 0 || len(report.WrongDetail.Method) > 0 || len(report.WrongDetail.Attribute) > 0 || len(report.WrongDetail.Edge) > 0
 
 	if !hasIssues {
 		fmt.Printf("\n%s✅ NO ISSUES FOUND — Perfect structural match!%s\n", Green+Bold, Reset)
 	}
+}
+
+func printDetailSection(title string, detail domain.DetailError, color string) {
+	isEmpty := len(detail.Class) == 0 && len(detail.Method) == 0 && len(detail.Attribute) == 0 && len(detail.Edge) == 0
+	if isEmpty {
+		return
+	}
+
+	fmt.Printf("\n%s%s%s\n", color, title, Reset)
+
+	if len(detail.Class) > 0 {
+		fmt.Printf("   %sNodes:%s\n", Bold, Reset)
+		for _, d := range detail.Class {
+			solName := "?"
+			if d.Sol != nil {
+				solName = d.Sol.Name
+			}
+			stuName := "?"
+			if d.Stu != nil {
+				stuName = d.Stu.Name
+			}
+			fmt.Printf("    • [%s vs %s] %s\n", solName, stuName, d.Description)
+		}
+	}
+	if len(detail.Attribute) > 0 {
+		fmt.Printf("   %sAttributes:%s\n", Bold, Reset)
+		for _, d := range detail.Attribute {
+			solV := "?"
+			if d.Sol != nil {
+				solV = attrString(d.Sol)
+			}
+			stuV := "?"
+			if d.Stu != nil {
+				stuV = attrString(d.Stu)
+			}
+			fmt.Printf("    • [%s] %s vs %s → %s\n", d.ParentClassName, solV, stuV, d.Description)
+		}
+	}
+	if len(detail.Method) > 0 {
+		fmt.Printf("   %sMethods:%s\n", Bold, Reset)
+		for _, d := range detail.Method {
+			solV := "?"
+			if d.Sol != nil {
+				solV = methString(d.Sol)
+			}
+			stuV := "?"
+			if d.Stu != nil {
+				stuV = methString(d.Stu)
+			}
+			fmt.Printf("    • [%s] %s vs %s → %s\n", d.ParentClassName, solV, stuV, d.Description)
+		}
+	}
+	if len(detail.Edge) > 0 {
+		fmt.Printf("   %sRelationships:%s\n", Bold, Reset)
+		for _, d := range detail.Edge {
+			solV := "?"
+			if d.Sol != nil {
+				solV = d.Sol.RelationType
+			}
+			stuV := "?"
+			if d.Stu != nil {
+				stuV = d.Stu.RelationType
+			}
+			fmt.Printf("    • [%s vs %s] %s\n", solV, stuV, d.Description)
+		}
+	}
+}
+
+func attrString(a *domain.ProcessedAttribute) string {
+	return fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name)
+}
+
+func methString(m *domain.ProcessedMethod) string {
+	params := []string{}
+	for _, p := range m.Inputs {
+		params = append(params, p.Type)
+	}
+	return fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output)
 }
 
 func nodeNames(g *domain.UMLGraph) []string {

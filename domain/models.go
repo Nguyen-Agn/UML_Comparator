@@ -31,18 +31,54 @@ type UMLEdge struct {
 	TargetLabel  string
 }
 
-// DiffReport contains the partitioned differences and missing items found between two UMLGraphs.
-type DiffReport struct {
-	// Missed items (Solution has them, Student does not)
-	MissedClass    []string
-	MissingNodes   []string
-	MissingEdges   []string
-	MissingMembers []string
+// NodeDiff represents a difference at the node level.
+type NodeDiff struct {
+	Sol         *ProcessedNode
+	Stu         *ProcessedNode
+	Description string // Human-readable summary of the mismatch
+}
 
-	// Wrong/Different items (Found but details mismatch)
-	AttributeErrors []string
-	MethodErrors    []string
-	NodeEdgeErrors  []string
+// AttributeDiff represents a difference for a specific attribute of a node.
+type AttributeDiff struct {
+	ParentClassName string
+	Sol             *ProcessedAttribute
+	Stu             *ProcessedAttribute
+	Description     string
+}
+
+// MethodDiff represents a difference for a specific method of a node.
+type MethodDiff struct {
+	ParentClassName string
+	Sol             *ProcessedMethod
+	Stu             *ProcessedMethod
+	Description     string
+}
+
+// EdgeDiff represents a difference in a relationship.
+type EdgeDiff struct {
+	Sol         *ProcessedEdge
+	Stu         *ProcessedEdge
+	Description string
+}
+
+// DetailError groups differences by their entity type.
+type DetailError struct {
+	Class     []NodeDiff
+	Method    []MethodDiff
+	Attribute []AttributeDiff
+	Edge      []EdgeDiff
+}
+
+// DiffReport contains the partitioned differences found between two UMLGraphs.
+type DiffReport struct {
+	// MissingDetail: items in solution but not in student (Stu will be nil).
+	MissingDetail DetailError
+	// WrongDetail: items in both but with mismatches.
+	WrongDetail DetailError
+	// ExtraDetail: items in student but not in solution (Sol will be nil).
+	ExtraDetail DetailError
+	// CorrectDetail: items that match perfectly (Described as "Match").
+	CorrectDetail DetailError
 }
 
 // GradeResult contains the final score and text feedbacks.
