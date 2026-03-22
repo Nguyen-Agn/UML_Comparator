@@ -75,13 +75,22 @@ go run ./cmd/<module name>/main.go <solution.drawio> <student.drawio>
 
 ---
 # Review 
-**Note**: các file .exe và .bat là các class main gọi các mô-đun và in ra output của mô-đun đó dưới format. Chủ yếu dùng để xem các mô-đun hoạt động chính xác không. Không phải là công cụ chính để sử dụng.
+**Note**: các file .exe và .bat là các class main gọi các mô-đun và in ra output của mô-đun đó dướtheo mẫu. Chủ yếu dùng để xem các mô-đun hoạt động chính xác không. Không phải là công cụ chính để sử dụng.
 
-## Ảnh review
+## Ảnh review CLI
+
+<details>
+<summary>Ảnh review CLI</summary>
+
+![assignment 1](./other/assignment1.png)
+
+![assignment 2](./other/assignment2.png)
 
 ![extractor](./other/extractor.png)
 
 ![compare](./other/compare.png)
+
+</details>
 
 ---
 *Dự án được xây dựng với mục tiêu nâng cao tính minh bạch và hiệu quả trong việc giảng dạy & chấm bài môn Thiết kế Hệ thống OOP.*
