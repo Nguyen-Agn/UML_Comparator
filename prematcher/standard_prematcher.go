@@ -74,6 +74,7 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 			customTypeCount++
 		}
 
+		// --- STEP A: Parse Attributes First ---
 		for _, attr := range node.Attributes {
 			raw := cleanText(attr)
 			if isPureShortcut(raw) {
@@ -113,6 +114,19 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 			}
 		}
 
+		// --- STEP B: Parse Methods with Attribute Context ---
+		claimedGetters := make(map[string]bool)
+		claimedSetters := make(map[string]bool)
+		// Mark methods generated from {getter}/{setter} as claimed
+		for _, m := range pNode.Methods {
+			if m.Type == "getter" {
+				claimedGetters[m.Name] = true // Simplified marker
+			}
+			if m.Type == "setter" {
+				claimedSetters[m.Name] = true
+			}
+		}
+
 		for _, method := range node.Methods {
 			raw := cleanText(method)
 			if isPureShortcut(raw) {
@@ -139,7 +153,7 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 				continue
 			}
 
-			parsedMethod := p.parseMethod(raw, pNode.Name)
+			parsedMethod := p.parseMethod(raw, pNode.Name, pNode.Attributes, claimedGetters, claimedSetters)
 			pNode.Methods = append(pNode.Methods, parsedMethod)
 
 			if strings.Contains(parsedMethod.Type, "<") || strings.Contains(parsedMethod.Output, "<") {
@@ -239,7 +253,7 @@ func (p *StandardPreMatcher) parseAttribute(raw string) domain.ProcessedAttribut
 	return attr
 }
 
-func (p *StandardPreMatcher) parseMethod(raw string, className string) domain.ProcessedMethod {
+func (p *StandardPreMatcher) parseMethod(raw string, className string, attributes []domain.ProcessedAttribute, claimedG, claimedS map[string]bool) domain.ProcessedMethod {
 	method := domain.ProcessedMethod{
 		Scope:  "+",
 		Name:   raw,
@@ -329,10 +343,42 @@ func (p *StandardPreMatcher) parseMethod(raw string, className string) domain.Pr
 
 	if lowerName == strings.ToLower(className) || lowerName == "constructor" || lowerName == "init" {
 		method.Type = "constructor"
-	} else if strings.HasPrefix(lowerName, "get") && len(method.Inputs) <= 1 {
-		method.Type = "getter"
-	} else if strings.HasPrefix(lowerName, "set") && len(method.Inputs) > 0 {
-		method.Type = "setter"
+	} else if strings.HasPrefix(lowerName, "get") && (len(method.Inputs) == 0 || (len(method.Inputs) == 1 && strings.EqualFold(method.Inputs[0].Type, "void"))) {
+		// Potential getter: check against attributes
+		baseName := method.Name[3:]
+		foundAttr := ""
+		for _, attr := range attributes {
+			if fuzzySimilarity(baseName, attr.Name) >= 0.8 {
+				if !claimedG[attr.Name] {
+					foundAttr = attr.Name
+					break
+				}
+			}
+		}
+		if foundAttr != "" {
+			method.Type = "getter"
+			claimedG[foundAttr] = true
+		} else {
+			method.Type = "custom"
+		}
+	} else if strings.HasPrefix(lowerName, "set") && len(method.Inputs) == 1 {
+		// Potential setter: check against attributes
+		baseName := method.Name[3:]
+		foundAttr := ""
+		for _, attr := range attributes {
+			if fuzzySimilarity(baseName, attr.Name) >= 0.8 {
+				if !claimedS[attr.Name] {
+					foundAttr = attr.Name
+					break
+				}
+			}
+		}
+		if foundAttr != "" {
+			method.Type = "setter"
+			claimedS[foundAttr] = true
+		} else {
+			method.Type = "custom"
+		}
 	} else {
 		method.Type = "custom"
 	}
@@ -484,4 +530,53 @@ func cleanText(text string) string {
 	text = strings.ReplaceAll(text, "&lt;", "<")
 	text = strings.ReplaceAll(text, "&gt;", ">")
 	return strings.TrimSpace(text)
+}
+
+func fuzzySimilarity(s1, s2 string) float64 {
+	s1 = strings.ToLower(strings.TrimSpace(s1))
+	s2 = strings.ToLower(strings.TrimSpace(s2))
+	if s1 == s2 {
+		return 1.0
+	}
+	if len(s1) == 0 || len(s2) == 0 {
+		return 0.0
+	}
+
+	dist := levenshteinDistance(s1, s2)
+	maxLen := len(s1)
+	if len(s2) > maxLen {
+		maxLen = len(s2)
+	}
+	return 1.0 - float64(dist)/float64(maxLen)
+}
+
+func levenshteinDistance(s1, s2 string) int {
+	m := len(s1)
+	n := len(s2)
+	d := make([][]int, m+1)
+	for i := range d {
+		d[i] = make([]int, n+1)
+		d[i][0] = i
+	}
+	for j := 0; j <= n; j++ {
+		d[0][j] = j
+	}
+
+	for j := 1; j <= n; j++ {
+		for i := 1; i <= m; i++ {
+			if s1[i-1] == s2[j-1] {
+				d[i][j] = d[i-1][j-1]
+			} else {
+				d[i][j] = min(d[i-1][j]+1, min(d[i][j-1]+1, d[i-1][j-1]+1))
+			}
+		}
+	}
+	return d[m][n]
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

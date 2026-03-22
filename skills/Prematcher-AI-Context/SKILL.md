@@ -17,7 +17,10 @@ Biến đổi mô hình `domain.UMLGraph` (dạng chuỗi thô) thành `domain.P
 
 ## Execution Approach
 1. **Node Processing**: Duyệt qua danh sách Nodes trong `UMLGraph`.
-2. **Member Parsing**: Với mỗi node, gọi helper để parse danh sách `Attributes` và `Methods` từ dạng chuỗi sang `ProcessedAttribute` và `ProcessedMethod`.
+2. **Member Parsing**: 
+   - Parse `Attributes` trước để lấy danh sách thuộc tính cơ sở.
+   - Parse `Methods` sau. Với các method `get/set`, thực hiện so khớp fuzzy (>= 80%, không phân biệt hoa thường) với danh sách thuộc tính của node đó để định nghĩa Type là `getter` hoặc `setter`.
+   - Đảm bảo mỗi thuộc tính chỉ gắn với tối đa một bộ get/set (one-to-one mapping).
 3. **Weight Calculation**: Tính toán `ArchWeight` dựa trên các đặc điểm nhận diện (VD: Singleton, Interface implementation, etc.).
 4. **Relationship Resolution**: Thiết lập các trường `Inherits` và `Implements` dựa trên danh sách Edges.
 

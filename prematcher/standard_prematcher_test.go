@@ -2,6 +2,7 @@ package prematcher
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"uml_compare/domain"
 )
@@ -146,9 +147,59 @@ func TestParseMethod(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := matcher.parseMethod(tt.input, tt.className)
+		emptyG := make(map[string]bool)
+		emptyS := make(map[string]bool)
+		// For TestParseMethod, we'll assume attributes exist for existing getters/setters
+		attrs := []domain.ProcessedAttribute{}
+		if strings.HasPrefix(tt.expected.Name, "get") || strings.EqualFold(tt.expected.Type, "getter") {
+			base := tt.expected.Name
+			if len(base) > 3 {
+				base = base[3:]
+			}
+			attrs = append(attrs, domain.ProcessedAttribute{Name: base})
+		}
+		if strings.HasPrefix(tt.expected.Name, "set") || strings.EqualFold(tt.expected.Type, "setter") {
+			base := tt.expected.Name
+			if len(base) > 3 {
+				base = base[3:]
+			}
+			attrs = append(attrs, domain.ProcessedAttribute{Name: base})
+		}
+
+		result := matcher.parseMethod(tt.input, tt.className, attrs, emptyG, emptyS)
 		if !reflect.DeepEqual(result, tt.expected) {
 			t.Errorf("parseMethod(%q, %q) = %+v, want %+v", tt.input, tt.className, result, tt.expected)
+		}
+	}
+}
+
+func TestFuzzyGetterSetter(t *testing.T) {
+	p := NewStandardPreMatcher()
+	attrs := []domain.ProcessedAttribute{
+		{Name: "firstName", Type: "string"},
+		{Name: "age", Type: "int"},
+	}
+
+	tests := []struct {
+		name     string
+		input    string
+		claimedG map[string]bool
+		claimedS map[string]bool
+		expected string // Expected method type
+	}{
+		{"Exact match", "+ getFirstName() : string", map[string]bool{}, map[string]bool{}, "getter"},
+		{"Fuzzy match (80%+)", "+ getFirst_Name() : string", map[string]bool{}, map[string]bool{}, "getter"},
+		{"Case insensitive", "+ GETFIRSTNAME() : string", map[string]bool{}, map[string]bool{}, "getter"},
+		{"No match attribute", "+ getSalary() : int", map[string]bool{}, map[string]bool{}, "custom"},
+		{"Already claimed", "+ getFirstName() : string", map[string]bool{"firstName": true}, map[string]bool{}, "custom"},
+		{"Setter exact", "+ setAge(a: int)", map[string]bool{}, map[string]bool{}, "setter"},
+		{"Setter mismatch", "+ setScore(s: int)", map[string]bool{}, map[string]bool{}, "custom"},
+	}
+
+	for _, tt := range tests {
+		res := p.parseMethod(tt.input, "User", attrs, tt.claimedG, tt.claimedS)
+		if res.Type != tt.expected {
+			t.Errorf("Test %s: parseMethod type = %s, want %s", tt.name, res.Type, tt.expected)
 		}
 	}
 }

@@ -13,8 +13,14 @@ Chuỗi phương thức: `[Scope] Name(params) : ReturnType`
 - **Output**: Là `ReturnType` sau dấu `:`.
 - **Type**: Phân loại theo business logic:
   - `constructor`: Method Name trùng với Class Name, hoặc tên là `constructor`, `init`.
-  - `getter`: Method Name bắt đầu bằng `get` (không phân biệt hoa/thường) VÀ có từ 0 đến 1 tham số.
-  - `setter`: Method Name bắt đầu bằng `set` (không phân biệt hoa/thường) VÀ có lớn hơn 0 tham số.
+  - `getter`: Method Name bắt đầu bằng `get` (case-insensitive) VÀ:
+    - Có 0 tham số (hoặc 1 tham số kiểu `void`).
+    - Phân còn lại của tên (suffix) khớp với một attribute có sẵn với độ tương đồng (fuzzy) >= 80%.
+    - Mỗi attribute chỉ có tối đa 1 getter.
+  - `setter`: Method Name bắt đầu bằng `set` (case-insensitive) VÀ:
+    - Có đúng 1 tham số.
+    - Phần còn lại của tên (suffix) khớp với một attribute có sẵn với độ tương đồng (fuzzy) >= 80%.
+    - Mỗi attribute chỉ có tối đa 1 setter.
   - `custom`: Tất cả các trường hợp còn lại.
 
 ## 3. ArchWeight Calculation (Bitwise)
