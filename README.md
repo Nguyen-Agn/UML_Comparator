@@ -74,4 +74,14 @@ go run ./cmd/<module name>/main.go <solution.drawio> <student.drawio>
 - [Hướng dẫn sử dụng chi tiết](USAGE_GUIDE.md)
 
 ---
+# Review 
+**Note**: các file .exe và .bat là các class main gọi các mô-đun và in ra output của mô-đun đó dưới format. Chủ yếu dùng để xem các mô-đun hoạt động chính xác không. Không phải là công cụ chính để sử dụng.
+
+## Ảnh review
+
+![extractor](./other/extractor.png)
+
+![compare](./other/compare.png)
+
+---
 *Dự án được xây dựng với mục tiêu nâng cao tính minh bạch và hiệu quả trong việc giảng dạy & chấm bài môn Thiết kế Hệ thống OOP.*
