@@ -104,15 +104,23 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 
 	for _, sAttr := range sol.Attributes {
 		foundIdx := -1
-		// Rule: Match by Type first, then Name(fuzzy)
+		
+		// 1. Try perfect match (Type + Name)
 		for i, stAttr := range stuAttrs {
-			if matchedStuAttrIdx[i] {
-				continue
+			if matchedStuAttrIdx[i] { continue }
+			if c.compareTypes(sAttr.Type, stAttr.Type, typeMap) {
+				if strings.EqualFold(sAttr.Name, stAttr.Name) {
+					foundIdx = i
+					break
+				}
 			}
-			if c.translateType(sAttr.Type, typeMap) == stAttr.Type {
-				if c.fuzzyMatcher.Compare(sAttr.Name, stAttr.Name) >= 0.5 || 
-				   strings.Contains(strings.ToLower(stAttr.Name), strings.ToLower(sAttr.Name)) ||
-				   strings.Contains(strings.ToLower(sAttr.Name), strings.ToLower(stAttr.Name)) {
+		}
+		
+		// 2. Try name-only match (If type mismatches but name is very similar)
+		if foundIdx == -1 {
+			for i, stAttr := range stuAttrs {
+				if matchedStuAttrIdx[i] { continue }
+				if c.fuzzyMatcher.Compare(sAttr.Name, stAttr.Name) >= 0.8 {
 					foundIdx = i
 					break
 				}
@@ -123,6 +131,10 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 			matchedStuAttrIdx[foundIdx] = true
 			matchingStu := stuAttrs[foundIdx]
 			issues := []string{}
+			
+			if !c.compareTypes(sAttr.Type, matchingStu.Type, typeMap) {
+				issues = append(issues, "Type mismatch (Sol: "+sAttr.Type+", Stu: "+matchingStu.Type+")")
+			}
 			if sAttr.Scope != matchingStu.Scope {
 				issues = append(issues, "Scope mismatch ("+sAttr.Scope+" vs "+matchingStu.Scope+")")
 			}
@@ -173,38 +185,49 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 		isCtor := c.isConstructor(sMethod, sol.Name)
 		foundIdx := -1
 		
-		// Rule: Match by ReturnType & NumParams(+-1 if >= 2), then Name(fuzzy)
+		// 1. Try perfect match (Name + RetType + ParamCount)
 		for i, stMethod := range stuNormal {
-			if matchedStuMethIdx[i] {
-				continue
+			if matchedStuMethIdx[i] { continue }
+			if c.compareTypes(sMethod.Output, stMethod.Output, typeMap) || isCtor {
+				if len(sMethod.Inputs) == len(stMethod.Inputs) {
+					if c.matchMethodName(sMethod, stMethod, isCtor, stu.Name) {
+						foundIdx = i
+						break
+					}
+				}
 			}
-			
-			// Return type check
-			retMatch := true
-			if !isCtor {
-				retMatch = (c.translateType(sMethod.Output, typeMap) == stMethod.Output)
-			}
-			
-			if retMatch {
-				// Param count check
+		}
+
+		// 2. Try signature-ish match (Name + ParamCount +-1 rule)
+		if foundIdx == -1 {
+			for i, stMethod := range stuNormal {
+				if matchedStuMethIdx[i] { continue }
+				
 				solPLen := len(sMethod.Inputs)
 				stuPLen := len(stMethod.Inputs)
 				paramCountMatch := (solPLen == stuPLen)
-				
-				// User rule: +-1 if both >= 2
 				if solPLen >= 2 && stuPLen >= 2 {
 					diff := solPLen - stuPLen
 					if diff < 0 { diff = -diff }
-					if diff <= 1 {
-						paramCountMatch = true
-					}
+					if diff <= 1 { paramCountMatch = true }
 				}
-				
+
 				if paramCountMatch {
 					if c.matchMethodName(sMethod, stMethod, isCtor, stu.Name) {
 						foundIdx = i
 						break
 					}
+				}
+			}
+		}
+
+		// 3. Try name-only fuzzy match (High similarity)
+		if foundIdx == -1 {
+			for i, stMethod := range stuNormal {
+				if matchedStuMethIdx[i] { continue }
+				if c.fuzzyMatcher.Compare(sMethod.Name, stMethod.Name) >= 0.8 {
+					foundIdx = i
+					break
 				}
 			}
 		}
@@ -215,6 +238,9 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 			issues := []string{}
 			
 			// Detailed check
+			if !isCtor && !c.compareTypes(sMethod.Output, matchingStu.Output, typeMap) {
+				issues = append(issues, "Return type mismatch (Sol: "+sMethod.Output+", Stu: "+matchingStu.Output+")")
+			}
 			if sMethod.Scope != matchingStu.Scope {
 				issues = append(issues, "Scope mismatch ("+sMethod.Scope+" vs "+matchingStu.Scope+")")
 			}
@@ -226,7 +252,7 @@ func (c *StandardComparator) compareNodeContent(sol domain.ProcessedNode, stu do
 				issues = append(issues, "Param count mismatch ("+itoa(len(sMethod.Inputs))+" vs "+itoa(len(matchingStu.Inputs))+")")
 			} else {
 				for j := range sMethod.Inputs {
-					if c.translateType(sMethod.Inputs[j].Type, typeMap) != matchingStu.Inputs[j].Type {
+					if !c.compareTypes(sMethod.Inputs[j].Type, matchingStu.Inputs[j].Type, typeMap) {
 						issues = append(issues, "Param "+itoa(j+1)+" type mismatch")
 						break
 					}
@@ -261,6 +287,87 @@ func (c *StandardComparator) matchMethodName(sol domain.ProcessedMethod, stu dom
 	}
 	// Fuzzy Name >= 0.5
 	return c.fuzzyMatcher.Compare(sol.Name, stu.Name) >= 0.5
+}
+
+func (c *StandardComparator) compareTypes(solType, stuType string, typeMap map[string]string) bool {
+	solType = strings.TrimSpace(solType)
+	stuType = strings.TrimSpace(stuType)
+
+	// Base case: exactly equal after translation
+	if c.translateType(solType, typeMap) == stuType {
+		return true
+	}
+
+	// Generic case
+	if strings.Contains(solType, "<") {
+		solOuter, solInners := c.splitGeneric(solType)
+		stuOuter, stuInners := c.splitGeneric(stuType)
+
+		// Outer check: "contains" rule (case-insensitive)
+		if !c.isCompatibleOuter(solOuter, stuOuter) {
+			return false
+		}
+
+		if len(solInners) != len(stuInners) {
+			return false
+		}
+
+		// Recursive inner check
+		for i := range solInners {
+			if !c.compareTypes(solInners[i], stuInners[i], typeMap) {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
+}
+
+func (c *StandardComparator) isCompatibleOuter(sol, stu string) bool {
+	s := strings.ToLower(sol)
+	t := strings.ToLower(stu)
+	if s == t { return true }
+	// Rule: solution "List" matches student "ArrayList", or vice versa if they contain each other
+	// (usually solution is generic "List", student is specific "ArrayList")
+	return strings.Contains(t, s) || strings.Contains(s, t)
+}
+
+func (c *StandardComparator) splitGeneric(t string) (string, []string) {
+	idx := strings.Index(t, "<")
+	if idx == -1 {
+		return t, nil
+	}
+	outer := strings.TrimSpace(t[:idx])
+	innerStr := t[idx+1:]
+	if lastIdx := strings.LastIndex(innerStr, ">"); lastIdx != -1 {
+		innerStr = innerStr[:lastIdx]
+	}
+
+	// Split by comma, respecting nested brackets
+	var inners []string
+	var current strings.Builder
+	depth := 0
+	for i := 0; i < len(innerStr); i++ {
+		char := innerStr[i]
+		if char == '<' {
+			depth++
+			current.WriteByte(char)
+		} else if char == '>' {
+			depth--
+			current.WriteByte(char)
+		} else if char == ',' && depth == 0 {
+			inners = append(inners, strings.TrimSpace(current.String()))
+			current.Reset()
+		} else {
+			current.WriteByte(char)
+		}
+	}
+	if current.Len() > 0 {
+		inners = append(inners, strings.TrimSpace(current.String()))
+	}
+
+	return outer, inners
 }
 
 // itoa converts an integer to its string representation.

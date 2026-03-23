@@ -104,10 +104,8 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 				pNode.Methods = append(pNode.Methods, p.generateSetter(parsedAttr))
 			}
 
-			// Simple heuristic: if type contains <, it might be a custom type
-			if strings.Contains(parsedAttr.Type, "<") {
-				customTypeCount++
-			}
+			// Count generic type parameters (e.g., List<T> = 1, Map<K, V> = 2)
+			customTypeCount += strings.Count(parsedAttr.Type, "<") + strings.Count(parsedAttr.Type, ",")
 			// Kind identification
 			if parsedAttr.Kind == "static" || parsedAttr.Kind == "static-final" {
 				staticMembersCount++
@@ -156,13 +154,10 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 			parsedMethod := p.parseMethod(raw, pNode.Name, pNode.Attributes, claimedGetters, claimedSetters)
 			pNode.Methods = append(pNode.Methods, parsedMethod)
 
-			if strings.Contains(parsedMethod.Type, "<") || strings.Contains(parsedMethod.Output, "<") {
-				customTypeCount++
-			}
+			// Count generic output and parameters
+			customTypeCount += strings.Count(parsedMethod.Output, "<") + strings.Count(parsedMethod.Output, ",")
 			for _, param := range parsedMethod.Inputs {
-				if strings.Contains(param.Type, "<") {
-					customTypeCount++
-				}
+				customTypeCount += strings.Count(param.Type, "<") + strings.Count(param.Type, ",")
 			}
 
 			if parsedMethod.Kind == "static" {
@@ -522,10 +517,10 @@ func minU32(a, b uint32) uint32 {
 }
 
 func cleanText(text string) string {
-	// Strip HTML tags if any
-	re := regexp.MustCompile(`<[^>]*>`)
-	text = re.ReplaceAllString(text, "")
-	// Also decode literal common entities that drawio leaves like &nbsp;
+	// We NO LONGER strip <...> here because the Builder already sanitized HTML.
+	// Stripping <...> here would destroy UML generics like List<String>.
+	
+	// Decode literal common entities that drawio might leave
 	text = strings.ReplaceAll(text, "&nbsp;", " ")
 	text = strings.ReplaceAll(text, "&lt;", "<")
 	text = strings.ReplaceAll(text, "&gt;", ">")

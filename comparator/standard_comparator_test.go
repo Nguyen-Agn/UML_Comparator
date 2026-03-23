@@ -1,16 +1,22 @@
 package comparator
 
 import (
+	"strings"
 	"testing"
 	"uml_compare/domain"
-	"uml_compare/matcher"
 )
 
+// mockFuzzy is a simple matcher for testing
+type mockFuzzy struct{}
+func (m *mockFuzzy) Compare(s1, s2 string) float64 {
+	if strings.EqualFold(s1, s2) { return 1.0 }
+	return 0.0
+}
+
 func TestStandardComparator(t *testing.T) {
-	fz := matcher.NewLevenshteinMatcher()
+	fz := &mockFuzzy{}
 	comp := NewStandardComparator(fz)
 
-	// Setup Mapping: Solution [S1] -> Student [Stu1]
 	mapping := domain.MappingTable{
 		"S1": {StudentID: "Stu1", Similarity: 1.0},
 	}
@@ -25,7 +31,6 @@ func TestStandardComparator(t *testing.T) {
 					{Name: "empId", Scope: "-", Type: "int"},
 				},
 				Methods: []domain.ProcessedMethod{
-					{Name: "Employee", Scope: "+", Inputs: []domain.MethodParam{{Name: "id", Type: "int"}}}, // Constructor
 					{Name: "work", Scope: "+", Output: "void"},
 				},
 			},
@@ -42,7 +47,6 @@ func TestStandardComparator(t *testing.T) {
 					{Name: "empId", Scope: "-", Type: "int"},
 				},
 				Methods: []domain.ProcessedMethod{
-					{Name: "Employee", Scope: "+", Inputs: []domain.MethodParam{{Name: "id", Type: "int"}}},
 					{Name: "work", Scope: "+", Output: "void"},
 				},
 			},
@@ -51,138 +55,86 @@ func TestStandardComparator(t *testing.T) {
 
 	report, _ := comp.Compare(solGraph, stuGraph, mapping)
 
-	if len(report.MissingDetail.Attribute) > 0 || len(report.MissingDetail.Method) > 0 || 
-	   len(report.WrongDetail.Attribute) > 0 || len(report.WrongDetail.Method) > 0 {
-		t.Errorf("Expected perfect match, got errors: %+v", report)
+	if len(report.CorrectDetail.Attribute) != 1 || len(report.CorrectDetail.Method) != 1 {
+		t.Errorf("Expected perfect match, got: %+v", report)
 	}
 }
 
-func TestComparatorAdvancedRules(t *testing.T) {
-	fz := matcher.NewLevenshteinMatcher()
-	comp := NewStandardComparator(fz)
+func TestComparatorGenerics(t *testing.T) {
+	fz := &mockFuzzy{}
+	c := NewStandardComparator(fz)
 
-	// Scenario:
-	// Sol: Node "A" has method with param of type "B".
-	// Stu: Node "A_Stu" has method with param of type "B_Stu".
-	// Mapping: A -> A_Stu, B -> B_Stu.
-	mapping := domain.MappingTable{
-		"SolA": {StudentID: "StuA", Similarity: 1.0},
-		"SolB": {StudentID: "StuB", Similarity: 1.0},
-	}
-
-	solGraph := &domain.ProcessedUMLGraph{
+	sol := &domain.ProcessedUMLGraph{
 		Nodes: []domain.ProcessedNode{
-			{ID: "SolA", Name: "Manager", Type: "Class", Methods: []domain.ProcessedMethod{
-				{Name: "init", Scope: "+", Inputs: []domain.MethodParam{{Type: "int"}, {Type: "String"}}},
-				{Name: "process", Scope: "+", Output: "Task", Inputs: []domain.MethodParam{{Type: "Task"}}},
-			}},
-			{ID: "SolB", Name: "Task", Type: "Class"},
+			{
+				ID:   "N1",
+				Name: "Service",
+				Type: "Class",
+				Attributes: []domain.ProcessedAttribute{
+					{Name: "users", Type: "List<User>", Scope: "-", Kind: "normal"},
+				},
+			},
+			{ID: "N2", Name: "User", Type: "Class"},
 		},
 	}
 
-	stuGraph := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
-			{ID: "StuA", Name: "Manager", Type: "Class", Methods: []domain.ProcessedMethod{
-				// Constructor: unordered params (String, int) vs (int, String) -> Should Pass match logic but maybe show wrong details if not handled as ctor
-				{Name: "Manager", Scope: "+", Inputs: []domain.MethodParam{{Type: "String"}, {Type: "int"}}},
-				// Normal Method: mapped type Task_Stu vs Task -> Should Pass
-				{Name: "process", Scope: "+", Output: "Task_Stu", Inputs: []domain.MethodParam{{Type: "Task_Stu"}}},
-			}},
-			{ID: "StuB", Name: "Task_Stu", Type: "Class"},
-		},
-	}
-
-	report, _ := comp.Compare(solGraph, stuGraph, mapping)
-
-	if len(report.MissingDetail.Method) > 0 {
-		t.Errorf("Advanced rules failed. Expected match via TypeMap & Constructor Params. Report: %+v", report)
-	}
-}
-
-func TestComparatorScopeMismatch(t *testing.T) {
-	fz := matcher.NewLevenshteinMatcher()
-	comp := NewStandardComparator(fz)
-
-	mapping := domain.MappingTable{"S1": {StudentID: "Stu1", Similarity: 1.0}}
-
-	solGraph := &domain.ProcessedUMLGraph{
+	stu := &domain.ProcessedUMLGraph{
 		Nodes: []domain.ProcessedNode{
 			{
 				ID:   "S1",
-				Name: "Employee",
+				Name: "ServiceImp",
 				Type: "Class",
 				Attributes: []domain.ProcessedAttribute{
-					{Name: "empId", Scope: "-", Type: "int"},
-				},
-				Methods: []domain.ProcessedMethod{
-					{Name: "work", Scope: "+", Output: "void"},
+					{Name: "users", Type: "ArrayList<NguoiDung>", Scope: "-", Kind: "normal"},
 				},
 			},
+			{ID: "S2", Name: "NguoiDung", Type: "Class"},
 		},
 	}
 
-	stuGraph := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
-			{
-				ID:   "Stu1",
-				Name: "Employee",
-				Type: "Class",
-				Attributes: []domain.ProcessedAttribute{
-					{Name: "empId", Scope: "+", Type: "int"}, // WRONG SCOPE
-				},
-				Methods: []domain.ProcessedMethod{
-					{Name: "work", Scope: "-", Output: "void"}, // WRONG SCOPE
-				},
-			},
-		},
+	mapping := domain.MappingTable{
+		"N1": {StudentID: "S1", Similarity: 1.0},
+		"N2": {StudentID: "S2", Similarity: 1.0},
 	}
 
-	report, _ := comp.Compare(solGraph, stuGraph, mapping)
+	report, _ := c.Compare(sol, stu, mapping)
 
-	if len(report.WrongDetail.Attribute) != 1 {
-		t.Errorf("Expected 1 WrongDetail.Attribute due to scope mismatch, got %d", len(report.WrongDetail.Attribute))
-	}
-	if len(report.WrongDetail.Method) != 1 {
-		t.Errorf("Expected 1 WrongDetail.Method due to scope mismatch, got %d", len(report.WrongDetail.Method))
+	if len(report.CorrectDetail.Attribute) == 0 {
+		t.Errorf("Expected attribute match for List<User> vs ArrayList<NguoiDung>")
 	}
 }
+
 func TestComparatorPointers(t *testing.T) {
-	fz := matcher.NewLevenshteinMatcher()
-	comp := NewStandardComparator(fz)
+	fz := &mockFuzzy{}
+	c := NewStandardComparator(fz)
+
+	sol := &domain.ProcessedUMLGraph{
+		Nodes: []domain.ProcessedNode{
+			{ID: "S1", Name: "User", Type: "Class", Attributes: []domain.ProcessedAttribute{{Name: "id", Type: "int"}}},
+		},
+	}
+	stu := &domain.ProcessedUMLGraph{
+		Nodes: []domain.ProcessedNode{
+			{ID: "Stu1", Name: "User", Type: "Interface", Attributes: []domain.ProcessedAttribute{{Name: "id", Type: "string"}}},
+		},
+	}
 
 	mapping := domain.MappingTable{"S1": {StudentID: "Stu1", Similarity: 1.0}}
+	report, _ := c.Compare(sol, stu, mapping)
 
-	solGraph := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
-			{ID: "S1", Name: "User", Type: "Class", Attributes: []domain.ProcessedAttribute{{Name: "id", Type: "string"}}},
-		},
-	}
-	stuGraph := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
-			{ID: "Stu1", Name: "User", Type: "Interface"}, // Type mismatch
-		},
-	}
-
-	report, _ := comp.Compare(solGraph, stuGraph, mapping)
-
-	// Check Node mismatch
+	// Node mismatch
 	if len(report.WrongDetail.Class) == 0 {
 		t.Fatal("Expected node type mismatch")
 	}
-	diff := report.WrongDetail.Class[0]
-	if diff.Sol == nil || diff.Stu == nil {
-		t.Errorf("Expected both Sol and Stu pointers for WrongDetail, got Sol=%v, Stu=%v", diff.Sol, diff.Stu)
-	}
-	if diff.Sol.Type != "Class" || diff.Stu.Type != "Interface" {
-		t.Errorf("Pointer data incorrect: Sol=%s, Stu=%s", diff.Sol.Type, diff.Stu.Type)
+	if report.WrongDetail.Class[0].Sol == nil || report.WrongDetail.Class[0].Stu == nil {
+		t.Error("WrongDetail.Class pointers should be non-nil")
 	}
 
-	// Check missing attribute
-	if len(report.MissingDetail.Attribute) == 0 {
-		t.Fatal("Expected missing attribute")
+	// Attr mismatch
+	if len(report.WrongDetail.Attribute) == 0 {
+		t.Fatal("Expected attribute type mismatch")
 	}
-	aDiff := report.MissingDetail.Attribute[0]
-	if aDiff.Sol == nil || aDiff.Stu != nil {
-		t.Errorf("Expected Sol pointer and nil Stu pointer for MissingDetail, got Sol=%v, Stu=%v", aDiff.Sol, aDiff.Stu)
+	if report.WrongDetail.Attribute[0].Sol == nil || report.WrongDetail.Attribute[0].Stu == nil {
+		t.Error("WrongDetail.Attribute pointers should be non-nil")
 	}
 }

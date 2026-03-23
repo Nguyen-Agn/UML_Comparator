@@ -23,7 +23,9 @@ var _ ITextSanitizer = (*htmlSanitizer)(nil)
 // newHTMLSanitizer constructs a sanitizer with all regexes pre-compiled.
 func newHTMLSanitizer() *htmlSanitizer {
 	return &htmlSanitizer{
-		tagRe:     regexp.MustCompile(`<[^>]+>`),
+		// Whitelist common Draw.io styling tags + structural tags mentioned by user.
+		// This prevents stripping UML generics like <String> or <T>.
+		tagRe:     regexp.MustCompile(`(?i)</?(b|i|u|font|br|div|span|p|ul|li|ol|table|tr|td|thead|tbody|tfoot|hr|strong|em|small|big|sub|sup|mxCell|mxGraphModel|root)\b[^>]*>`),
 		newlineRe: regexp.MustCompile(`\n{2,}`),
 		stereoRe:  regexp.MustCompile(`<<[^>]+>>`),
 		spaceRe:   regexp.MustCompile(`\s{2,}`),
@@ -63,9 +65,13 @@ func (s *htmlSanitizer) clean(raw string) string {
 
 	// Step 3: protect << >> stereotypes BEFORE HTML tag stripping.
 	// Replace <<Foo>> with a placeholder, strip tags, then restore.
-	// Simpler: just strip stereotypes outright here — extractCleanName also strips,
-	// but clean() must not TEAR them with the tag regex.
 	raw = s.stereoRe.ReplaceAllString(raw, "\n")
+
+	// Step 3.5: Translate UML semantic styling tags (<i>, <u>) to keywords
+	// <i> -> italic -> abstract in UML
+	// <u> -> underline -> static in UML
+	raw = regexp.MustCompile(`(?i)<i>`).ReplaceAllString(raw, " {abstract} ")
+	raw = regexp.MustCompile(`(?i)<u>`).ReplaceAllString(raw, " {static} ")
 
 	// Step 4: strip HTML tags (replace with newline)
 	clean := s.tagRe.ReplaceAllString(raw, "\n")

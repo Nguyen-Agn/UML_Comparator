@@ -227,3 +227,54 @@ func TestBuild_MultilineMethodSignature(t *testing.T) {
 	}
 	t.Logf("✔ multi-line method: Methods=%v Attrs=%v", n.Methods, n.Attributes)
 }
+
+func TestBuild_GenericsAndStyling(t *testing.T) {
+	// 1. Generic types: List<String>
+	// 2. Italics <i>: abstract
+	// 3. Underline <u>: static
+	xml := `<mxGraphModel><root>
+	  <mxCell id="0"/><mxCell id="1" parent="0"/>
+	  <mxCell id="2" value="&lt;i&gt;GenericService&amp;lt;T&amp;gt;&lt;/i&gt;" style="swimlane;" vertex="1" parent="1">
+	    <mxGeometry width="200" height="80" as="geometry"/>
+	  </mxCell>
+	  <mxCell id="3" value="- items : List&amp;lt;String&amp;gt;" style="text;" vertex="1" parent="2">
+	    <mxGeometry y="26" width="200" height="26" as="geometry"/>
+	  </mxCell>
+	  <mxCell id="4" value="+ &lt;u&gt;getInstance()&lt;/u&gt; : T" style="text;" vertex="1" parent="2">
+	    <mxGeometry y="52" width="200" height="26" as="geometry"/>
+	  </mxCell>
+	</root></mxGraphModel>`
+
+	b := builder.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(graph.Nodes) == 0 {
+		t.Fatal("expected 1 node")
+	}
+	n := graph.Nodes[0]
+
+	// Verify Name (should have generic preserved AND abstract keyword added from <i>)
+	if !strings.Contains(n.Name, "GenericService<T>") {
+		t.Errorf("expected Name to contain 'GenericService<T>', got %q", n.Name)
+	}
+	if !strings.Contains(n.Name, "{abstract}") {
+		t.Errorf("expected Name to contain '{abstract}' from <i> tag, got %q", n.Name)
+	}
+
+	// Verify Attribute
+	if len(n.Attributes) == 0 || !strings.Contains(n.Attributes[0], "List<String>") {
+		t.Errorf("expected attribute with 'List<String>', got %v", n.Attributes)
+	}
+
+	// Verify Method (should have {static} from <u>)
+	if len(n.Methods) == 0 || !strings.Contains(n.Methods[0], "{static}") {
+		t.Fatalf("expected method with '{static}', got %v", n.Methods)
+	}
+	if !strings.Contains(n.Methods[0], "getInstance") {
+		t.Errorf("expected method name 'getInstance', got %q", n.Methods[0])
+	}
+
+	t.Logf("✔ generics and styling: Name=%s Attrs=%v Methods=%v", n.Name, n.Attributes, n.Methods)
+}

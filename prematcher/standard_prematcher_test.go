@@ -331,3 +331,31 @@ func TestProcessGraph(t *testing.T) {
 		t.Errorf("Expected ArchWeight %d, got %d", expectedWeight, dogNode.ArchWeight)
 	}
 }
+
+func TestArchWeightGenericCount(t *testing.T) {
+	p := NewStandardPreMatcher()
+	graph := &domain.UMLGraph{
+		Nodes: []domain.UMLNode{
+			{
+				ID:   "N1",
+				Name: "Container",
+				Type: "Class",
+				Attributes: []string{
+					"+ data : Map<String, int>", // Count = 2
+					"+ list : List<int>",        // Count = 1
+				},
+				Methods: []string{},
+			},
+		},
+	}
+
+	processed, _ := p.Process(graph)
+	node := processed.Nodes[0]
+
+	// Generic count should be 2 + 1 = 3
+	expectedGeneric := uint32(3) << 6
+	if (node.ArchWeight & (0x7 << 6)) != expectedGeneric {
+		got := (node.ArchWeight >> 6) & 0x7
+		t.Errorf("Expected generic count 3, got %d", got)
+	}
+}

@@ -3,20 +3,23 @@
 ## 1. TypeMap (Ánh xạ Kiểu Dữ liệu)
 Trong UML, kiểu dữ liệu tham số hoặc trả về thường mang tên của một Class khác (vd: `Ship`, `User`). Vì sinh viên có thể đổi tên Class (vd: `Ship` -> `PPShip`), Comparator CẦN xây dựng một `TypeMap` (Từ Solution Name -> Student Name dựa trên `MappingTable`) trước khi bắt đầu so sánh. Khi so sánh kiểu dữ liệu, nếu kiểu của Solution trùng với một key trong TypeMap, phải dịch nó sang tên của Student trước khi so.
 
-## 2. Quy tắc So sánh Method
-Với mọi method, đây là mảng không quan tâm thứ tự (Unordered Set). Hai method được coi là `Matched` nếu:
-- **Kiểu trả về (ReturnType)**: Giống nhau tuyệt đối (Sau khi đã qua TypeMap).
-- **Tham số (Params) Count**: Giống nhau. Nếu cả hai >= 2 params, chấp nhận +-1 (sẽ được ghi nhận là sai sau khi matched).
-- **Tên (Name)**: Tương tự >= 0.5 (Dùng FuzzyMatcher).
-- **Sau khi match**, kiểm tra chi tiết: Scope, Kind, Params chính xác -> báo vào `WrongDetail` nếu sai.
-- **Trường hợp Constructor**: Nếu Solution KHÔNG có constructor -> Mặc định cho full điểm phần constructor (Bỏ qua). Nếu CÓ constructor -> So sánh như method bình thường, nhưng KHÔNG quan tâm thứ tự params.
-- **Getter/Setter**: Không cần so sánh chi tiết tên/param/scope. Chỉ cần lấy tổng count Getter của Solution so với Student, lệch bao nhiêu báo bấy nhiêu.
+## 2. Quy tắc So sánh Type (Generic & Simple)
+- **Simple Types**: Phải khớp sau khi mapping qua `TypeMap`.
+- **Generic Types (`List<T>`, `Map<K, V>`)**:
+  - **Outer Match**: Dùng quy tắc `contains` (case-insensitive). Ví dụ: `List` khớp với `ArrayList`, `Map` khớp với `HashMap`.
+  - **Inner Match**: Các tham số bên trong `< >` được so sánh đệ quy sau khi mapping qua `TypeMap`.
+  - Để một kiểu Generic được coi là "Match", cả phần Outer và TOÀN BỘ phần Inner đều phải khớp.
 
-## 3. Quy tắc So sánh Attribute
-Mảng thuộc tính cũng không quan tâm thứ tự. Hai attribute được coi là `Matched` nếu:
-- **Kiểu dữ liệu (Type)**: Khớp tuyệt đối (Sau khi qua TypeMap) — kiểm tra TRƯỚC.
-- **Tên (Name)**: `FuzzyScore >= 0.5` HOẶC một chuỗi `Contains` chuỗi còn lại.
-- **Sau khi match**, kiểm tra Scope, Kind -> báo vào `WrongDetail` nếu sai.
+## 3. Quy tắc Tiered Matching (Phân tầng khớp)
+Để cung cấp feedback chi tiết "Cái gì so với cái gì", Comparator áp dụng 3 tầng khớp cho Attributes và Methods của một Class đã được xác định:
+1. **Tầng 1: Perfect Match**: Khớp cả Tên (Exact/Fuzzy) và Kiểu dữ liệu (Sau mapping).
+2. **Tầng 2: Signature Match**: Khớp Tên và Số lượng tham số (áp dụng quy tắc +-1 cho Method), dù kiểu dữ liệu có thể khác.
+3. **Tầng 3: Name-only Match**: Chỉ cần Tên tương đồng cao (>= 0.8), dùng để bắt cặp các thành phần chắc chắn là cùng một thực thể nhưng sai kiểu dữ liệu.
+
+**Kết quả sau khi bắt cặp (Matched):**
+- Nếu khớp hoàn toàn -> `CorrectDetail`.
+- Nếu có sai lệch (Sai kiểu dữ liệu, sai Scope, sai Kind) -> `WrongDetail` kèm mô tả chi tiết lỗi.
+- Nếu không thể bắt cặp qua cả 3 tầng -> Coi là `MissingDetail` (Thiếu) hoặc `ExtraDetail` (Thừa).
 
 ## 4. Reverse Arrow & Edge Errors (Mũi tên ngược & Sai kiểu)
 - **Exact match**: SourceID + TargetID + RelationType đều đúng -> `CorrectDetail`.
