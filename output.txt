@@ -1,0 +1,125 @@
+[34m╔══════════════════════════════════════════════════════════╗[0m
+[34m[1m║          UML Compare — Data Flow Integrity Check         ║[0m
+[34m╚══════════════════════════════════════════════════════════╝[0m
+
+📘 Solution: .\UMLs_testcase\Lab1_5.drawio
+  [32m✅ Loaded: 5 nodes, 6 edges[0m
+
+📄 Student: .\UMLs_testcase\LAb1_5_short.drawio
+  [32m✅ Loaded: 5 nodes, 6 edges[0m
+
+[36m[1m── [GATE] Data Integrity Check ──────────────────────────────[0m
+[32m✅ Both graphs pass — proceeding to comparison[0m
+
+[36m[1m── [COMPARE] Nodes Side-by-Side ────────────────────────────[0m
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[1m[34m  SOLUTION (đáp án)                                           │  STUDENT (bài nộp)                                           [0m
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [C] PrintedBook (3A/7M)                                   │ [32m✔ [C] PrintedBook (3A/7M)                                     [0m
+[32m    ✔ [Attr] - String isbn                                  [0m│ [32m ✔ [Attr] - String isbn                                     [0m
+[32m    ✔ [Attr] - String title                                 [0m│ [32m ✔ [Attr] - String title                                    [0m
+[32m    ✔ [Attr] - BookStatus status                            [0m│ [32m ✔ [Attr] - BookStatus status                               [0m
+[32m    ✔ [Meth] + PrintedBook(String, String):                 [0m│ [32m ✔ [Meth] + PrintedBook(String, String):                    [0m
+  [C] User (4A/11M)                                         │ [32m✔ [C] User (4A/11M)                                           [0m
+[32m    ✔ [Attr] - String userId                                [0m│ [32m ✔ [Attr] - String userId                                   [0m
+[32m    ✔ [Attr] - String name                                  [0m│ [32m ✔ [Attr] - String name                                     [0m
+[32m    ✔ [Attr] - String email                                 [0m│ [32m ✔ [Attr] - String email                                    [0m
+[32m    ✔ [Attr] - List<BorrowingRecord> currentLoans           [0m│ [32m ✔ [Attr] - List<BorrowingRecord> currentLoans              [0m
+[32m    ✔ [Meth] + User():                                      [0m│ [32m ✔ [Meth] + User():                                         [0m
+[32m    ✔ [Meth] + getHoldingCount(): int                       [0m│ [32m ✔ [Meth] + getHoldingCount(): int                          [0m
+[32m    ✔ [Meth] + getOverdueBook(): int                        [0m│ [32m ✔ [Meth] + getOverdueBook(): int                           [0m
+[32m    ✔ [Meth] + addBorrowingRecord(BorrowingRecord): void    [0m│ [32m ✔ [Meth] + addBorrowingRecord(BorrowingRecord): void       [0m
+  [C] BorrowingRecord (5A/11M)                              │ [32m✔ [C] BorrowingRecord (5A/11M)                                [0m
+[32m    ✔ [Attr] - User borrowingUser                           [0m│ [32m ✔ [Attr] - User borrowingUser                              [0m
+[32m    ✔ [Attr] - PrintedBook borrowingBook                    [0m│ [32m ✔ [Attr] - PrintedBook borrowingBook                       [0m
+[32m    ✔ [Attr] - LocalDate borrowingDate                      [0m│ [32m ✔ [Attr] - LocalDate borrowingDate                         [0m
+[32m    ✔ [Attr] - int numberDayBorrow                          [0m│ [32m ✔ [Attr] - int numberDayBorrow                             [0m
+[32m    ✔ [Attr] - LocalDate dueDate                            [0m│ [32m ✔ [Attr] - LocalDate dueDate                               [0m
+[32m    ✔ [Meth] + BorrowingRecord(User, PrintedBook, int):     [0m│ [32m ✔ [Meth] + BorrowingRecord(User, PrintedBook, int):        [0m
+  [E] BookStatus (3A/0M)                                    │ [32m✔ [E] BookStatus (3A/0M)                                      [0m
+[32m    ✔ [Attr] + void AVAILABLE                               [0m│ [32m ✔ [Attr] + void AVAILABLE                                  [0m
+[32m    ✔ [Attr] + void BORROWED                                [0m│ [32m ✔ [Attr] + void BORROWED                                   [0m
+[32m    ✔ [Attr] + void LOST                                    [0m│ [32m ✔ [Attr] + void LOST                                       [0m
+  [C] LibrarySystem (2A/6M)                                 │ [32m✔ [C] LibrarySystem (2A/6M)                                   [0m
+[32m    ✔ [Attr] - List<BorrowingRecord> historyList            [0m│ [32m ✔ [Attr] - List<BorrowingRecord> historyList               [0m
+[31m    ✗ [Attr] - List<User> userList                          [0m│                                                              
+                                                            │ [31m ✗ [Attr] - List<User, BorrowingRecord> userList            [0m
+[32m    ✔ [Meth] + LibrarySystem():                             [0m│ [32m ✔ [Meth] + LibrarySystem():                                [0m
+[32m    ✔ [Meth] + addUser(User): void                          [0m│ [32m ✔ [Meth] + addUser(User): void                             [0m
+[32m    ✔ [Meth] + verifyUser(String, String): boolean          [0m│ [32m ✔ [Meth] + verifyUser(String, String): boolean             [0m
+[32m    ✔ [Meth] + checkOverdue(User): boolean                  [0m│ [32m ✔ [Meth] + checkOverdue(User): boolean                     [0m
+[32m    ✔ [Meth] + borrowBook(User, PrintedBook, int): void     [0m│ [32m ✔ [Meth] + borrowBook(User, PrintedBook, int): void        [0m
+[32m    ✔ [Meth] + addToHistory(BorrowingRecord): void          [0m│ [32m ✔ [Meth] + addToHistory(BorrowingRecord): void             [0m
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [1mLegend:[0m [C]=Class [I]=Interface [A]=Actor  (A=attrs M=methods)
+          [32m✔[0m exact/perfect match  [33m≈[0m fuzzy/arch match  [31m✗[0m missing in one side
+
+[36m[1m── [COMPARE] Edges (Relations) ──────────────────────────────[0m
+  Solution edges (mapped to student names if available):
+    [32m✔ BorrowingRecord -[Composition]-> PrintedBook[0m
+    [32m✔ BorrowingRecord -[Composition]-> User[0m
+    [32m✔ BorrowingRecord -[Aggregation]-> LibrarySystem[0m
+    [32m✔ PrintedBook -[Association]-> BookStatus[0m
+    [32m✔ User -[Aggregation]-> LibrarySystem[0m
+    [32m✔ PrintedBook -[Aggregation]-> LibrarySystem[0m
+  Extra/different edges in Student:
+
+[36m[1m── [REPORT] Detailed Diff ─────────────────────────────────[0m
+
+[33m[1m⚠️ [WRONG/MISMATCHED DETAILS][0m
+   [1mAttributes:[0m
+    • [LibrarySystem] - List<User> userList vs - List<User, BorrowingRecord> userList → Type mismatch (Sol: List<User>, Stu: List<User, BorrowingRecord>)
+
+[32m[1m✅ [CORRECT DETAILS][0m
+   [1mNodes:[0m
+    • [PrintedBook vs PrintedBook] Match
+    • [User vs User] Match
+    • [BorrowingRecord vs BorrowingRecord] Match
+    • [BookStatus vs BookStatus] Match
+    • [LibrarySystem vs LibrarySystem] Match
+   [1mAttributes:[0m
+    • [PrintedBook] - String isbn vs - String isbn → Match
+    • [PrintedBook] - String title vs - String title → Match
+    • [PrintedBook] - BookStatus status vs - BookStatus status → Match
+    • [User] - String userId vs - String userId → Match
+    • [User] - String name vs - String name → Match
+    • [User] - String email vs - String email → Match
+    • [User] - List<BorrowingRecord> currentLoans vs - List<BorrowingRecord> currentLoans → Match
+    • [BorrowingRecord] - User borrowingUser vs - User borrowingUser → Match
+    • [BorrowingRecord] - PrintedBook borrowingBook vs - PrintedBook borrowingBook → Match
+    • [BorrowingRecord] - LocalDate borrowingDate vs - LocalDate borrowingDate → Match
+    • [BorrowingRecord] - int numberDayBorrow vs - int numberDayBorrow → Match
+    • [BorrowingRecord] - LocalDate dueDate vs - LocalDate dueDate → Match
+    • [BookStatus] + void AVAILABLE vs + void AVAILABLE → Match
+    • [BookStatus] + void BORROWED vs + void BORROWED → Match
+    • [BookStatus] + void LOST vs + void LOST → Match
+    • [LibrarySystem] - List<BorrowingRecord> historyList vs - List<BorrowingRecord> historyList → Match
+   [1mMethods:[0m
+    • [PrintedBook] ? vs ? → 3 getter(s) match
+    • [PrintedBook] ? vs ? → 3 setter(s) match
+    • [PrintedBook] + PrintedBook(String, String):  vs + PrintedBook(String, String):  → Match
+    • [User] ? vs ? → 4 getter(s) match
+    • [User] ? vs ? → 3 setter(s) match
+    • [User] + User():  vs + User():  → Match
+    • [User] + getHoldingCount(): int vs + getHoldingCount(): int → Match
+    • [User] + getOverdueBook(): int vs + getOverdueBook(): int → Match
+    • [User] + addBorrowingRecord(BorrowingRecord): void vs + addBorrowingRecord(BorrowingRecord): void → Match
+    • [BorrowingRecord] ? vs ? → 5 getter(s) match
+    • [BorrowingRecord] ? vs ? → 5 setter(s) match
+    • [BorrowingRecord] + BorrowingRecord(User, PrintedBook, int):  vs + BorrowingRecord(User, PrintedBook, int):  → Match
+    • [LibrarySystem] + LibrarySystem():  vs + LibrarySystem():  → Match
+    • [LibrarySystem] + addUser(User): void vs + addUser(User): void → Match
+    • [LibrarySystem] + verifyUser(String, String): boolean vs + verifyUser(String, String): boolean → Match
+    • [LibrarySystem] + checkOverdue(User): boolean vs + checkOverdue(User): boolean → Match
+    • [LibrarySystem] + borrowBook(User, PrintedBook, int): void vs + borrowBook(User, PrintedBook, int): void → Match
+    • [LibrarySystem] + addToHistory(BorrowingRecord): void vs + addToHistory(BorrowingRecord): void → Match
+   [1mRelationships:[0m
+    • [Composition vs Composition] Relationship match
+    • [Composition vs Composition] Relationship match
+    • [Aggregation vs Aggregation] Relationship match
+    • [Association vs Association] Relationship match
+    • [Aggregation vs Aggregation] Relationship match
+    • [Aggregation vs Aggregation] Relationship match
+
+[36m[1m── [SUMMARY] Quick Stats ────────────────────────────────────[0m
+  Stats: Nodes 5/5 (100%), Edges 6/6 (100%) → [32m[1mOverall: 100.0%[0m

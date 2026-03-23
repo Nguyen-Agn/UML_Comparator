@@ -15,7 +15,10 @@ func (m *mockFuzzy) Compare(s1, s2 string) float64 {
 
 func TestStandardComparator(t *testing.T) {
 	fz := &mockFuzzy{}
-	comp := NewStandardComparator(fz)
+	ta := NewStandardTypeAnalyzer()
+	mc := NewStandardMemberComparator(fz, ta)
+	ec := NewStandardEdgeComparator()
+	comp := NewStandardComparator(fz, ta, mc, ec)
 
 	mapping := domain.MappingTable{
 		"S1": {StudentID: "Stu1", Similarity: 1.0},
@@ -62,7 +65,10 @@ func TestStandardComparator(t *testing.T) {
 
 func TestComparatorGenerics(t *testing.T) {
 	fz := &mockFuzzy{}
-	c := NewStandardComparator(fz)
+	ta := NewStandardTypeAnalyzer()
+	mc := NewStandardMemberComparator(fz, ta)
+	ec := NewStandardEdgeComparator()
+	c := NewStandardComparator(fz, ta, mc, ec)
 
 	sol := &domain.ProcessedUMLGraph{
 		Nodes: []domain.ProcessedNode{
@@ -106,7 +112,10 @@ func TestComparatorGenerics(t *testing.T) {
 
 func TestComparatorPointers(t *testing.T) {
 	fz := &mockFuzzy{}
-	c := NewStandardComparator(fz)
+	ta := NewStandardTypeAnalyzer()
+	mc := NewStandardMemberComparator(fz, ta)
+	ec := NewStandardEdgeComparator()
+	c := NewStandardComparator(fz, ta, mc, ec)
 
 	sol := &domain.ProcessedUMLGraph{
 		Nodes: []domain.ProcessedNode{

@@ -27,7 +27,7 @@ func newHTMLSanitizer() *htmlSanitizer {
 		// This prevents stripping UML generics like <String> or <T>.
 		tagRe:     regexp.MustCompile(`(?i)</?(b|i|u|font|br|div|span|p|ul|li|ol|table|tr|td|thead|tbody|tfoot|hr|strong|em|small|big|sub|sup|mxCell|mxGraphModel|root)\b[^>]*>`),
 		newlineRe: regexp.MustCompile(`\n{2,}`),
-		stereoRe:  regexp.MustCompile(`<<[^>]+>>`),
+		stereoRe:  regexp.MustCompile(`(<<[^>]+>>|«[^»]+»)`),
 		spaceRe:   regexp.MustCompile(`\s{2,}`),
 	}
 }

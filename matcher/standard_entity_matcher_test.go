@@ -27,7 +27,8 @@ func TestFuzzyMatcher(t *testing.T) {
 
 func TestStandardEntityMatcher(t *testing.T) {
 	fz := NewLevenshteinMatcher()
-	matcher := NewStandardEntityMatcher(fz, 0.8)
+	arch := NewStandardArchAnalyzer()
+	matcher := NewStandardEntityMatcher(fz, arch, 0.8)
 
 	solGraph := &domain.ProcessedUMLGraph{
 		Nodes: []domain.ProcessedNode{
@@ -97,7 +98,8 @@ func TestStandardEntityMatcher(t *testing.T) {
 
 func TestArchWeightPriority(t *testing.T) {
 	fz := NewLevenshteinMatcher()
-	matcher := NewStandardEntityMatcher(fz, 0.75) // lowered threshold a bit for test
+	arch := NewStandardArchAnalyzer()
+	matcher := NewStandardEntityMatcher(fz, arch, 0.75) // lowered threshold a bit for test
 	
 	solGraph := &domain.ProcessedUMLGraph{
 		Nodes: []domain.ProcessedNode{
@@ -127,7 +129,8 @@ func TestArchWeightPriority(t *testing.T) {
 
 func TestInterfaceArchitectureMatch(t *testing.T) {
 	fz := NewLevenshteinMatcher()
-	matcher := NewStandardEntityMatcher(fz, 0.75)
+	arch := NewStandardArchAnalyzer()
+	matcher := NewStandardEntityMatcher(fz, arch, 0.75)
 	
 	// Create interface with identical structure weight (1000)
 	solGraph := &domain.ProcessedUMLGraph{
@@ -157,7 +160,8 @@ func TestInterfaceArchitectureMatch(t *testing.T) {
 
 func TestToleranceArchitectureMatch(t *testing.T) {
 	fz := NewLevenshteinMatcher()
-	matcher := NewStandardEntityMatcher(fz, 0.75)
+	arch := NewStandardArchAnalyzer()
+	matcher := NewStandardEntityMatcher(fz, arch, 0.75)
 	
 	// Base ArchWeight: Class (1<<29), NumMethods=10 (10<<18) => 539492352
 	solGraph := &domain.ProcessedUMLGraph{
@@ -194,7 +198,8 @@ func TestToleranceArchitectureMatch(t *testing.T) {
 
 func TestTwoPassMatching(t *testing.T) {
 	fz := NewLevenshteinMatcher()
-	matcher := NewStandardEntityMatcher(fz, 0.8)
+	arch := NewStandardArchAnalyzer()
+	matcher := NewStandardEntityMatcher(fz, arch, 0.8)
 
 	// Base ArchWeight: Class (1<<29), NumMethods=10 (10<<18) => 539492352
 	solGraph := &domain.ProcessedUMLGraph{

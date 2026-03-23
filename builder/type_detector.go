@@ -25,11 +25,12 @@ func (d *typeDetector) nodeType(style, sanitizedValue string) string {
 
 	// Priority 1: stereotype in value text
 	switch {
-	case strings.Contains(v, "<<interface>>") || strings.Contains(v, "<interface>"):
+	case strings.Contains(v, "<<interface>>") || strings.Contains(v, "«interface»") || strings.Contains(v, "<interface>"):
 		return "Interface"
-	case strings.Contains(v, "<<abstract>>"):
+	case strings.Contains(v, "<<abstract>>") || strings.Contains(v, "«abstract»"):
 		return "Abstract"
-	case strings.Contains(v, "<<enum>>") || strings.Contains(v, "<<enumeration>>"):
+	case strings.Contains(v, "<<enum>>") || strings.Contains(v, "«enum»") || 
+	     strings.Contains(v, "<<enumeration>>") || strings.Contains(v, "«enumeration»"):
 		return "Enum"
 	}
 

@@ -31,7 +31,8 @@ func main() {
 	var preMatcher prematcher.IPreMatcher = prematcher.NewStandardPreMatcher()
 
 	fuzzy := matcher.NewLevenshteinMatcher()
-	var entityMatcher matcher.IEntityMatcher = matcher.NewStandardEntityMatcher(fuzzy, 0.8)
+	arch := matcher.NewStandardArchAnalyzer()
+	var entityMatcher matcher.IEntityMatcher = matcher.NewStandardEntityMatcher(fuzzy, arch, 0.8)
 
 	// 2. Process Solution
 	fmt.Println("[2] Processing Solution Graph...")

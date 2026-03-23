@@ -59,7 +59,7 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 		pNode := domain.ProcessedNode{
 			ID:         node.ID,
 			Name:       cleanText(node.Name),
-			Type:       node.Type,
+			Type:       p.normalizeNodeType(node.Type),
 			Inherits:   inheritsMap[node.ID],
 			Implements: implementsMap[node.ID],
 			Attributes: make([]domain.ProcessedAttribute, 0, len(node.Attributes)),
@@ -90,7 +90,7 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 
 			parsedAttr := p.parseAttribute(raw)
 			// Enums: default missing type to "void"
-			if parsedAttr.Type == "" && strings.EqualFold(pNode.Type, "Enum") {
+			if parsedAttr.Type == "" && p.isEnumType(pNode.Type) {
 				parsedAttr.Type = "void"
 			}
 			pNode.Attributes = append(pNode.Attributes, parsedAttr)
@@ -472,13 +472,13 @@ func (p *StandardPreMatcher) calculateArchWeight(
 	// 1. Loại Class (Bit 29-31)
 	var typeVal uint32 = 0
 	lowerType := strings.ToLower(nodeType)
-	if strings.Contains(lowerType, "class") && !strings.Contains(lowerType, "abstract") {
+	if (strings.Contains(lowerType, "class") || lowerType == "default") && !strings.Contains(lowerType, "abstract") {
 		typeVal = 1
 	} else if strings.Contains(lowerType, "interface") {
 		typeVal = 2
 	} else if strings.Contains(lowerType, "abstract") {
 		typeVal = 3
-	} else if strings.Contains(lowerType, "enum") {
+	} else if p.isEnumType(nodeType) {
 		typeVal = 4
 	}
 	weight |= (typeVal & 0x7) << 29
@@ -509,6 +509,25 @@ func (p *StandardPreMatcher) calculateArchWeight(
 	return weight
 }
 
+// normalizeNodeType maps various stereotype formats to a standard representation.
+func (p *StandardPreMatcher) normalizeNodeType(t string) string {
+	if p.isEnumType(t) {
+		return "Enum"
+	}
+	// Add other normalizations if needed (e.g. interface, abstract)
+	return t
+}
+
+// isEnumType checks if a given type string represents an enumeration (including stereotypes).
+func (p *StandardPreMatcher) isEnumType(t string) bool {
+	lower := strings.ToLower(t)
+	// Match: enum, enumeration, <<enum>>, <<enumeration>>, «enum», «enumeration»
+	return strings.Contains(lower, "enum") ||
+		strings.Contains(lower, "enumeration") ||
+		(strings.Contains(lower, "«") && strings.Contains(lower, "enu")) ||
+		(strings.Contains(lower, "<<") && strings.Contains(lower, "enu"))
+}
+
 func minU32(a, b uint32) uint32 {
 	if a < b {
 		return a
@@ -519,7 +538,7 @@ func minU32(a, b uint32) uint32 {
 func cleanText(text string) string {
 	// We NO LONGER strip <...> here because the Builder already sanitized HTML.
 	// Stripping <...> here would destroy UML generics like List<String>.
-	
+
 	// Decode literal common entities that drawio might leave
 	text = strings.ReplaceAll(text, "&nbsp;", " ")
 	text = strings.ReplaceAll(text, "&lt;", "<")

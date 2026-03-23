@@ -85,11 +85,15 @@ func main() {
 	stuProc, _ := preMatcher.Process(studentGraph)
 
 	fuzzy := matcher.NewLevenshteinMatcher()
-	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, 0.8)
+	arch := matcher.NewStandardArchAnalyzer()
+	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, 0.8)
 	mapping, _ := entityMatcher.Match(solProc, stuProc)
 
 	// ── Advanced Comparator ──────────────────────────────────────
-	comp := comparator.NewStandardComparator(fuzzy)
+	ta := comparator.NewStandardTypeAnalyzer()
+	mc := comparator.NewStandardMemberComparator(fuzzy, ta)
+	ec := comparator.NewStandardEdgeComparator()
+	comp := comparator.NewStandardComparator(fuzzy, ta, mc, ec)
 	diffReport, _ := comp.Compare(solProc, stuProc, mapping)
 
 	// ── Side-by-side Node Comparison ─────────────────────────────

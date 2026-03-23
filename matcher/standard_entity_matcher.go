@@ -10,15 +10,17 @@ import (
 
 type StandardEntityMatcher struct {
 	fuzzyMatcher     IFuzzyMatcher
+	archAnalyzer     IArchAnalyzer
 	similarityThresh float64
 }
 
 var _ IEntityMatcher = (*StandardEntityMatcher)(nil)
 
-// NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher submodule.
-func NewStandardEntityMatcher(fz IFuzzyMatcher, threshold float64) *StandardEntityMatcher {
+// NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher and architecture analyzer.
+func NewStandardEntityMatcher(fz IFuzzyMatcher, arch IArchAnalyzer, threshold float64) *StandardEntityMatcher {
 	return &StandardEntityMatcher{
 		fuzzyMatcher:     fz,
+		archAnalyzer:     arch,
 		similarityThresh: threshold,
 	}
 }
@@ -72,8 +74,8 @@ func (m *StandardEntityMatcher) Match(solution *domain.ProcessedUMLGraph, studen
 
 			// Sort candidates using the 3-tier algorithm
 			sort.Slice(candidates, func(i, j int) bool {
-				simI := IsArchitectureSimilar(solNode.ArchWeight, candidates[i].node.ArchWeight, archTolerance)
-				simJ := IsArchitectureSimilar(solNode.ArchWeight, candidates[j].node.ArchWeight, archTolerance)
+				simI := m.archAnalyzer.IsArchitectureSimilar(solNode.ArchWeight, candidates[i].node.ArchWeight, archTolerance)
+				simJ := m.archAnalyzer.IsArchitectureSimilar(solNode.ArchWeight, candidates[j].node.ArchWeight, archTolerance)
 
 				// Tier 1: Architecture Similarity Priority
 				if simI != simJ {
@@ -88,8 +90,8 @@ func (m *StandardEntityMatcher) Match(solution *domain.ProcessedUMLGraph, studen
 				}
 
 				// Tier 3: Delta Fallback
-				deltaI := CalcArchDelta(solNode.ArchWeight, candidates[i].node.ArchWeight)
-				deltaJ := CalcArchDelta(solNode.ArchWeight, candidates[j].node.ArchWeight)
+				deltaI := m.archAnalyzer.CalcArchDelta(solNode.ArchWeight, candidates[i].node.ArchWeight)
+				deltaJ := m.archAnalyzer.CalcArchDelta(solNode.ArchWeight, candidates[j].node.ArchWeight)
 				if deltaI != deltaJ {
 					return deltaI < deltaJ
 				}
@@ -101,7 +103,7 @@ func (m *StandardEntityMatcher) Match(solution *domain.ProcessedUMLGraph, studen
 			mapped := false
 			for _, candidate := range candidates {
 				if candidate.simScore >= minSimScore || candidate.exactMatch {
-					archSim := CalcArchSim(solNode.ArchWeight, candidate.node.ArchWeight)
+					archSim := m.archAnalyzer.CalcArchSim(solNode.ArchWeight, candidate.node.ArchWeight)
 					finalSim := (archSim * 0.7) + (candidate.simScore * 0.3)
 					finalSim = round4(finalSim)
 
@@ -137,137 +139,6 @@ type studentCandidate struct {
 	exactMatch bool
 }
 
-type ArchTraits struct {
-	ClassType       uint32
-	HasInheritance  uint32
-	NumInterfaces   uint32
-	NumMethods      uint32
-	NumAttributes   uint32
-	NumDependencies uint32
-	NumCustomTypes  uint32
-	NumStaticMems   uint32
-}
-
-func UnpackArchWeight(w uint32) ArchTraits {
-	return ArchTraits{
-		ClassType:       (w >> 29) & 0x7,
-		HasInheritance:  (w >> 28) & 0x1,
-		NumInterfaces:   (w >> 24) & 0xF,
-		NumMethods:      (w >> 18) & 0x3F,
-		NumAttributes:   (w >> 13) & 0x1F,
-		NumDependencies: (w >> 9) & 0xF,
-		NumCustomTypes:  (w >> 6) & 0x7,
-		NumStaticMems:   (w >> 2) & 0xF,
-	}
-}
-
-func IsArchitectureSimilar(solWeight, stuWeight uint32, tolerance float64) bool {
-	if solWeight == stuWeight {
-		return true
-	}
-	sol := UnpackArchWeight(solWeight)
-	stu := UnpackArchWeight(stuWeight)
-
-	// Exact match fields
-	if sol.ClassType != stu.ClassType ||
-		sol.HasInheritance != stu.HasInheritance ||
-		sol.NumInterfaces != stu.NumInterfaces ||
-		sol.NumCustomTypes != stu.NumCustomTypes {
-		return false
-	}
-
-	// Dynamic tolerance fields
-	if !isTol(sol.NumMethods, stu.NumMethods, tolerance) ||
-		!isTol(sol.NumAttributes, stu.NumAttributes, tolerance) ||
-		!isTol(sol.NumDependencies, stu.NumDependencies, tolerance) ||
-		!isTol(sol.NumStaticMems, stu.NumStaticMems, tolerance) {
-		return false
-	}
-
-	return true
-}
-
-func isTol(sol, stu uint32, tolerance float64) bool {
-	if sol == stu {
-		return true
-	}
-	diff := float64(sol) - float64(stu)
-	if diff < 0 {
-		diff = -diff
-	}
-	allowedDiff := ceil(float64(sol) * tolerance)
-	return diff <= allowedDiff
-}
-
-func ceil(a float64) float64 {
-	intA := float64(int(a))
-	if intA < a {
-		return intA + 1
-	}
-	return intA
-}
-
-func CalcArchDelta(solWeight, stuWeight uint32) float64 {
-	sol := UnpackArchWeight(solWeight)
-	stu := UnpackArchWeight(stuWeight)
-	
-	var diff float64
-	diff += absf(float64(sol.NumMethods) - float64(stu.NumMethods))
-	diff += absf(float64(sol.NumAttributes) - float64(stu.NumAttributes))
-	diff += absf(float64(sol.NumDependencies) - float64(stu.NumDependencies))
-	diff += absf(float64(sol.NumStaticMems) - float64(stu.NumStaticMems))
-
-	// Heavy penalty for non-matching exact fields
-	if sol.ClassType != stu.ClassType {
-		diff += 1000
-	}
-	if sol.HasInheritance != stu.HasInheritance {
-		diff += 1000
-	}
-	if sol.NumInterfaces != stu.NumInterfaces {
-		diff += 1000
-	}
-	if sol.NumCustomTypes != stu.NumCustomTypes {
-		diff += 1000
-	}
-
-	return diff
-}
-
-func CalcArchSim(solWeight, stuWeight uint32) float64 {
-	sol := UnpackArchWeight(solWeight)
-	stu := UnpackArchWeight(stuWeight)
-
-	var totalSol float64
-	totalSol += float64(sol.NumMethods + sol.NumAttributes + sol.NumDependencies + sol.NumStaticMems)
-
-	var diff float64
-	diff += absf(float64(sol.NumMethods) - float64(stu.NumMethods))
-	diff += absf(float64(sol.NumAttributes) - float64(stu.NumAttributes))
-	diff += absf(float64(sol.NumDependencies) - float64(stu.NumDependencies))
-	diff += absf(float64(sol.NumStaticMems) - float64(stu.NumStaticMems))
-
-	if totalSol == 0 {
-		if diff == 0 {
-			return 1.0
-		}
-		return 0.0
-	}
-
-	sim := 1.0 - (diff / totalSol)
-	if sim < 0 {
-		return 0.0
-	}
-	return sim
-}
-
 func round4(val float64) float64 {
 	return math.Round(val*10000) / 10000
-}
-
-func absf(a float64) float64 {
-	if a < 0 {
-		return -a
-	}
-	return a
 }
