@@ -1,48 +1,89 @@
-# Hướng dẫn sử dụng CompareUML_CLI
+# Hướng dẫn sử dụng UML Comparator
 
-`CompareUML_CLI` là công cụ dòng lệnh mạnh mẽ giúp so sánh cấu trúc giữa hai tệp mã nguồn UML dạng `.drawio`. Công cụ này tập trung vào việc hiển thị sự khác biệt về Class, Thuộc tính (Attributes) và Phương thức (Methods).
+`UML Comparator` là công cụ so sánh và chấm điểm biểu đồ UML từ file `.drawio`. Công cụ phân tích cấu trúc Class, Attributes, Methods, và Relations, sau đó xuất báo cáo HTML trực quan.
 
-## 1. Cách chạy nhanh (Quick Start)
+---
 
-Nếu bạn ở trên Windows, hãy **click đúp vào file `CompareUML_CLI.bat`**. 
-- Bạn sẽ được yêu cầu nhập tên file **Đáp án (Solution)**.
-- Sau đó nhập tên file **Bài nộp (Student)**.
-- Nhấn **Enter** để xem kết quả ngay lập tức.
-- Công cụ sẽ tự động kiểm tra xem tệp có tồn tại hay không và yêu cầu nhập lại nếu sai.
+## 1. Quick Start — VisualizeUML (Khuyến nghị)
 
-## 2. Cách chạy qua Command Line
+### Chế độ tương tác (Windows)
+1. Đặt `VisualizeUML.bat` và `visualize.exe` vào cùng thư mục.
+2. **Click đúp** vào `VisualizeUML.bat`.
+3. Nhập đường dẫn file **Solution** (đáp án) → công cụ tự verify file tồn tại.
+4. Nhập đường dẫn file **Student** (bài nộp) → tự verify.
+5. Nhập tên file output `.html` hoặc nhấn **Enter** để tự đặt tên.
+6. Xác nhận → file HTML được tạo và **tự mở trong trình duyệt**.
 
-Mở CMD hoặc PowerShell tại thư mục chứa file `.exe` và sử dụng cú pháp:
-
+### Chế độ dòng lệnh (CLI)
 ```bash
-CompareUML_CLI.exe <path/to/solution.drawio> <path/to/student.drawio>
+visualize.exe <solution.drawio> <student.drawio> [output.html]
 ```
 
 **Ví dụ:**
 ```bash
-CompareUML_CLI.exe UMLs_testcase/assignment2.drawio UMLs_testcase/assignment1.drawio
+visualize.exe UMLs_testcase/problem1.drawio UMLs_testcase/assignment1.drawio
+```
+→ Xuất file `report_assignment1.html` và tự mở browser.
+
+> **Lưu ý:** Nếu chạy từ PowerShell, dùng `cmd /c .\VisualizeUML.bat` để đảm bảo interactive input hoạt động.
+
+---
+
+## 2. Chạy từ mã nguồn (Go)
+
+```bash
+# Xuất báo cáo HTML (full pipeline)
+go run ./cmd/visualize/main.go <solution.drawio> <student.drawio> [output.html]
+
+# So sánh CLI (chỉ in ra terminal, không xuất HTML)
+go run ./cmd/compare/main.go <solution.drawio> <student.drawio>
 ```
 
-## 3. Giải thích kết quả
+---
 
-Màn hình sẽ hiển thị 3 phần chính:
+## 3. Giải thích kết quả HTML Report
 
-### A. Nodes Side-by-Side (Bảng so sánh Class)
-Bảng này chia làm 2 cột: **SOLUTION** (Đáp án) và **STUDENT** (Bài làm).
-- `✔` (Xanh): Khớp hoàn toàn 100%.
-- `≈` (Vàng): Khớp mờ (tên có thể hơi khác nhưng cấu trúc tương đồng).
-- `✗` (Đỏ): Tên Class không tìm thấy hoặc bị thiếu.
-- **Dấu `+` (Xanh):** Sinh viên làm thừa ra (Extra).
-- **Dấu `-` (Đỏ):** Sinh viên bị thiếu (Missing) so với mẫu.
+### A. Header — Score
+Hiển thị điểm tổng, điểm tối đa, và phần trăm chính xác kèm progress bar.
+- 🟢 ≥ 90%: Xuất sắc
+- 🟡 ≥ 60%: Trung bình
+- 🔴 < 60%: Cần cải thiện
 
-### B. Edges (Relations)
-Kiểm tra các mối quan hệ (Inheritance, Association...):
-- `✔`: Quan hệ chính xác.
-- `✗`: Quan hệ không tìm thấy hoặc sai hướng mũi tên.
+### B. Nodes Comparison (Side-by-Side)
+Bảng 2 cột: **Student** (bài nộp) và **Solution** (đáp án).
 
-### C. Quick Stats
-Tóm tắt phần trăm khớp của bài làm.
+Mỗi node (Class/Interface/Enum) hiển thị:
+- Attributes và Methods với color-coded status:
+  - 🟢 **Correct** (xanh): Khớp hoàn toàn.
+  - 🟡 **Wrong** (vàng): Tồn tại nhưng sai (sai tên, sai type...).
+  - 🔴 **Missing** (đỏ): Thiếu so với đáp án.
+  - 🔵 **Extra** (xanh dương): Thừa, không có trong đáp án.
 
-## 4. Lưu ý
-- Đảm bảo các tệp `.drawio` không bị lỗi định dạng (Export từ diagrams.net).
-- Màu sắc hiển thị tốt nhất trên Terminal hỗ trợ ANSI (Windows Terminal, PowerShell Core).
+### C. Relations
+Liệt kê tất cả mối quan hệ (Inheritance, Association, Aggregation...):
+- ✅ Correct: Đúng.
+- ⚠️ Wrong: Sai loại hoặc hướng.
+- ❌ Missing: Thiếu trong bài sinh viên.
+- ➕ Extra: Thừa trong bài sinh viên.
+
+### D. Summary
+4 ô thống kê: **Correct** / **Missing** / **Wrong** / **Extra** + danh sách chi tiết trừ điểm.
+
+---
+
+## 4. Các công cụ Debug khác
+
+| Công cụ | Lệnh | Mục đích |
+|:---|:---|:---|
+| **Compare CLI** | `go run ./cmd/compare/main.go` | So sánh full pipeline, in ra terminal |
+| **Match CLI** | `go run ./cmd/match/main.go` | Kiểm tra Mapping Table |
+| **PreMatch CLI** | `go run ./cmd/prematch/main.go` | Xem kết quả tiền xử lý |
+| **Build CLI** | `go run ./cmd/build/main.go` | Xem UMLGraph sau khi build |
+| **Parse CLI** | `go run ./cmd/parse/main.go` | Xem XML thô đã decode |
+
+---
+
+## 5. Lưu ý
+- Đảm bảo các tệp `.drawio` được export từ [diagrams.net](https://diagrams.net) và không bị lỗi định dạng.
+- Báo cáo HTML tự chứa (self-contained) — không cần internet, mở bằng bất kỳ trình duyệt nào.
+- Màu sắc CLI hiển thị tốt nhất trên Terminal hỗ trợ ANSI (Windows Terminal, PowerShell Core).
