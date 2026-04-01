@@ -25,15 +25,16 @@ func NewStandardEntityMatcher(fz IFuzzyMatcher, arch IArchAnalyzer, threshold fl
 	}
 }
 
-// Match maps Solution nodes to Student nodes by leveraging Architecture First Sorting -> Fuzzy Match tiebreaker.
-// Note: Read-only immutability is adhered to. Neither of the graphs are modified.
-func (m *StandardEntityMatcher) Match(solution *domain.ProcessedUMLGraph, student *domain.ProcessedUMLGraph) (domain.MappingTable, error) {
+// Match maps Solution nodes (OR-aware SolutionProcessedUMLGraph) to Student nodes (ProcessedUMLGraph).
+// Matching is driven by the 3-tier algorithm: Architecture → Fuzzy Name → Arch Delta.
+// Note: Read-only immutability is adhered to. Neither graph is modified.
+func (m *StandardEntityMatcher) Match(solution *domain.SolutionProcessedUMLGraph, student *domain.ProcessedUMLGraph) (domain.MappingTable, error) {
 	mapping := make(domain.MappingTable)
 	if solution == nil || student == nil {
 		return mapping, nil
 	}
 
-	// Keep track of which student nodes have already been mapped to enforce 1:1 mapping constraint
+	// Keep track of which student nodes have already been mapped to enforce 1:1 constraint
 	studentAssigned := make(map[string]bool)
 
 	unmappedSol := make([]int, 0, len(solution.Nodes))
@@ -42,7 +43,9 @@ func (m *StandardEntityMatcher) Match(solution *domain.ProcessedUMLGraph, studen
 	}
 
 	// runPass encapsulates the intelligent matching logic with specified thresholds.
-	// It returns the list of solution node indices that remain unmapped.
+	// solNode is a SolutionProcessedNode — we use its primary name (Names[0]) for fuzzy matching
+	// and its ArchWeight for architecture comparison. OR-alternatives in Names are checked as
+	// bonus comparators: if any alternative fully matches, simScore becomes 1.0.
 	runPass := func(solIndices []int, archTolerance float64, minSimScore float64) []int {
 		var nextUnmapped []int
 		for _, solIdx := range solIndices {
@@ -54,9 +57,10 @@ func (m *StandardEntityMatcher) Match(solution *domain.ProcessedUMLGraph, studen
 				if !studentAssigned[stuNode.ID] {
 
 					simScore := m.fuzzyMatcher.Compare(solNode.Name, stuNode.Name)
-					exactMatch := solNode.Type == stuNode.Type && strings.EqualFold(strings.TrimSpace(solNode.Name), strings.TrimSpace(stuNode.Name))
+					exactMatch := solNode.Type == stuNode.Type &&
+						strings.EqualFold(strings.TrimSpace(solNode.Name), strings.TrimSpace(stuNode.Name))
 					if exactMatch {
-						simScore = 1.0 // Ensure exact matches always have top score
+						simScore = 1.0
 					}
 
 					candidates = append(candidates, studentCandidate{

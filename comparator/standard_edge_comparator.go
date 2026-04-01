@@ -15,7 +15,7 @@ func NewStandardEdgeComparator() *StandardEdgeComparator {
 }
 
 // CompareEdges identifies differences in relationships between solution and student graphs.
-func (v *StandardEdgeComparator) CompareEdges(solution, student *domain.ProcessedUMLGraph, mapping domain.MappingTable, report *domain.DiffReport) {
+func (v *StandardEdgeComparator) CompareEdges(solution *domain.SolutionProcessedUMLGraph, student *domain.ProcessedUMLGraph, mapping domain.MappingTable, report *domain.DiffReport) {
 	matchedStuEdgeIdx := make(map[int]bool)
 
 	for _, solEdge := range solution.Edges {

@@ -24,7 +24,7 @@ func NewStandardComparator(fz matcher.IFuzzyMatcher, ta ITypeAnalyzer, mc IMembe
 	}
 }
 
-func (c *StandardComparator) Compare(solution *domain.ProcessedUMLGraph, student *domain.ProcessedUMLGraph, mapping domain.MappingTable) (*domain.DiffReport, error) {
+func (c *StandardComparator) Compare(solution *domain.SolutionProcessedUMLGraph, student *domain.ProcessedUMLGraph, mapping domain.MappingTable) (*domain.DiffReport, error) {
 	report := &domain.DiffReport{}
 
 	if solution == nil || student == nil {

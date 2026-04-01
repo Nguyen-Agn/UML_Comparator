@@ -4,8 +4,9 @@ import "uml_compare/domain"
 
 // IEntityMatcher defines the contract for matching nodes between the solution and the student's diagram.
 type IEntityMatcher interface {
-	// Match compares two graphs and produces a dictionary mapping solution node IDs to student node IDs.
-	Match(solution *domain.ProcessedUMLGraph, student *domain.ProcessedUMLGraph) (domain.MappingTable, error)
+	// Match compares a solution graph (OR-aware) and a student graph, producing a
+	// dictionary mapping solution node IDs to student node IDs.
+	Match(solution *domain.SolutionProcessedUMLGraph, student *domain.ProcessedUMLGraph) (domain.MappingTable, error)
 }
 
 // IArchAnalyzer defines the contract for analyzing and comparing node architectures based on their ArchWeight.

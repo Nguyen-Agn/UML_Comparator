@@ -10,6 +10,7 @@ import (
 	"uml_compare/builder"
 	"uml_compare/comparator"
 	"uml_compare/domain"
+	"uml_compare/grader"
 	"uml_compare/matcher"
 	"uml_compare/parser"
 	"uml_compare/prematcher"
@@ -80,25 +81,27 @@ func main() {
 	}
 
 	// ── AI Matcher Integration ───────────────────────────────────
-	preMatcher := prematcher.NewStandardPreMatcher()
-	solProc, _ := preMatcher.Process(solutionGraph)
-	stuProc, _ := preMatcher.Process(studentGraph)
+	stdPM := prematcher.NewStandardPreMatcher()
+	solPM := prematcher.NewUMLSolutionPreMatcher()
+	solProc, _ := stdPM.Process(solutionGraph)  // Used for display & comparator
+	stuProc, _ := stdPM.Process(studentGraph)
+	solForMatch, _ := solPM.ProcessSolution(solutionGraph) // Used for OR-aware matching
 
 	fuzzy := matcher.NewLevenshteinMatcher()
 	arch := matcher.NewStandardArchAnalyzer()
 	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, 0.8)
-	mapping, _ := entityMatcher.Match(solProc, stuProc)
+	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	// ── Advanced Comparator ──────────────────────────────────────
 	ta := comparator.NewStandardTypeAnalyzer()
 	mc := comparator.NewStandardMemberComparator(fuzzy, ta)
 	ec := comparator.NewStandardEdgeComparator()
 	comp := comparator.NewStandardComparator(fuzzy, ta, mc, ec)
-	diffReport, _ := comp.Compare(solProc, stuProc, mapping)
+	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	// ── Side-by-side Node Comparison ─────────────────────────────
 	fmt.Printf("\n%s── [COMPARE] Nodes Side-by-Side ────────────────────────────%s\n", Cyan+Bold, Reset)
-	printSideBySideNodes(solProc, stuProc, mapping)
+	printSideBySideNodes(solForMatch, stuProc, mapping, diffReport)
 
 	// ── Edge Comparison ──────────────────────────────────────────
 	fmt.Printf("\n%s── [COMPARE] Edges (Relations) ──────────────────────────────%s\n", Cyan+Bold, Reset)
@@ -111,6 +114,27 @@ func main() {
 	// ── Summary ──────────────────────────────────────────────────
 	fmt.Printf("\n%s── [SUMMARY] Quick Stats ────────────────────────────────────%s\n", Cyan+Bold, Reset)
 	printSummary(solProc, stuProc, mapping)
+
+	// ── Grading ──────────────────────────────────────────────────
+	fmt.Printf("\n%s── [GRADER] Final Score ───────────────────────────────────────%s\n", Cyan+Bold, Reset)
+	gr := grader.NewStandardGrader()
+	rules := &grader.GradingRules{}
+	gradeResult, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
+
+	scoreColor := Green
+	if gradeResult.CorrectPercent < 90 {
+		scoreColor = Yellow
+	}
+	if gradeResult.CorrectPercent < 60 {
+		scoreColor = Red
+	}
+	fmt.Printf("  %sScore: %.2f / %.2f (%.2f%%)%s\n", scoreColor+Bold, gradeResult.TotalScore, gradeResult.MaxScore, gradeResult.CorrectPercent, Reset)
+	if len(gradeResult.Feedbacks) > 0 {
+		fmt.Printf("\n  %sDeductions Log:%s\n", Yellow, Reset)
+		for _, f := range gradeResult.Feedbacks {
+			fmt.Printf("   • %s\n", f)
+		}
+	}
 }
 
 func loadGraph(filePath, label string) *domain.UMLGraph {
@@ -132,7 +156,7 @@ func loadGraph(filePath, label string) *domain.UMLGraph {
 	return graph
 }
 
-func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
+func printSideBySideNodes(sol *domain.SolutionProcessedUMLGraph, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable, report *domain.DiffReport) {
 	const col = 60
 	header := fmt.Sprintf("%s  %-*s│  %-*s%s", Bold+Blue, col, "SOLUTION (đáp án)", col, "STUDENT (bài nộp)", Reset)
 	fmt.Println(strings.Repeat("─", col*2+4))
@@ -143,7 +167,7 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 
 	for i := range sol.Nodes {
 		solNode := &sol.Nodes[i]
-		solPart := fmt.Sprintf("[%s] %s (%dA/%dM)", solNode.Type[:1], solNode.Name, len(solNode.Attributes), len(solNode.Methods))
+		solPart := cleanStr(fmt.Sprintf("[%s] %s (%dA/%dM)", solNode.Type[:1], solNode.Name, len(solNode.Attributes), len(solNode.Methods)))
 
 		var stuNode *domain.ProcessedNode
 		stuPart := ""
@@ -158,7 +182,7 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 				}
 			}
 			if stuNode != nil {
-				stuPart = fmt.Sprintf("[%s] %s (%dA/%dM)", stuNode.Type[:1], stuNode.Name, len(stuNode.Attributes), len(stuNode.Methods))
+				stuPart = cleanStr(fmt.Sprintf("[%s] %s (%dA/%dM)", stuNode.Type[:1], stuNode.Name, len(stuNode.Attributes), len(stuNode.Methods)))
 				if mapped.Similarity == 1.0 {
 					matchMark = "✔ "
 				} else {
@@ -179,43 +203,55 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 
 		fmt.Printf("%-*s│ %s%s%-*s%s\n", col, "  "+solPart, color, matchMark, col, stuPart, Reset)
 
-		// Print mismatched members side-by-side
+		// Print mismatched members side-by-side using DiffReport data
 		if stuNode != nil {
-			solAttrs := []string{}
-			for _, a := range solNode.Attributes {
-				solAttrs = append(solAttrs, fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name))
+			// Attributes
+			for _, d := range report.CorrectDetail.Attribute {
+				if d.ParentClassName == solNode.Name {
+					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, limitStr("    ✔ [Attr] "+attrString(d.Sol), col), Reset, Green, col, limitStr(" ✔ [Attr] "+stuAttrString(d.Stu), col), Reset)
+				}
 			}
-			stuAttrs := []string{}
-			for _, a := range stuNode.Attributes {
-				stuAttrs = append(stuAttrs, fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name))
+			for _, d := range report.WrongDetail.Attribute {
+				if d.ParentClassName == solNode.Name {
+					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Yellow, col, limitStr("    ≈ [Attr] "+attrString(d.Sol), col), Reset, Yellow, col, limitStr(" ≈ [Attr] "+stuAttrString(d.Stu), col), Reset)
+				}
 			}
-			printAllMembers("Attr", solAttrs, stuAttrs, col)
+			for _, d := range report.MissingDetail.Attribute {
+				if d.ParentClassName == solNode.Name {
+					fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, limitStr("    ✗ [Attr] "+attrString(d.Sol), col), Reset, col, "")
+				}
+			}
+			for _, d := range report.ExtraDetail.Attribute {
+				if d.ParentClassName == stuNode.Name {
+					fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, limitStr(" ✗ [Attr] "+stuAttrString(d.Stu), col), Reset)
+				}
+			}
 
-			solMeths := []string{}
-			for _, m := range solNode.Methods {
-				if m.Type == "getter" || m.Type == "setter" {
-					continue
+			// Methods
+			for _, d := range report.CorrectDetail.Method {
+				if d.ParentClassName == solNode.Name && d.Sol != nil {
+					if d.Sol.Type == "getter" || d.Sol.Type == "setter" { continue }
+					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, limitStr("    ✔ [Meth] "+methString(d.Sol), col), Reset, Green, col, limitStr(" ✔ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
-
-				params := []string{}
-				for _, p := range m.Inputs {
-					params = append(params, p.Type)
-				}
-				solMeths = append(solMeths, fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
 			}
-			stuMeths := []string{}
-			for _, m := range stuNode.Methods {
-				if m.Type == "getter" || m.Type == "setter" {
-					continue
+			for _, d := range report.WrongDetail.Method {
+				if d.ParentClassName == solNode.Name && d.Sol != nil {
+					if d.Sol.Type == "getter" || d.Sol.Type == "setter" { continue }
+					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Yellow, col, limitStr("    ≈ [Meth] "+methString(d.Sol), col), Reset, Yellow, col, limitStr(" ≈ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
-
-				params := []string{}
-				for _, p := range m.Inputs {
-					params = append(params, p.Type)
-				}
-				stuMeths = append(stuMeths, fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
 			}
-			printAllMembers("Meth", solMeths, stuMeths, col)
+			for _, d := range report.MissingDetail.Method {
+				if d.ParentClassName == solNode.Name && d.Sol != nil {
+					if d.Sol.Type == "getter" || d.Sol.Type == "setter" { continue }
+					fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, limitStr("    ✗ [Meth] "+methString(d.Sol), col), Reset, col, "")
+				}
+			}
+			for _, d := range report.ExtraDetail.Method {
+				if d.ParentClassName == stuNode.Name && d.Stu != nil {
+					if d.Stu.Type == "getter" || d.Stu.Type == "setter" { continue }
+					fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, limitStr(" ✗ [Meth] "+stuMethString(d.Stu), col), Reset)
+				}
+			}
 		}
 	}
 
@@ -223,8 +259,8 @@ func printSideBySideNodes(sol, stu *domain.ProcessedUMLGraph, mapping domain.Map
 	for i := range stu.Nodes {
 		stuNode := &stu.Nodes[i]
 		if !mappedStu[stuNode.ID] {
-			stuPart := fmt.Sprintf("[%s] %s (%dA/%dM)", stuNode.Type[:1], stuNode.Name, len(stuNode.Attributes), len(stuNode.Methods))
-			fmt.Printf("%-*s│ %s%-*s%s\n", col, "  ", Red+"✗ ", col, stuPart, Reset)
+			stuPart := cleanStr(fmt.Sprintf("[%s] %s (%dA/%dM)", stuNode.Type[:1], stuNode.Name, len(stuNode.Attributes), len(stuNode.Methods)))
+			fmt.Printf("%-*s│ %s%-*s%s\n", col, "  ", Red+"✗ ", col, limitStr(stuPart, col), Reset)
 		}
 	}
 
@@ -394,7 +430,7 @@ func printDetailSection(title string, detail domain.DetailError, color string) {
 			}
 			stuV := "?"
 			if d.Stu != nil {
-				stuV = attrString(d.Stu)
+				stuV = stuAttrString(d.Stu)
 			}
 			fmt.Printf("    • [%s] %s vs %s → %s\n", d.ParentClassName, solV, stuV, d.Description)
 		}
@@ -408,7 +444,7 @@ func printDetailSection(title string, detail domain.DetailError, color string) {
 			}
 			stuV := "?"
 			if d.Stu != nil {
-				stuV = methString(d.Stu)
+				stuV = stuMethString(d.Stu)
 			}
 			fmt.Printf("    • [%s] %s vs %s → %s\n", d.ParentClassName, solV, stuV, d.Description)
 		}
@@ -429,16 +465,40 @@ func printDetailSection(title string, detail domain.DetailError, color string) {
 	}
 }
 
-func attrString(a *domain.ProcessedAttribute) string {
-	return fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name)
+func cleanStr(s string) string {
+	s = strings.ReplaceAll(s, "\r", "")
+	return strings.ReplaceAll(s, "\n", " ")
 }
 
-func methString(m *domain.ProcessedMethod) string {
+func limitStr(s string, limit int) string {
+	if len(s) > limit-1 {
+		return s[:limit-4] + "..."
+	}
+	return s
+}
+
+func attrString(a *domain.SolutionProcessedAttribute) string {
+	return cleanStr(fmt.Sprintf("%s %s %s", a.Scope, strings.Join(a.Types, "|"), strings.Join(a.Names, "|")))
+}
+
+func stuAttrString(a *domain.ProcessedAttribute) string {
+	return cleanStr(fmt.Sprintf("%s %s %s", a.Scope, a.Type, a.Name))
+}
+
+func methString(m *domain.SolutionProcessedMethod) string {
 	params := []string{}
 	for _, p := range m.Inputs {
 		params = append(params, p.Type)
 	}
-	return fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output)
+	return cleanStr(fmt.Sprintf("%s %s(%s): %s", m.Scope, strings.Join(m.Names, "|"), strings.Join(params, ", "), strings.Join(m.Outputs, "|")))
+}
+
+func stuMethString(m *domain.ProcessedMethod) string {
+	params := []string{}
+	for _, p := range m.Inputs {
+		params = append(params, p.Type)
+	}
+	return cleanStr(fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
 }
 
 func nodeNames(g *domain.UMLGraph) []string {
@@ -476,42 +536,4 @@ func max(a, b int) int {
 	return b
 }
 
-func printAllMembers(label string, solList, stuList []string, col int) {
-	// Create a map to track which student members have been matched
-	matchedStu := make(map[int]bool)
 
-	// Interleave matched and mismatched from solution perspective
-	for _, s := range solList {
-		foundIdx := -1
-		for i, st := range stuList {
-			if matchedStu[i] {
-				continue
-			}
-			// Exact match (including scope)
-			if strings.TrimSpace(s) == strings.TrimSpace(st) {
-				foundIdx = i
-				break
-			}
-		}
-
-		if foundIdx != -1 {
-			// Matched: Both Green
-			matchedStu[foundIdx] = true
-			fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, "    ✔ ["+label+"] "+s, Reset, Green, col, " ✔ ["+label+"] "+s, Reset)
-		} else {
-			// Not in student: Left Red
-			solPart := "    ✗ [" + label + "] " + s
-			if len(solPart) > col-1 {
-				solPart = solPart[:col-4] + "..."
-			}
-			fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, solPart, Reset, col, "")
-		}
-	}
-
-	// Print remaining student members (extra ones)
-	for i, st := range stuList {
-		if !matchedStu[i] {
-			fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, " ✗ ["+label+"] "+st, Reset)
-		}
-	}
-}

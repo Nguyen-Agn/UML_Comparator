@@ -33,7 +33,7 @@ type UMLEdge struct {
 
 // NodeDiff represents a difference at the node level.
 type NodeDiff struct {
-	Sol         *ProcessedNode
+	Sol         *SolutionProcessedNode
 	Stu         *ProcessedNode
 	Description string // Human-readable summary of the mismatch
 }
@@ -41,7 +41,7 @@ type NodeDiff struct {
 // AttributeDiff represents a difference for a specific attribute of a node.
 type AttributeDiff struct {
 	ParentClassName string
-	Sol             *ProcessedAttribute
+	Sol             *SolutionProcessedAttribute
 	Stu             *ProcessedAttribute
 	Description     string
 }
@@ -49,7 +49,7 @@ type AttributeDiff struct {
 // MethodDiff represents a difference for a specific method of a node.
 type MethodDiff struct {
 	ParentClassName string
-	Sol             *ProcessedMethod
+	Sol             *SolutionProcessedMethod
 	Stu             *ProcessedMethod
 	Description     string
 }
@@ -83,8 +83,15 @@ type DiffReport struct {
 
 // GradeResult contains the final score and text feedbacks.
 type GradeResult struct {
-	TotalScore float64
-	Feedbacks  []string
+	TotalScore     float64
+	MaxScore       float64
+	CorrectPercent float64
+	Feedbacks      []string
+
+	// Inputs retained for subsequent visualization pipeline
+	Report        *DiffReport
+	SolutionGraph *SolutionProcessedUMLGraph
+	StudentGraph  *ProcessedUMLGraph
 }
 
 // MappedNode represents a connected student node with its similarity score.

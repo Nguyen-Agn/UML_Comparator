@@ -412,40 +412,6 @@ func (p *StandardPreMatcher) generateSetter(attr domain.ProcessedAttribute) doma
 	}
 }
 
-func cleanMemberString(s string) string {
-	// 1. Remove all { ... } annotations
-	reAnn := regexp.MustCompile(`\{[^}]*\}`)
-	res := reAnn.ReplaceAllString(s, "")
-
-	// 2. Remove other keywords
-	keywords := []string{"static", "final", "const", "abstract"}
-	for _, kw := range keywords {
-		re := regexp.MustCompile("(?i)\\b" + kw + "\\b")
-		res = re.ReplaceAllString(res, "")
-	}
-	return strings.TrimSpace(res)
-}
-
-func isScopeChar(c byte) bool {
-	return c == '+' || c == '-' || c == '#' || c == '~'
-}
-
-func isPureShortcut(s string) bool {
-	s = strings.TrimLeft(strings.TrimSpace(s), "+-#~ ")
-	clean := strings.ReplaceAll(strings.ToLower(cleanMemberString(s)), "/", " ")
-	tokens := strings.Fields(clean)
-	if len(tokens) == 0 {
-		return false
-	}
-	// If all tokens are getter/setter related, it's a pure shortcut
-	for _, t := range tokens {
-		if t != "getter" && t != "setter" && t != "getters" && t != "setters" && t != "and" {
-			return false
-		}
-	}
-	return true
-}
-
 // calculateArchWeight uses bitwise shifting to pack structural info into a single uint32
 //
 // Bit 29-31: Loại Class (3 bit - 0: Unknown, 1: Class, 2: Interface, 3: Abstract, 4: Enum)
@@ -528,69 +494,4 @@ func (p *StandardPreMatcher) isEnumType(t string) bool {
 		(strings.Contains(lower, "<<") && strings.Contains(lower, "enu"))
 }
 
-func minU32(a, b uint32) uint32 {
-	if a < b {
-		return a
-	}
-	return b
-}
 
-func cleanText(text string) string {
-	// We NO LONGER strip <...> here because the Builder already sanitized HTML.
-	// Stripping <...> here would destroy UML generics like List<String>.
-
-	// Decode literal common entities that drawio might leave
-	text = strings.ReplaceAll(text, "&nbsp;", " ")
-	text = strings.ReplaceAll(text, "&lt;", "<")
-	text = strings.ReplaceAll(text, "&gt;", ">")
-	return strings.TrimSpace(text)
-}
-
-func fuzzySimilarity(s1, s2 string) float64 {
-	s1 = strings.ToLower(strings.TrimSpace(s1))
-	s2 = strings.ToLower(strings.TrimSpace(s2))
-	if s1 == s2 {
-		return 1.0
-	}
-	if len(s1) == 0 || len(s2) == 0 {
-		return 0.0
-	}
-
-	dist := levenshteinDistance(s1, s2)
-	maxLen := len(s1)
-	if len(s2) > maxLen {
-		maxLen = len(s2)
-	}
-	return 1.0 - float64(dist)/float64(maxLen)
-}
-
-func levenshteinDistance(s1, s2 string) int {
-	m := len(s1)
-	n := len(s2)
-	d := make([][]int, m+1)
-	for i := range d {
-		d[i] = make([]int, n+1)
-		d[i][0] = i
-	}
-	for j := 0; j <= n; j++ {
-		d[0][j] = j
-	}
-
-	for j := 1; j <= n; j++ {
-		for i := 1; i <= m; i++ {
-			if s1[i-1] == s2[j-1] {
-				d[i][j] = d[i-1][j-1]
-			} else {
-				d[i][j] = min(d[i-1][j]+1, min(d[i][j-1]+1, d[i-1][j-1]+1))
-			}
-		}
-	}
-	return d[m][n]
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

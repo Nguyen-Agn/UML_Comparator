@@ -8,7 +8,7 @@ type IComparator interface {
 	// It categorizes results into Missing (in solution only), Wrong (in both but mismatched),
 	// Extra (in student only), and Correct (perfect match) details.
 	// Labels for members/edges should follow the format: "Class 'ClassName': [Issue description]".
-	Compare(solution *domain.ProcessedUMLGraph, student *domain.ProcessedUMLGraph, mapping domain.MappingTable) (*domain.DiffReport, error)
+	Compare(solution *domain.SolutionProcessedUMLGraph, student *domain.ProcessedUMLGraph, mapping domain.MappingTable) (*domain.DiffReport, error)
 }
 
 // ITypeAnalyzer handles type translation and deep comparison including generics.
@@ -22,13 +22,13 @@ type ITypeAnalyzer interface {
 // IMemberComparator handles comparison of attributes and methods within a node.
 type IMemberComparator interface {
 	// CompareAttributes identifies differences in attributes between solution and student nodes.
-	CompareAttributes(sol, stu domain.ProcessedNode, typeMap map[string]string, report *domain.DiffReport)
+	CompareAttributes(sol domain.SolutionProcessedNode, stu domain.ProcessedNode, typeMap map[string]string, report *domain.DiffReport)
 	// CompareMethods identifies differences in methods between solution and student nodes.
-	CompareMethods(sol, stu domain.ProcessedNode, typeMap map[string]string, report *domain.DiffReport)
+	CompareMethods(sol domain.SolutionProcessedNode, stu domain.ProcessedNode, typeMap map[string]string, report *domain.DiffReport)
 }
 
 // IEdgeComparator handles comparison of relationships between nodes.
 type IEdgeComparator interface {
 	// CompareEdges identifies differences in relationships between solution and student graphs.
-	CompareEdges(solution, student *domain.ProcessedUMLGraph, mapping domain.MappingTable, report *domain.DiffReport)
+	CompareEdges(solution *domain.SolutionProcessedUMLGraph, student *domain.ProcessedUMLGraph, mapping domain.MappingTable, report *domain.DiffReport)
 }

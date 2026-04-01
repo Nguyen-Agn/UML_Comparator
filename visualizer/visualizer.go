@@ -2,11 +2,11 @@ package visualizer
 
 import "uml_compare/domain"
 
-// IVisualizer defines the contract for exporting or visualizing the differences.
+// IVisualizer defines the contract for exporting visual reports of UML grading results.
 type IVisualizer interface {
-	// VisualizeDiff creates an output file (like a colored draw.io) highlighting the errors.
-	VisualizeDiff(report *domain.DiffReport, solution *domain.UMLGraph, student *domain.UMLGraph, studentRawPath string) error
-
-	// ExportReport creates a text/HTML report string summarizing the diff.
-	ExportReport(report *domain.DiffReport) (string, error)
+	// ExportHTML renders the GradeResult into a self-contained HTML file.
+	// The GradeResult carries the full DiffReport, both graphs, score, and feedbacks.
+	// outputPath is the destination file path for the generated .html file.
+	// Returns an error if the file cannot be written.
+	ExportHTML(result *domain.GradeResult, outputPath string) error
 }

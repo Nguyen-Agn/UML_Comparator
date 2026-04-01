@@ -28,7 +28,8 @@ func main() {
 	fmt.Println("[1] Initializing Pipeline Interfaces...")
 	var fileParser parser.IFileParser = parser.NewDrawioParser()
 	var modelBuilder builder.IModelBuilder = builder.NewStandardModelBuilder()
-	var preMatcher prematcher.IPreMatcher = prematcher.NewStandardPreMatcher()
+	var stdPreMatcher prematcher.IPreMatcher = prematcher.NewStandardPreMatcher()
+	var solPreMatcher prematcher.IUMLSolutionPreMatcher = prematcher.NewUMLSolutionPreMatcher()
 
 	fuzzy := matcher.NewLevenshteinMatcher()
 	arch := matcher.NewStandardArchAnalyzer()
@@ -44,7 +45,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to build solution graph: %v\n", err)
 	}
-	solProcessed, err := preMatcher.Process(solGraph)
+	solProcessed, err := solPreMatcher.ProcessSolution(solGraph)
 	if err != nil {
 		log.Fatalf("Failed to process solution graph: %v\n", err)
 	}
@@ -59,7 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to build student graph: %v\n", err)
 	}
-	stuProcessed, err := preMatcher.Process(stuGraph)
+	stuProcessed, err := stdPreMatcher.Process(stuGraph)
 	if err != nil {
 		log.Fatalf("Failed to process student graph: %v\n", err)
 	}
@@ -83,8 +84,9 @@ func main() {
 	}
 
 	for solID, mappedNode := range mapping {
+		solName := solNames[solID]
 		fmt.Printf("  Solution '%s'  ==>  Student '%s'  (Similarity: %.2f)\n",
-			solNames[solID],
+			solName,
 			stuNames[mappedNode.StudentID],
 			mappedNode.Similarity)
 	}

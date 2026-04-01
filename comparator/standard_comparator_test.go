@@ -24,17 +24,17 @@ func TestStandardComparator(t *testing.T) {
 		"S1": {StudentID: "Stu1", Similarity: 1.0},
 	}
 
-	solGraph := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
+	solGraph := &domain.SolutionProcessedUMLGraph{
+		Nodes: []domain.SolutionProcessedNode{
 			{
 				ID:   "S1",
 				Name: "Employee",
 				Type: "Class",
-				Attributes: []domain.ProcessedAttribute{
-					{Name: "empId", Scope: "-", Type: "int"},
+				Attributes: []domain.SolutionProcessedAttribute{
+					{Names: []string{"empId"}, Scope: "-", Types: []string{"int"}},
 				},
-				Methods: []domain.ProcessedMethod{
-					{Name: "work", Scope: "+", Output: "void"},
+				Methods: []domain.SolutionProcessedMethod{
+					{Names: []string{"work"}, Scope: "+", Outputs: []string{"void"}},
 				},
 			},
 		},
@@ -70,14 +70,14 @@ func TestComparatorGenerics(t *testing.T) {
 	ec := NewStandardEdgeComparator()
 	c := NewStandardComparator(fz, ta, mc, ec)
 
-	sol := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
+	sol := &domain.SolutionProcessedUMLGraph{
+		Nodes: []domain.SolutionProcessedNode{
 			{
 				ID:   "N1",
 				Name: "Service",
 				Type: "Class",
-				Attributes: []domain.ProcessedAttribute{
-					{Name: "users", Type: "List<User>", Scope: "-", Kind: "normal"},
+				Attributes: []domain.SolutionProcessedAttribute{
+					{Names: []string{"users"}, Types: []string{"List<User>"}, Scope: "-", Kind: "normal"},
 				},
 			},
 			{ID: "N2", Name: "User", Type: "Class"},
@@ -117,9 +117,9 @@ func TestComparatorPointers(t *testing.T) {
 	ec := NewStandardEdgeComparator()
 	c := NewStandardComparator(fz, ta, mc, ec)
 
-	sol := &domain.ProcessedUMLGraph{
-		Nodes: []domain.ProcessedNode{
-			{ID: "S1", Name: "User", Type: "Class", Attributes: []domain.ProcessedAttribute{{Name: "id", Type: "int"}}},
+	sol := &domain.SolutionProcessedUMLGraph{
+		Nodes: []domain.SolutionProcessedNode{
+			{ID: "S1", Name: "User", Type: "Class", Attributes: []domain.SolutionProcessedAttribute{{Names: []string{"id"}, Types: []string{"int"}}}},
 		},
 	}
 	stu := &domain.ProcessedUMLGraph{

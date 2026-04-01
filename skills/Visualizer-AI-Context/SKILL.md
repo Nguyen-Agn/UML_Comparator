@@ -1,7 +1,15 @@
 # SKILL: drawio-visualizer
 ## Purpose
-Render và sinh ra hệ file báo cáo (Trực tiếp gán đè vào .drawio XML hoặc xuất ra HTML Mermaid) nhằm tô màu các Entity lỗi để sinh viên xem lại trực quan bài sai điểm nào.
+Render kết quả chấm UML ra file HTML tự chứa (self-contained), hiển thị side-by-side Student vs Solution với color-coded status cho từng node, attribute, method, và relation.
 
 ## Execution
-Dùng String Replace quét vào chính RawXMLData lúc đầu, thay thế chuỗi thuộc tính 'style="..."' thêm 'fillColor=#f8cecc' (Đỏ) ứng với ID bị báo lỗi từ DiffReport.
-Xuất file write ra đĩa.
+1. Pipeline chạy đầy đủ: Parse → Build → Validate → PreMatch → Match → Compare → Grade
+2. Gọi `HTMLVisualizer.ExportHTML(gradeResult, outputPath)` — xuất file `.html` self-contained.
+3. File HTML sử dụng dark theme, color scheme: Xanh (#d5e8d4) = Correct, Đỏ (#f8cecc) = Missing/Error, Vàng (#ffe6cc) = Wrong.
+4. Auto-open browser trên Windows/macOS/Linux.
+
+## CLI Usage
+```
+go run ./cmd/visualize/main.go <solution.drawio> <student.drawio> [output.html]
+```
+Nếu không truyền output path, mặc định: `report_<student_filename>.html`
