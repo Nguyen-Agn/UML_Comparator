@@ -30,11 +30,13 @@ func (v *StandardMemberComparator) CompareAttributes(sol domain.SolutionProcesse
 
 	for _, sAttr := range sol.Attributes {
 		foundIdx := -1
-		
+
 		// 1. Try perfect match (Type + Name)
 		for i, stAttr := range stuAttrs {
-			if matchedStuAttrIdx[i] { continue }
-			
+			if matchedStuAttrIdx[i] {
+				continue
+			}
+
 			matchedType := false
 			for _, t := range sAttr.Types {
 				if v.typeAnalyzer.CompareTypes(t, stAttr.Type, typeMap) {
@@ -56,12 +58,14 @@ func (v *StandardMemberComparator) CompareAttributes(sol domain.SolutionProcesse
 				}
 			}
 		}
-		
+
 		// 2. Try name-only match (fuzzy)
 		if foundIdx == -1 {
 			for i, stAttr := range stuAttrs {
-				if matchedStuAttrIdx[i] { continue }
-				
+				if matchedStuAttrIdx[i] {
+					continue
+				}
+
 				matchedName := false
 				for _, n := range sAttr.Names {
 					if v.fuzzyMatcher.Compare(n, stAttr.Name) >= 0.8 {
@@ -80,7 +84,7 @@ func (v *StandardMemberComparator) CompareAttributes(sol domain.SolutionProcesse
 			matchedStuAttrIdx[foundIdx] = true
 			matchingStu := stuAttrs[foundIdx]
 			issues := []string{}
-			
+
 			matchedType := false
 			for _, t := range sAttr.Types {
 				if v.typeAnalyzer.CompareTypes(t, matchingStu.Type, typeMap) {
@@ -146,11 +150,13 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 	for _, sMethod := range solNormal {
 		isCtor := v.isConstructor(sMethod, sol.Name)
 		foundIdx := -1
-		
+
 		// 1. Try perfect match (Name + RetType + ParamCount)
 		for i, stMethod := range stuNormal {
-			if matchedStuMethIdx[i] { continue }
-			
+			if matchedStuMethIdx[i] {
+				continue
+			}
+
 			matchedOutput := isCtor
 			if !isCtor {
 				for _, out := range sMethod.Outputs {
@@ -174,15 +180,21 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 		// 2. Try signature-ish match (Name + ParamCount +-1 rule)
 		if foundIdx == -1 {
 			for i, stMethod := range stuNormal {
-				if matchedStuMethIdx[i] { continue }
-				
+				if matchedStuMethIdx[i] {
+					continue
+				}
+
 				solPLen := len(sMethod.Inputs)
 				stuPLen := len(stMethod.Inputs)
 				paramCountMatch := (solPLen == stuPLen)
 				if solPLen >= 2 && stuPLen >= 2 {
 					diff := solPLen - stuPLen
-					if diff < 0 { diff = -diff }
-					if diff <= 1 { paramCountMatch = true }
+					if diff < 0 {
+						diff = -diff
+					}
+					if diff <= 1 {
+						paramCountMatch = true
+					}
 				}
 
 				if paramCountMatch {
@@ -197,7 +209,9 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 		// 3. Try fuzzy match
 		if foundIdx == -1 {
 			for i, stMethod := range stuNormal {
-				if matchedStuMethIdx[i] { continue }
+				if matchedStuMethIdx[i] {
+					continue
+				}
 				matchedName := false
 				for _, n := range sMethod.Names {
 					if v.fuzzyMatcher.Compare(n, stMethod.Name) >= 0.8 {
@@ -216,7 +230,7 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 			matchedStuMethIdx[foundIdx] = true
 			matchingStu := stuNormal[foundIdx]
 			issues := []string{}
-			
+
 			matchedOutput := isCtor
 			if !isCtor {
 				for _, out := range sMethod.Outputs {
@@ -239,10 +253,30 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 			if len(sMethod.Inputs) != len(matchingStu.Inputs) {
 				issues = append(issues, "Param count mismatch ("+itoa(len(sMethod.Inputs))+" vs "+itoa(len(matchingStu.Inputs))+")")
 			} else {
-				for j := range sMethod.Inputs {
-					if !v.typeAnalyzer.CompareTypes(sMethod.Inputs[j].Type, matchingStu.Inputs[j].Type, typeMap) {
-						issues = append(issues, "Param "+itoa(j+1)+" type mismatch")
-						break
+				if isCtor {
+					matchedStuParams := make(map[int]bool)
+					for _, sParam := range sMethod.Inputs {
+						foundMatch := false
+						for j, stuParam := range matchingStu.Inputs {
+							if matchedStuParams[j] {
+								continue
+							}
+							if v.typeAnalyzer.CompareTypes(sParam.Type, stuParam.Type, typeMap) {
+								matchedStuParams[j] = true
+								foundMatch = true
+								break
+							}
+						}
+						if !foundMatch {
+							issues = append(issues, "Param type '"+sParam.Type+"' not found")
+						}
+					}
+				} else {
+					for j := range sMethod.Inputs {
+						if !v.typeAnalyzer.CompareTypes(sMethod.Inputs[j].Type, matchingStu.Inputs[j].Type, typeMap) {
+							issues = append(issues, "Param "+itoa(j+1)+" type mismatch")
+							break
+						}
 					}
 				}
 			}
@@ -331,9 +365,13 @@ func (v *StandardMemberComparator) matchMethodName(sol domain.SolutionProcessedM
 
 // itoa is a helper for integer to string conversion.
 func itoa(n int) string {
-	if n == 0 { return "0" }
+	if n == 0 {
+		return "0"
+	}
 	neg := n < 0
-	if neg { n = -n }
+	if neg {
+		n = -n
+	}
 	buf := [20]byte{}
 	pos := len(buf)
 	for n > 0 {

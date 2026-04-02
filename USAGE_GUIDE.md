@@ -15,6 +15,7 @@
 6. Xác nhận → file HTML được tạo và **tự mở trong trình duyệt**.
 
 ### Chế độ dòng lệnh (CLI)
+- Chỉ cần file visualize.exe
 ```bash
 visualize.exe <solution.drawio> <student.drawio> [output.html]
 ```
@@ -45,9 +46,6 @@ go run ./cmd/compare/main.go <solution.drawio> <student.drawio>
 
 ### A. Header — Score
 Hiển thị điểm tổng, điểm tối đa, và phần trăm chính xác kèm progress bar.
-- 🟢 ≥ 90%: Xuất sắc
-- 🟡 ≥ 60%: Trung bình
-- 🔴 < 60%: Cần cải thiện
 
 ### B. Nodes Comparison (Side-by-Side)
 Bảng 2 cột: **Student** (bài nộp) và **Solution** (đáp án).
