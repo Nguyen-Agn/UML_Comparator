@@ -319,7 +319,7 @@ func (p *StandardPreMatcher) parseMethod(raw string, className string, attribute
 		// Simple fallback
 		if openIdx := strings.Index(working, "("); openIdx != -1 {
 			method.Name = strings.TrimSpace(working[:openIdx])
-			if len(working) > 0 && isScopeChar(method.Name[0]) {
+			if len(method.Name) > 0 && isScopeChar(method.Name[0]) {
 				method.Scope = string(method.Name[0])
 				method.Name = strings.TrimSpace(method.Name[1:])
 			}

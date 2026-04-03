@@ -121,12 +121,22 @@ func main() {
 
 	// ── 8. Visualize ─────────────────────────────────────────────────────
 	vis := visualizer.NewHTMLVisualizer()
+
+	// 8a. Full grader report (with solution + summary)
 	if err := vis.ExportHTML(gradeResult, outputPath); err != nil {
 		fmt.Printf("❌ Export error: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Printf("✅ Grader report:  %s\n", outputPath)
 
-	fmt.Printf("✅ Report exported: %s\n", outputPath)
+	// 8b. Student-facing feedback report (no solution, no deduction details)
+	stuBaseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
+	studentOutputPath := fmt.Sprintf("feedback_%s.html", stuBaseName)
+	if err := vis.ExportStudentHTML(gradeResult, studentOutputPath); err != nil {
+		fmt.Printf("❌ Student report export error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("✅ Student report: %s\n", studentOutputPath)
 
 	// ── 9. Auto-open in browser ──────────────────────────────────────────
 	absPath, _ := filepath.Abs(outputPath)

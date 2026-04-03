@@ -93,6 +93,30 @@ func (v *HTMLVisualizer) ExportHTML(result *domain.GradeResult, outputPath strin
 	return nil
 }
 
+// ExportStudentHTML renders a student-facing HTML report.
+// Shows only the student's own nodes and relations with color-coded feedback.
+// Does NOT reveal solution content or detailed deduction breakdown.
+func (v *HTMLVisualizer) ExportStudentHTML(result *domain.GradeResult, outputPath string) error {
+	data := v.buildStudentTemplateData(result)
+
+	tmpl, err := template.New("student_report").Parse(studentHTMLTemplate)
+	if err != nil {
+		return fmt.Errorf("student template parse error: %w", err)
+	}
+
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("cannot create output file: %w", err)
+	}
+	defer f.Close()
+
+	if err := tmpl.Execute(f, data); err != nil {
+		return fmt.Errorf("student template execute error: %w", err)
+	}
+
+	return nil
+}
+
 // buildTemplateData transforms a GradeResult into the template-friendly struct.
 func (v *HTMLVisualizer) buildTemplateData(result *domain.GradeResult) templateData {
 	d := templateData{
@@ -181,6 +205,122 @@ func (v *HTMLVisualizer) buildTemplateData(result *domain.GradeResult) templateD
 }
 
 // ── Relations Builder ────────────────────────────────────────────────────────
+
+// buildStudentTemplateData builds template data for the student-facing report.
+// Only includes student nodes and student-visible relations (no solution, no feedbacks).
+func (v *HTMLVisualizer) buildStudentTemplateData(result *domain.GradeResult) templateData {
+	d := templateData{
+		Score:      result.TotalScore,
+		MaxScore:   result.MaxScore,
+		Percent:    result.CorrectPercent,
+		ScoreClass: scoreColorClass(result.CorrectPercent),
+		FillClass:  fillColorClass(result.CorrectPercent),
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
+		// Feedbacks intentionally omitted — student should not see deduction details
+	}
+
+	report := result.Report
+
+	// Only student nodes
+	if result.StudentGraph != nil {
+		for _, n := range result.StudentGraph.Nodes {
+			nv := nodeView{
+				Name:       n.Name,
+				Type:       n.Type,
+				BadgeClass: badgeClass(n.Type),
+			}
+
+			for _, a := range n.Attributes {
+				status := memberStatus(n.Name, stuAttrDisplay(&a), report, "attribute", "student")
+				nv.Attributes = append(nv.Attributes, memberView{
+					Display: formatStuAttr(&a),
+					Status:  status,
+				})
+			}
+
+			for _, m := range n.Methods {
+				if m.Type == "getter" || m.Type == "setter" {
+					continue
+				}
+				status := memberStatus(n.Name, stuMethDisplay(&m), report, "method", "student")
+				nv.Methods = append(nv.Methods, memberView{
+					Display: formatStuMethod(&m),
+					Status:  status,
+				})
+			}
+
+			d.StuNodes = append(d.StuNodes, nv)
+		}
+	}
+
+	// No SolNodes — intentionally empty
+
+	// Student-visible relations only (correct, wrong, extra — no missing)
+	d.Relations = v.buildStudentRelations(result)
+
+	return d
+}
+
+// buildStudentRelations returns only relations that the student actually drew.
+// Missing relations are excluded because they would reveal solution info.
+func (v *HTMLVisualizer) buildStudentRelations(result *domain.GradeResult) []relationView {
+	var rels []relationView
+	report := result.Report
+
+	stuNames := make(map[string]string)
+	solNames := make(map[string]string)
+	if result.StudentGraph != nil {
+		for _, n := range result.StudentGraph.Nodes {
+			stuNames[n.ID] = n.Name
+		}
+	}
+	if result.SolutionGraph != nil {
+		for _, n := range result.SolutionGraph.Nodes {
+			solNames[n.ID] = n.Name
+		}
+	}
+	nameOf := func(id string) string {
+		if n, ok := stuNames[id]; ok {
+			return n
+		}
+		if n, ok := solNames[id]; ok {
+			return n
+		}
+		return id
+	}
+
+	// Correct — student drew it and it matches
+	for _, e := range report.CorrectDetail.Edge {
+		edge := edgeFromDiff(&e)
+		rels = append(rels, relationView{
+			Source: nameOf(edge.SourceID), Target: nameOf(edge.TargetID),
+			RelType: edge.RelationType, Status: "correct", Icon: "✅",
+		})
+	}
+
+	// Wrong — student drew it but something is off
+	for _, e := range report.WrongDetail.Edge {
+		edge := edgeFromDiff(&e)
+		rels = append(rels, relationView{
+			Source: nameOf(edge.SourceID), Target: nameOf(edge.TargetID),
+			RelType: edge.RelationType, Status: "wrong", Icon: "⚠️",
+		})
+	}
+
+	// Extra — student drew it but it's not in solution
+	for _, e := range report.ExtraDetail.Edge {
+		if e.Stu != nil {
+			rels = append(rels, relationView{
+				Source: nameOf(e.Stu.SourceID), Target: nameOf(e.Stu.TargetID),
+				RelType: e.Stu.RelationType, Status: "extra", Icon: "💡",
+			})
+		}
+	}
+
+	// Missing edges intentionally excluded — would reveal solution
+
+	return rels
+}
 
 func (v *HTMLVisualizer) buildRelations(result *domain.GradeResult) []relationView {
 	var rels []relationView
