@@ -278,3 +278,34 @@ func TestBuild_GenericsAndStyling(t *testing.T) {
 
 	t.Logf("✔ generics and styling: Name=%s Attrs=%v Methods=%v", n.Name, n.Attributes, n.Methods)
 }
+
+// ─── Relation Note test ───────────────────────────────────────────────────────
+
+func TestBuild_EdgeNoteExtraction(t *testing.T) {
+	xml := `<mxGraphModel><root>
+	  <mxCell id="0"/><mxCell id="1" parent="0"/>
+	  <mxCell id="2" value="ClassA" style="swimlane;" vertex="1" parent="1">
+		<mxGeometry x="0" y="0" width="100" height="100" as="geometry" />
+	  </mxCell>
+	  <mxCell id="3" value="ClassB" style="swimlane;" vertex="1" parent="1">
+	    <mxGeometry x="200" y="0" width="100" height="100" as="geometry" />
+	  </mxCell>
+	  <mxCell id="4" value="__1__&lt;br&gt;" style="edgeStyle=none;" edge="1" parent="1" source="2" target="3">
+	    <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+	</root></mxGraphModel>`
+
+	b := builder.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(graph.Edges) == 0 {
+		t.Fatal("expected 1 edge")
+	}
+	edge := graph.Edges[0]
+	if edge.Note != "__1__" {
+		t.Errorf("expected Edge.Note='__1__', got %q", edge.Note)
+	}
+	t.Logf("✔ edge note extracted: %s", edge.Note)
+}

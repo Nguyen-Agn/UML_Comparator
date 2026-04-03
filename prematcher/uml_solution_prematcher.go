@@ -2,6 +2,7 @@ package prematcher
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"uml_compare/domain"
 )
@@ -33,6 +34,22 @@ func NewUMLSolutionPreMatcher() *UMLSolutionPreMatcher {
 	}
 }
 
+var scoreRegex = regexp.MustCompile(`__(\d+(?:\.\d+)?)__\s*$`)
+
+// extractScore pulls out the __d__ or __d.d__ point value from the end of a string.
+func extractScore(raw string) (string, float64) {
+	matches := scoreRegex.FindStringSubmatch(raw)
+	if len(matches) > 0 {
+		scoreStr := matches[1]
+		score, err := strconv.ParseFloat(scoreStr, 64)
+		if err == nil {
+			cleaned := scoreRegex.ReplaceAllString(raw, "")
+			return strings.TrimSpace(cleaned), score
+		}
+	}
+	return raw, 1.0 // Default score is 1.0
+}
+
 // ProcessSolution transforms a raw UMLGraph into an OR-aware SolutionProcessedUMLGraph.
 func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain.SolutionProcessedUMLGraph, error) {
 	if graph == nil {
@@ -42,6 +59,12 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 	processed := &domain.SolutionProcessedUMLGraph{
 		Nodes: make([]domain.SolutionProcessedNode, len(graph.Nodes)),
 		Edges: make([]domain.ProcessedEdge, len(graph.Edges)),
+		GradingConfig: domain.ScoreConfig{
+			Nodes:      make(map[string]float64),
+			Attributes: make(map[string]float64),
+			Methods:    make(map[string]float64),
+			Edges:      make(map[string]float64),
+		},
 	}
 
 	// --- Step 1: Analyze edges for Inherits / Implements / RelatedCount ---
@@ -49,8 +72,37 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 	implementsMap := make(map[string][]string)
 	relatedCountMap := make(map[string]int)
 
+	getNodeName := func(id string) string {
+		for _, n := range graph.Nodes {
+			if n.ID == id {
+				cleaned, _ := extractScore(n.Name)
+				return cleanText(cleaned)
+			}
+		}
+		return id
+	}
+
 	for i, edge := range graph.Edges {
+		edgeScore := 1.0
+
+		if cleaned, sc := extractScore(edge.Note); cleaned != edge.Note {
+			edge.Note = cleaned
+			edgeScore = sc
+		} else if cleaned, sc := extractScore(edge.SourceLabel); cleaned != edge.SourceLabel {
+			edge.SourceLabel = cleaned
+			edgeScore = sc
+		} else if cleaned, sc := extractScore(edge.TargetLabel); cleaned != edge.TargetLabel {
+			edge.TargetLabel = cleaned
+			edgeScore = sc
+		}
+
 		processed.Edges[i] = edge
+
+		srcName := getNodeName(edge.SourceID)
+		tgtName := getNodeName(edge.TargetID)
+		edgeKey := srcName + "::" + tgtName + "::" + edge.RelationType
+		processed.GradingConfig.Edges[edgeKey] = edgeScore
+
 		switch edge.RelationType {
 		case "Inheritance", "Generalization":
 			inheritsMap[edge.SourceID] = edge.TargetID
@@ -63,15 +115,20 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 
 	// --- Step 2: Process each node ---
 	for i, node := range graph.Nodes {
+		cleanedNodeName, nodeScore := extractScore(node.Name)
+		cleanedNodeName = cleanText(cleanedNodeName)
+
 		pNode := domain.SolutionProcessedNode{
 			ID:         node.ID,
-			Name:       cleanText(node.Name),
+			Name:       cleanedNodeName,
 			Type:       p.normalizeNodeType(node.Type),
 			Inherits:   inheritsMap[node.ID],
 			Implements: implementsMap[node.ID],
 			Attributes: make([]domain.SolutionProcessedAttribute, 0, len(node.Attributes)),
 			Methods:    make([]domain.SolutionProcessedMethod, 0, len(node.Methods)),
+			Score:      nodeScore,
 		}
+		processed.GradingConfig.Nodes[cleanedNodeName] = nodeScore
 
 		staticMembersCount := 0
 		customTypeCount := 0
@@ -82,7 +139,8 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 
 		// --- Step A: Parse Attributes ---
 		for _, attr := range node.Attributes {
-			raw := cleanText(attr)
+			rawAttr, attrScore := extractScore(attr)
+			raw := cleanText(rawAttr)
 			if isPureShortcut(raw) {
 				lower := strings.ToLower(raw)
 				if strings.Contains(lower, "getter") {
@@ -95,6 +153,7 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 			}
 
 			parsedAttr := p.parseSolutionAttribute(raw)
+			parsedAttr.Score = attrScore
 			// Enums: default missing type to "void"
 			if len(parsedAttr.Types) == 0 || (len(parsedAttr.Types) == 1 && parsedAttr.Types[0] == "") {
 				if p.isEnumType(pNode.Type) {
@@ -103,13 +162,27 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 			}
 			pNode.Attributes = append(pNode.Attributes, parsedAttr)
 
+			for _, n := range parsedAttr.Names {
+				processed.GradingConfig.Attributes[cleanedNodeName+"::"+n] = attrScore
+			}
+
 			// Proactively generate getters/setters from {getter}/{setter} annotations
 			lowerRaw := strings.ToLower(raw)
 			if strings.Contains(lowerRaw, "getter") {
-				pNode.Methods = append(pNode.Methods, p.generateGetter(parsedAttr))
+				getter := p.generateGetter(parsedAttr)
+				getter.Score = attrScore
+				pNode.Methods = append(pNode.Methods, getter)
+				if len(getter.Names) > 0 {
+					processed.GradingConfig.Methods[cleanedNodeName+"::"+getter.Names[0]] = attrScore
+				}
 			}
 			if strings.Contains(lowerRaw, "setter") {
-				pNode.Methods = append(pNode.Methods, p.generateSetter(parsedAttr))
+				setter := p.generateSetter(parsedAttr)
+				setter.Score = attrScore
+				pNode.Methods = append(pNode.Methods, setter)
+				if len(setter.Names) > 0 {
+					processed.GradingConfig.Methods[cleanedNodeName+"::"+setter.Names[0]] = attrScore
+				}
 			}
 
 			// Count generic type parameters for ArchWeight
@@ -137,7 +210,8 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 		stdAttrs := p.toStdAttributes(pNode.Attributes)
 
 		for _, method := range node.Methods {
-			raw := cleanText(method)
+			rawMethod, methodScore := extractScore(method)
+			raw := cleanText(rawMethod)
 			if isPureShortcut(raw) {
 				lower := strings.ToLower(raw)
 				if strings.Contains(lower, "getter") {
@@ -154,16 +228,31 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 			if (strings.Contains(lowerRaw, "getter") || strings.Contains(lowerRaw, "setter")) && !strings.Contains(raw, "(") {
 				attr := p.parseSolutionAttribute(raw)
 				if strings.Contains(lowerRaw, "getter") {
-					pNode.Methods = append(pNode.Methods, p.generateGetter(attr))
+					getter := p.generateGetter(attr)
+					getter.Score = methodScore
+					pNode.Methods = append(pNode.Methods, getter)
+					if len(getter.Names) > 0 {
+						processed.GradingConfig.Methods[cleanedNodeName+"::"+getter.Names[0]] = methodScore
+					}
 				}
 				if strings.Contains(lowerRaw, "setter") {
-					pNode.Methods = append(pNode.Methods, p.generateSetter(attr))
+					setter := p.generateSetter(attr)
+					setter.Score = methodScore
+					pNode.Methods = append(pNode.Methods, setter)
+					if len(setter.Names) > 0 {
+						processed.GradingConfig.Methods[cleanedNodeName+"::"+setter.Names[0]] = methodScore
+					}
 				}
 				continue
 			}
 
 			parsedMethod := p.parseSolutionMethod(raw, pNode.Name, stdAttrs, claimedGetters, claimedSetters)
+			parsedMethod.Score = methodScore
 			pNode.Methods = append(pNode.Methods, parsedMethod)
+
+			for _, n := range parsedMethod.Names {
+				processed.GradingConfig.Methods[cleanedNodeName+"::"+n] = methodScore
+			}
 
 			for _, out := range parsedMethod.Outputs {
 				customTypeCount += strings.Count(out, "<") + strings.Count(out, ",")
@@ -388,7 +477,7 @@ func (p *UMLSolutionPreMatcher) parseSolutionMethod(
 			}
 		}
 		if foundAttr != "" {
-			method.Type = "getter"
+			method.Type = "custom"
 			claimedG[foundAttr] = true
 		} else {
 			method.Type = "custom"
@@ -406,7 +495,7 @@ func (p *UMLSolutionPreMatcher) parseSolutionMethod(
 			}
 		}
 		if foundAttr != "" {
-			method.Type = "setter"
+			method.Type = "custom"
 			claimedS[foundAttr] = true
 		} else {
 			method.Type = "custom"

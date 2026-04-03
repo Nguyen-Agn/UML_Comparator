@@ -100,6 +100,7 @@ func (b *DrawioModelBuilder) Build(rawData domain.RawModelData) (*domain.UMLGrap
 			SourceID:     srcID,
 			TargetID:     tgtID,
 			RelationType: b.types.relationType(cell.Style),
+			Note:         b.san.clean(cell.Value),
 		})
 	}
 

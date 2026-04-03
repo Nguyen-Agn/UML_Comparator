@@ -10,23 +10,30 @@ func TestStandardGrader_Grade(t *testing.T) {
 	grader := NewStandardGrader()
 
 	solGraph := &domain.SolutionProcessedUMLGraph{
+		GradingConfig: domain.ScoreConfig{
+			Edges: map[string]float64{
+				"List<String>::MyClass::Inheritance": 2.0,
+			},
+		},
 		Nodes: []domain.SolutionProcessedNode{
 			{
 				ID:   "N1",
 				Name: "MyClass",
 				Type: "Class",
+				Score: 0.0,
 				Attributes: []domain.SolutionProcessedAttribute{
-					{Names: []string{"attr1"}, Scope: "-"},
+					{Names: []string{"attr1"}, Scope: "-", Score: 1.0},
 				},
 				Methods: []domain.SolutionProcessedMethod{
-					{Names: []string{"doSomething"}, Type: "custom"},
-					{Names: []string{"getAttr1"}, Type: "getter"},
+					{Names: []string{"doSomething"}, Type: "custom", Score: 1.0},
+					{Names: []string{"getAttr1"}, Type: "getter", Score: 0.0},
 				},
 			},
 			{
 				ID:       "N2",
 				Name:     "List<String>",
 				Inherits: "N1",
+				Score:    2.0,
 			},
 		},
 		Edges: []domain.ProcessedEdge{
@@ -43,12 +50,19 @@ func TestStandardGrader_Grade(t *testing.T) {
 	report := &domain.DiffReport{
 		MissingDetail: domain.DetailError{
 			Method: []domain.MethodDiff{
-				{ParentClassName: "MyClass", Description: "Missing doSomething"},
+				{
+					ParentClassName: "MyClass", 
+					Description: "Missing doSomething",
+					Sol: &domain.SolutionProcessedMethod{Score: 1.0},
+				},
 			},
 		},
 		WrongDetail: domain.DetailError{
 			Edge: []domain.EdgeDiff{
-				{Description: "Wrong edge type"},
+				{
+					Description: "Wrong edge type",
+					Sol: &domain.ProcessedEdge{SourceID: "N2", TargetID: "N1", RelationType: "Inheritance"},
+				},
 			},
 		},
 	}
@@ -77,3 +91,4 @@ func TestStandardGrader_Grade(t *testing.T) {
 		t.Errorf("expected percent 50.0, got %f", result.CorrectPercent)
 	}
 }
+

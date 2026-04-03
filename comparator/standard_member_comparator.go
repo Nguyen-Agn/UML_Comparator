@@ -127,32 +127,18 @@ func (v *StandardMemberComparator) CompareAttributes(sol domain.SolutionProcesse
 // CompareMethods identifies differences in methods between solution and student nodes.
 func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNode, stu domain.ProcessedNode, typeMap map[string]string, report *domain.DiffReport) {
 	solG, solS, solNormal := v.splitSolutionMethods(sol.Methods)
-	stuG, stuS, stuNormal := v.splitStudentMethods(stu.Methods)
 
-	// Getter/Setter Count logic
-	if (sol.Shortcut&1) == 0 && (stu.Shortcut&1) == 0 {
-		if len(solG) != len(stuG) {
-			report.WrongDetail.Method = append(report.WrongDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: strings.Join([]string{"Expected", itoa(len(solG)), "getter(s), got", itoa(len(stuG))}, " ")})
-		} else if len(solG) > 0 {
-			report.CorrectDetail.Method = append(report.CorrectDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: itoa(len(solG)) + " getter(s) match"})
-		}
-	}
-	if (sol.Shortcut&2) == 0 && (stu.Shortcut&2) == 0 {
-		if len(solS) != len(stuS) {
-			report.WrongDetail.Method = append(report.WrongDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: strings.Join([]string{"Expected", itoa(len(solS)), "setter(s), got", itoa(len(stuS))}, " ")})
-		} else if len(solS) > 0 {
-			report.CorrectDetail.Method = append(report.CorrectDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: itoa(len(solS)) + " setter(s) match"})
-		}
-	}
+	stuMethods := make([]domain.ProcessedMethod, len(stu.Methods))
+	copy(stuMethods, stu.Methods)
+	matchedStuMethIdx := make(map[int]bool)
 
 	// Normal Methods
-	matchedStuMethIdx := make(map[int]bool)
 	for _, sMethod := range solNormal {
 		isCtor := v.isConstructor(sMethod, sol.Name)
 		foundIdx := -1
 
 		// 1. Try perfect match (Name + RetType + ParamCount)
-		for i, stMethod := range stuNormal {
+		for i, stMethod := range stuMethods {
 			if matchedStuMethIdx[i] {
 				continue
 			}
@@ -179,7 +165,7 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 
 		// 2. Try signature-ish match (Name + ParamCount +-1 rule)
 		if foundIdx == -1 {
-			for i, stMethod := range stuNormal {
+			for i, stMethod := range stuMethods {
 				if matchedStuMethIdx[i] {
 					continue
 				}
@@ -208,7 +194,7 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 
 		// 3. Try fuzzy match
 		if foundIdx == -1 {
-			for i, stMethod := range stuNormal {
+			for i, stMethod := range stuMethods {
 				if matchedStuMethIdx[i] {
 					continue
 				}
@@ -228,7 +214,7 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 
 		if foundIdx != -1 {
 			matchedStuMethIdx[foundIdx] = true
-			matchingStu := stuNormal[foundIdx]
+			matchingStu := stuMethods[foundIdx]
 			issues := []string{}
 
 			matchedOutput := isCtor
@@ -297,11 +283,39 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 		}
 	}
 
+	var stuG, stuS, stuNormal []domain.ProcessedMethod
+	for i, stMethod := range stuMethods {
+		if !matchedStuMethIdx[i] {
+			switch stMethod.Type {
+			case "getter":
+				stuG = append(stuG, stMethod)
+			case "setter":
+				stuS = append(stuS, stMethod)
+			default:
+				stuNormal = append(stuNormal, stMethod)
+			}
+		}
+	}
+
+	// Getter/Setter Count logic
+	if (sol.Shortcut&1) == 0 && (stu.Shortcut&1) == 0 {
+		if len(solG) != len(stuG) {
+			report.WrongDetail.Method = append(report.WrongDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: strings.Join([]string{"Expected", itoa(len(solG)), "getter(s), got", itoa(len(stuG))}, " ")})
+		} else if len(solG) > 0 {
+			report.CorrectDetail.Method = append(report.CorrectDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: itoa(len(solG)) + " getter(s) match"})
+		}
+	}
+	if (sol.Shortcut&2) == 0 && (stu.Shortcut&2) == 0 {
+		if len(solS) != len(stuS) {
+			report.WrongDetail.Method = append(report.WrongDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: strings.Join([]string{"Expected", itoa(len(solS)), "setter(s), got", itoa(len(stuS))}, " ")})
+		} else if len(solS) > 0 {
+			report.CorrectDetail.Method = append(report.CorrectDetail.Method, domain.MethodDiff{ParentClassName: sol.Name, Sol: nil, Stu: nil, Description: itoa(len(solS)) + " setter(s) match"})
+		}
+	}
+
 	for i := range stuNormal {
 		stMethod := &stuNormal[i]
-		if !matchedStuMethIdx[i] {
-			report.ExtraDetail.Method = append(report.ExtraDetail.Method, domain.MethodDiff{ParentClassName: stu.Name, Sol: nil, Stu: stMethod, Description: "Extra method (" + stMethod.Scope + " " + stMethod.Output + ")"})
-		}
+		report.ExtraDetail.Method = append(report.ExtraDetail.Method, domain.MethodDiff{ParentClassName: stu.Name, Sol: nil, Stu: stMethod, Description: "Extra method (" + stMethod.Scope + " " + stMethod.Output + ")"})
 	}
 }
 

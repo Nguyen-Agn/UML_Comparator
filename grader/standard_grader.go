@@ -3,16 +3,14 @@ package grader
 import (
 	"fmt"
 	"math"
-	"strings"
 	"uml_compare/domain"
 )
 
 // StandardGrader provides the implementation for the default grading rules.
 // Rules:
-// - Attribute or Method (non-getter/setter) = 1 point maximum.
-// - Relation = 2 points maximum.
-// - Node = Method pts + Attribute pts + 1 (if generic) + 1 (per Inheritance/Implementation).
-// Deductions occur for items missing or wrong. Max score represents a perfect match.
+// - Uses the scores assigned during preprocessing (extracted from __d__).
+// - If no score configuration exists, defaults to 1.
+// - Node penalty includes the base node score plus all its attributes and methods scores.
 type StandardGrader struct{}
 
 func NewStandardGrader() *StandardGrader {
@@ -24,34 +22,35 @@ func roundData(val float64) float64 {
 	return math.Round(val*100) / 100
 }
 
-func calculateNodeMaxScore(node *domain.SolutionProcessedNode) float64 {
-	score := 0.0
-
-	// Attribute points
-	score += float64(len(node.Attributes))
-
-	// Method points (exclude getters/setters)
+func calculateNodePenalty(node *domain.SolutionProcessedNode) float64 {
+	penalty := node.Score
+	for _, a := range node.Attributes {
+		penalty += a.Score
+	}
 	for _, m := range node.Methods {
-		// Ensure it's not a getter/setter
-		if m.Type != "getter" && m.Type != "setter" {
-			score += 1.0
+		penalty += m.Score
+	}
+	return penalty
+}
+
+func getEdgeScore(edge *domain.ProcessedEdge, sol *domain.SolutionProcessedUMLGraph) float64 {
+	if edge == nil || sol == nil {
+		return 1.0
+	}
+	srcName, tgtName := edge.SourceID, edge.TargetID
+	for _, n := range sol.Nodes {
+		if n.ID == edge.SourceID {
+			srcName = n.Name
+		}
+		if n.ID == edge.TargetID {
+			tgtName = n.Name
 		}
 	}
-
-	// Generic type points
-	if strings.Contains(node.Name, "<") && strings.Contains(node.Name, ">") {
-		score += 1.0
+	edgeKey := srcName + "::" + tgtName + "::" + edge.RelationType
+	if val, ok := sol.GradingConfig.Edges[edgeKey]; ok {
+		return val
 	}
-
-	// Inheritance
-	if node.Inherits != "" {
-		score += 1.0
-	}
-
-	// Implementations
-	score += float64(len(node.Implements))
-
-	return score
+	return 1.0
 }
 
 func (g *StandardGrader) Grade(report *domain.DiffReport, sol *domain.SolutionProcessedUMLGraph, stu *domain.ProcessedUMLGraph, rule *GradingRules) (*domain.GradeResult, error) {
@@ -59,10 +58,10 @@ func (g *StandardGrader) Grade(report *domain.DiffReport, sol *domain.SolutionPr
 
 	// 1. Calculate MaxScore based on the Solution Graph
 	for _, node := range sol.Nodes {
-		maxScore += calculateNodeMaxScore(&node)
+		maxScore += calculateNodePenalty(&node)
 	}
-	for range sol.Edges {
-		maxScore += 2.0 // Each edge is worth 2 points
+	for _, edge := range sol.Edges {
+		maxScore += getEdgeScore(&edge, sol)
 	}
 
 	totalScore := maxScore
@@ -72,26 +71,35 @@ func (g *StandardGrader) Grade(report *domain.DiffReport, sol *domain.SolutionPr
 	processDetail := func(detail *domain.DetailError, category string) {
 		// Calculate edge omissions
 		for _, e := range detail.Edge {
-			totalScore -= 2.0
-			feedbacks = append(feedbacks, fmt.Sprintf("%s Edge: %s", category, e.Description))
+			penalty := getEdgeScore(e.Sol, sol)
+			totalScore -= penalty
+			feedbacks = append(feedbacks, fmt.Sprintf("%s Edge: %s (Penalty: -%.1f)", category, e.Description, penalty))
 		}
 
 		// Calculate attribute mismatches
 		for _, a := range detail.Attribute {
-			totalScore -= 1.0
-			feedbacks = append(feedbacks, fmt.Sprintf("%s Attribute in %s: %s", category, a.ParentClassName, a.Description))
+			penalty := 1.0
+			if a.Sol != nil {
+				penalty = a.Sol.Score
+			}
+			totalScore -= penalty
+			feedbacks = append(feedbacks, fmt.Sprintf("%s Attribute in %s: %s (Penalty: -%.1f)", category, a.ParentClassName, a.Description, penalty))
 		}
 
 		// Calculate method mismatches
 		for _, m := range detail.Method {
-			totalScore -= 1.0
-			feedbacks = append(feedbacks, fmt.Sprintf("%s Method in %s: %s", category, m.ParentClassName, m.Description))
+			penalty := 1.0
+			if m.Sol != nil {
+				penalty = m.Sol.Score
+			}
+			totalScore -= penalty
+			feedbacks = append(feedbacks, fmt.Sprintf("%s Method in %s: %s (Penalty: -%.1f)", category, m.ParentClassName, m.Description, penalty))
 		}
 
 		// Calculate full node omissions or structural wrong types
 		for _, n := range detail.Class {
 			if n.Sol != nil {
-				penalty := calculateNodeMaxScore(n.Sol)
+				penalty := calculateNodePenalty(n.Sol)
 				totalScore -= penalty
 				feedbacks = append(feedbacks, fmt.Sprintf("%s Node '%s': %s (Penalty: -%.1f)", category, n.Sol.Name, n.Description, penalty))
 			}

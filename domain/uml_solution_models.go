@@ -5,6 +5,16 @@ package domain
 type SolutionProcessedUMLGraph struct {
 	Nodes []SolutionProcessedNode
 	Edges []ProcessedEdge // Reuse existing UMLEdge
+	GradingConfig ScoreConfig
+}
+
+// ScoreConfig maps the entity identifier to its points.
+// Key format: "NodeName", "NodeName::AttributeName", or "NodeName::MethodName"
+type ScoreConfig struct {
+	Nodes      map[string]float64
+	Attributes map[string]float64
+	Methods    map[string]float64
+	Edges      map[string]float64
 }
 
 // SolutionProcessedNode holds OR-aware attributes and methods for a single UML node.
@@ -18,6 +28,7 @@ type SolutionProcessedNode struct {
 	Implements []string // IDs of implemented interfaces (from Realization/Implementation edges)
 	Attributes []SolutionProcessedAttribute
 	Methods    []SolutionProcessedMethod
+	Score      float64  // Point value for this class/node
 }
 
 // SolutionProcessedAttribute supports OR-patterns for both name and type.
@@ -36,6 +47,9 @@ type SolutionProcessedAttribute struct {
 
 	// Kind describes the attribute modifier: "normal", "static", "final", "static-final".
 	Kind string
+
+	// Score is the point value extracted from __d__
+	Score float64
 }
 
 // SolutionProcessedMethod supports OR-patterns for method name and return type.
@@ -64,4 +78,7 @@ type SolutionProcessedMethod struct {
 
 	// Kind describes the method modifier: "normal", "static", "abstract".
 	Kind string
+
+	// Score is the point value extracted from __d__
+	Score float64
 }

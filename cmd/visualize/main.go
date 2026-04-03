@@ -1,5 +1,5 @@
 // cmd/visualize/main.go
-// Usage: go run ./cmd/visualize/main.go <solution.drawio> <student.drawio> [output.html]
+// Usage: go run ./cmd/visualize/main.go [--admin] <solution.drawio> <student.drawio> [output.html]
 // Runs the full pipeline (Parse → Build → Validate → PreMatch → Match → Compare → Grade → Visualize)
 // and exports a self-contained HTML report, then auto-opens it in the default browser.
 package main
@@ -22,25 +22,42 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run ./cmd/visualize/main.go <solution.drawio> <student.drawio> [output.html]")
-		fmt.Println("  Example: go run ./cmd/visualize/main.go UMLs_testcase/problem1.drawio UMLs_testcase/problem_1.drawio")
+	var args []string
+	isAdmin := false
+
+	// Parse flags manually to keep simplicity
+	for _, arg := range os.Args {
+		if arg == "--admin" {
+			isAdmin = true
+		} else {
+			args = append(args, arg)
+		}
+	}
+
+	if len(args) < 3 {
+		fmt.Println("Usage: go run ./cmd/visualize/main.go [--admin] <solution.drawio> <student.drawio> [output.html]")
+		fmt.Println("  Example: go run ./cmd/visualize/main.go --admin UMLs_testcase/problem1.drawio UMLs_testcase/problem_1.drawio")
 		os.Exit(1)
 	}
 
-	solutionPath := os.Args[1]
-	studentPath := os.Args[2]
+	solutionPath := args[1]
+	studentPath := args[2]
 
 	// Determine output path
 	outputPath := ""
-	if len(os.Args) >= 4 {
-		outputPath = os.Args[3]
+	if len(args) >= 4 {
+		outputPath = args[3]
 	} else {
 		baseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
 		outputPath = fmt.Sprintf("report_%s.html", baseName)
 	}
 
 	fmt.Printf("📊 UML Visual Report Generator\n")
+	if isAdmin {
+		fmt.Printf("   Mode:     Admin (Solution View)\n")
+	} else {
+		fmt.Printf("   Mode:     Student (Feedback View)\n")
+	}
 	fmt.Printf("   Solution: %s\n", solutionPath)
 	fmt.Printf("   Student:  %s\n", studentPath)
 	fmt.Printf("   Output:   %s\n\n", outputPath)
@@ -139,7 +156,11 @@ func main() {
 	fmt.Printf("✅ Student report: %s\n", studentOutputPath)
 
 	// ── 9. Auto-open in browser ──────────────────────────────────────────
-	absPath, _ := filepath.Abs(outputPath)
+	targetToOpen := studentOutputPath
+	if isAdmin {
+		targetToOpen = outputPath
+	}
+	absPath, _ := filepath.Abs(targetToOpen)
 	openBrowser(absPath)
 }
 

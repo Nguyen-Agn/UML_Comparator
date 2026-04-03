@@ -62,6 +62,13 @@ set "OUT_PATH="
 set /p OUT_PATH="  [3/3] Output .html name (Enter = auto): "
 echo.
 
+if not "!OUT_PATH!"=="" (
+    echo !OUT_PATH! | findstr /i "\.html$" >nul
+    if errorlevel 1 (
+        set "OUT_PATH=!OUT_PATH!.html"
+    )
+)
+
 :: -- Confirm --
 echo  --------------------------------------------------------
 echo   Solution : !SOL_PATH!
@@ -80,11 +87,12 @@ echo.
 echo   Running visualize.exe ...
 echo.
 
-if "!OUT_PATH!"=="" (
-    visualize.exe "!SOL_PATH!" "!STU_PATH!"
-) else (
-    visualize.exe "!SOL_PATH!" "!STU_PATH!" "!OUT_PATH!"
+set "CMD_ARGS="!SOL_PATH!" "!STU_PATH!""
+if not "!OUT_PATH!"=="" (
+    set "CMD_ARGS=!CMD_ARGS! "!OUT_PATH!""
 )
+
+visualize.exe !CMD_ARGS!
 
 if errorlevel 1 (
     echo.

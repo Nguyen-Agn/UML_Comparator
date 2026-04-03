@@ -29,6 +29,7 @@ type UMLEdge struct {
 	RelationType string // e.g., "Inheritance", "Association"
 	SourceLabel  string
 	TargetLabel  string
+	Note         string // __1__
 }
 
 // NodeDiff represents a difference at the node level.
