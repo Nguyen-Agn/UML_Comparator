@@ -294,7 +294,7 @@ func (v *HTMLVisualizer) buildStudentRelations(result *domain.GradeResult) []rel
 		edge := edgeFromDiff(&e)
 		rels = append(rels, relationView{
 			Source: nameOf(edge.SourceID), Target: nameOf(edge.TargetID),
-			RelType: edge.RelationType, Status: "correct", Icon: "✅",
+			RelType: edge.RelationType, Status: "correct",
 		})
 	}
 
@@ -303,7 +303,7 @@ func (v *HTMLVisualizer) buildStudentRelations(result *domain.GradeResult) []rel
 		edge := edgeFromDiff(&e)
 		rels = append(rels, relationView{
 			Source: nameOf(edge.SourceID), Target: nameOf(edge.TargetID),
-			RelType: edge.RelationType, Status: "wrong", Icon: "⚠️",
+			RelType: edge.RelationType, Status: "wrong",
 		})
 	}
 
@@ -312,7 +312,7 @@ func (v *HTMLVisualizer) buildStudentRelations(result *domain.GradeResult) []rel
 		if e.Stu != nil {
 			rels = append(rels, relationView{
 				Source: nameOf(e.Stu.SourceID), Target: nameOf(e.Stu.TargetID),
-				RelType: e.Stu.RelationType, Status: "extra", Icon: "💡",
+				RelType: e.Stu.RelationType, Status: "extra",
 			})
 		}
 	}
@@ -354,7 +354,7 @@ func (v *HTMLVisualizer) buildRelations(result *domain.GradeResult) []relationVi
 		edge := edgeFromDiff(&e)
 		rels = append(rels, relationView{
 			Source: nameOf(edge.SourceID), Target: nameOf(edge.TargetID),
-			RelType: edge.RelationType, Status: "correct", Icon: "✅",
+			RelType: edge.RelationType, Status: "correct",
 		})
 	}
 
@@ -363,7 +363,7 @@ func (v *HTMLVisualizer) buildRelations(result *domain.GradeResult) []relationVi
 		edge := edgeFromDiff(&e)
 		rels = append(rels, relationView{
 			Source: nameOf(edge.SourceID), Target: nameOf(edge.TargetID),
-			RelType: edge.RelationType, Status: "wrong", Icon: "⚠️",
+			RelType: edge.RelationType, Status: "wrong",
 			Note: e.Description,
 		})
 	}
@@ -373,7 +373,7 @@ func (v *HTMLVisualizer) buildRelations(result *domain.GradeResult) []relationVi
 		if e.Sol != nil {
 			rels = append(rels, relationView{
 				Source: nameOf(e.Sol.SourceID), Target: nameOf(e.Sol.TargetID),
-				RelType: e.Sol.RelationType, Status: "missing", Icon: "❌",
+				RelType: e.Sol.RelationType, Status: "missing",
 				Note: "Missing in student",
 			})
 		}
@@ -384,7 +384,7 @@ func (v *HTMLVisualizer) buildRelations(result *domain.GradeResult) []relationVi
 		if e.Stu != nil {
 			rels = append(rels, relationView{
 				Source: nameOf(e.Stu.SourceID), Target: nameOf(e.Stu.TargetID),
-				RelType: e.Stu.RelationType, Status: "extra", Icon: "➕",
+				RelType: e.Stu.RelationType, Status: "extra",
 				Note: "Extra in student",
 			})
 		}

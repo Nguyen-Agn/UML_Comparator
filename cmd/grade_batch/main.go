@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
 	"uml_compare/builder"
 	"uml_compare/comparator"
 	"uml_compare/domain"
@@ -16,38 +20,48 @@ import (
 )
 
 func main() {
+	if len(os.Args) <= 1 {
+		fmt.Printf("📊 UML Batch Grader (Teacher Mode)\n")
+		fmt.Printf("   Tip: Drag & drop the folder here for student submissions!\n\n")
+		runBatchInteractiveLoop()
+		return
+	}
+
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run ./cmd/grade_batch/main.go <solution.drawio> <student_dir>")
-		fmt.Println("  Example: go run ./cmd/grade_batch/main.go UMLs_testcase/problem1.drawio UMLs_testcase/students")
+		fmt.Println("Usage: lecture_cli_parallel.exe <solution.drawio> <student_dir> [report.csv]")
 		os.Exit(1)
 	}
 
 	solutionPath := os.Args[1]
 	studentDir := os.Args[2]
+	outputPath := "batch_report.csv"
+	if len(os.Args) >= 4 {
+		outputPath = os.Args[3]
+	}
 
-	fmt.Println("Loading solution file...")
+	if err := runBatchGrading(solutionPath, studentDir, outputPath); err != nil {
+		fmt.Printf("\n❌ Batch Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// runBatchGrading executes the grading pipeline for all files in a folder in parallel.
+func runBatchGrading(solutionPath, studentDir, outputPath string) error {
+	fmt.Printf("⏳ Loading solution from %s...\n", filepath.Base(solutionPath))
 	solutionGraph := loadGraph(solutionPath)
 	if solutionGraph == nil {
-		fmt.Printf("Failed to load solution from %s\n", solutionPath)
-		os.Exit(1)
+		return fmt.Errorf("failed to load solution graph")
 	}
 
-	// Integrity Check for Solution
+	// Integrity Check
 	solErrs := domain.ValidateGraph(solutionGraph, "Solution")
-	hardErrors := domain.FilterErrors(solErrs)
-	if len(hardErrors) > 0 {
-		fmt.Println("Integrity errors in solution file:")
-		for _, e := range hardErrors {
-			fmt.Printf(" - %s\n", e.Error())
-		}
-		os.Exit(1)
+	if len(domain.FilterErrors(solErrs)) > 0 {
+		return fmt.Errorf("solution has integrity errors (check logs)")
 	}
 
-	// Prepare Matcher & Comparator instances
+	// Prepare Toolchain (Immutable components shared across threads)
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
-	
-	// Create solution processed graphs for matching and grading
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 	
 	fuzzy := matcher.NewLevenshteinMatcher()
@@ -57,61 +71,95 @@ func main() {
 	mc := comparator.NewStandardMemberComparator(fuzzy, ta)
 	ec := comparator.NewStandardEdgeComparator()
 	comp := comparator.NewStandardComparator(fuzzy, ta, mc, ec)
-	
 	gr := grader.NewStandardGrader()
-	rules := &grader.GradingRules{} // Use default rules
-	
+	rules := &grader.GradingRules{}
+
 	batchResult := &report.BatchGradeResult{
 		SolutionPath:   solutionPath,
 		StudentResults: make(map[string]*domain.GradeResult),
 	}
 
-	// Process directory
-	fmt.Printf("Scanning directory %s for .drawio files...\n", studentDir)
+	// Scan directory
 	entries, err := os.ReadDir(studentDir)
 	if err != nil {
-		fmt.Printf("Failed to read directory: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("cannot read directory: %w", err)
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".drawio") {
-			continue
+	var studentFiles []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".drawio") {
+			studentFiles = append(studentFiles, e.Name())
 		}
-
-		studentPath := filepath.Join(studentDir, entry.Name())
-		fmt.Printf("Processing %s... ", entry.Name())
-
-		studentGraph := loadGraph(studentPath)
-		if studentGraph == nil {
-			fmt.Println("❌ Load failed")
-			continue
-		}
-		
-		stuErrs := domain.ValidateGraph(studentGraph, "Student")
-		if len(domain.FilterErrors(stuErrs)) > 0 {
-			fmt.Println("❌ Validation failed")
-			// Depending on requirements, we might skip or still grade with warnings
-			// For batch grading, we'll continue and maybe it scores poorly.
-		}
-
-		stuProc, _ := stdPM.Process(studentGraph)
-		mapping, _ := entityMatcher.Match(solForMatch, stuProc)
-		diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
-		gradeResult, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
-
-		batchResult.StudentResults[entry.Name()] = gradeResult
-		fmt.Println("✅ Done")
 	}
 
-	// Generate CSV Report
-	csvRep := report.NewCSVReporter("batch_report.csv")
-	err = csvRep.GenerateReport(batchResult)
-	if err != nil {
-		fmt.Printf("CSV Reporter error: %v\n", err)
-	} else {
-		fmt.Println("Ghi file batch_report.csv thành công!")
+	if len(studentFiles) == 0 {
+		return fmt.Errorf("no .drawio files found in %s", studentDir)
 	}
+
+	fmt.Printf("🚀 Processing %d submissions using Parallel Pipeline...\n", len(studentFiles))
+	
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	startTime := time.Now()
+
+	for _, filename := range studentFiles {
+		wg.Add(1)
+		go func(fname string) {
+			defer wg.Done()
+			
+			stuPath := filepath.Join(studentDir, fname)
+			stuGraph := loadGraph(stuPath)
+			if stuGraph == nil {
+				fmt.Printf("  [!] %s: Failed to load\n", fname)
+				return
+			}
+
+			stuProc, _ := stdPM.Process(stuGraph)
+			mapping, _ := entityMatcher.Match(solForMatch, stuProc)
+			diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
+			res, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
+
+			mu.Lock()
+			batchResult.StudentResults[fname] = res
+			mu.Unlock()
+			fmt.Printf("  [✓] %s: %.1f%%\n", fname, res.CorrectPercent)
+		}(filename)
+	}
+
+	wg.Wait()
+	duration := time.Since(startTime)
+	fmt.Printf("\n✨ Finished grading in %v.\n", duration)
+
+	// Save CSV
+	if !strings.HasSuffix(strings.ToLower(outputPath), ".csv") {
+		outputPath += ".csv"
+	}
+	csvRep := report.NewCSVReporter(outputPath)
+	if err := csvRep.GenerateReport(batchResult); err != nil {
+		return fmt.Errorf("CSV export failed: %w", err)
+	}
+
+	fmt.Printf("📁 Report saved to: %s\n", outputPath)
+	
+	// Open CSV automatically
+	absPath, _ := filepath.Abs(outputPath)
+	openFile(absPath)
+
+	return nil
+}
+
+// openFile uses the OS system call to open a file with its default application
+func openFile(path string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default:
+		cmd = exec.Command("xdg-open", path)
+	}
+	_ = cmd.Start()
 }
 
 func loadGraph(filePath string) *domain.UMLGraph {

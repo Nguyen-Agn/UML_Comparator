@@ -10,74 +10,86 @@ const studentHTMLTemplate = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UML Feedback Report — {{printf "%.1f" .Percent}}%</title>
 <style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
   /* ── Reset & Base ─────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: #0f0f1a;
-    color: #e0e0e0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #16202b;
     line-height: 1.6;
-    padding: 2rem;
-    max-width: 860px;
+    padding: 3rem 1rem;
+    max-width: 960px;
     margin: 0 auto;
   }
 
   /* ── Header ───────────────────────────────────── */
   .report-header {
     text-align: center;
-    padding: 2.5rem 1rem 2rem;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    border-radius: 16px;
-    margin-bottom: 2rem;
-    border: 1px solid #2a2a4a;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    padding: 3rem 2rem;
+    background: #ffffff;
+    border-radius: 20px;
+    margin-bottom: 2.5rem;
+    border: 1px solid rgba(22, 32, 43, 0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .report-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #720f32, #114665);
   }
   .report-header h1 {
-    font-size: 1.6rem;
-    font-weight: 700;
-    background: linear-gradient(90deg, #e0e0e0, #7eb8da);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #16202b;
     margin-bottom: 0.6rem;
+    letter-spacing: -0.02em;
   }
   .report-header .subtitle {
-    font-size: 0.85rem;
-    color: #888;
-    margin-bottom: 1.2rem;
+    font-size: 0.9rem;
+    color: #7b445a;
+    margin-bottom: 1.5rem;
   }
   .score-display {
-    font-size: 2.8rem;
+    font-size: 3.5rem;
     font-weight: 800;
     margin: 0.5rem 0;
+    letter-spacing: -0.04em;
   }
-  .score-green  { color: #82b366; }
+  .score-green  { color: #10b981; }
   .score-yellow { color: #d79b00; }
-  .score-red    { color: #b85450; }
+  .score-red    { color: #720f32; }
   .progress-wrap {
-    width: 300px;
-    height: 14px;
-    background: #2a2a3a;
-    border-radius: 7px;
-    margin: 1rem auto 0;
+    width: 340px;
+    height: 12px;
+    background: #edf2f7;
+    border-radius: 10px;
+    margin: 1.5rem auto 0;
     overflow: hidden;
   }
   .progress-fill {
     height: 100%;
-    border-radius: 7px;
-    transition: width 1s ease;
+    border-radius: 10px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .fill-green  { background: linear-gradient(90deg, #82b366, #a8d98a); }
-  .fill-yellow { background: linear-gradient(90deg, #d79b00, #f0c040); }
-  .fill-red    { background: linear-gradient(90deg, #b85450, #e07070); }
+  .fill-green  { background: #10b981; }
+  .fill-yellow { background: #d79b00; }
+  .fill-red    { background: #720f32; }
 
   /* ── Legend ────────────────────────────────────── */
   .legend {
     display: flex;
     justify-content: center;
-    gap: 1.5rem;
-    margin: 1.5rem 0;
-    font-size: 0.78rem;
-    color: #888;
+    gap: 2rem;
+    margin: 2rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #7b445a;
   }
   .legend-item {
     display: flex;
@@ -89,40 +101,42 @@ const studentHTMLTemplate = `<!DOCTYPE html>
     height: 10px;
     border-radius: 3px;
   }
-  .dot-correct { background: #82b366; }
-  .dot-wrong   { background: #d79b00; }
-  .dot-extra   { background: #7eb8da; }
+  .dot-correct { background: #10b981; }
+  .dot-wrong   { background: #720f32; }
+  .dot-extra   { background: #114665; }
 
   /* ── Section Container ────────────────────────── */
   .section {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    background: #ffffff;
+    border: 1px solid rgba(22, 32, 43, 0.08);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   }
   .section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #2a2a4a;
-    color: #7eb8da;
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #f1f5f9;
+    color: #114665;
+    letter-spacing: -0.01em;
   }
 
   /* ── Node Card ────────────────────────────────── */
   .node-card {
-    background: #12121f;
-    border: 1px solid #2a2a4a;
-    border-radius: 10px;
-    margin-bottom: 0.8rem;
+    background: #f8fafc;
+    border: 1px solid rgba(22, 32, 43, 0.06);
+    border-radius: 12px;
+    margin-bottom: 1rem;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
   }
   .node-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    border-color: #114665;
   }
   .node-name {
     padding: 0.6rem 1rem;
@@ -142,10 +156,10 @@ const studentHTMLTemplate = `<!DOCTYPE html>
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .badge-class     { background: #16213e; color: #7eb8da; }
-  .badge-interface { background: #2e1a2e; color: #da7eb8; }
-  .badge-abstract  { background: #2e2e1a; color: #b8da7e; }
-  .badge-enum      { background: #1a2e2e; color: #7edab8; }
+  .badge-class     { background: #114665; color: white; }
+  .badge-interface { background: #720f32; color: white; }
+  .badge-abstract  { background: #7b445a; color: white; }
+  .badge-enum      { background: #16202b; color: white; }
 
   .member-list {
     padding: 0.4rem 0;
@@ -169,11 +183,11 @@ const studentHTMLTemplate = `<!DOCTYPE html>
   .member-item:hover {
     background: rgba(255,255,255,0.03);
   }
-  .status-correct { border-left-color: #82b366; color: #a8d98a; }
-  .status-wrong   { border-left-color: #d79b00; color: #f0c040; }
-  .status-missing { border-left-color: #b85450; color: #e07070; }
-  .status-extra   { border-left-color: #7eb8da; color: #9ed0ee; font-style: italic; }
-  .status-neutral { border-left-color: #444; color: #999; }
+  .status-correct { border-left-color: #10b981; color: #065f46; background: rgba(16, 185, 129, 0.04); }
+  .status-wrong   { border-left-color: #720f32; color: #720f32; background: rgba(114, 15, 50, 0.04); }
+  .status-missing { border-left-color: #720f32; color: #720f32; background: rgba(114, 15, 50, 0.04); }
+  .status-extra   { border-left-color: #114665; color: #114665; font-style: italic; background: rgba(17, 70, 101, 0.04); }
+  .status-neutral { border-left-color: #cbd5e1; color: #64748b; }
 
   /* ── Relation Row ─────────────────────────────── */
   .relation-row {
@@ -188,9 +202,9 @@ const studentHTMLTemplate = `<!DOCTYPE html>
     transition: background 0.15s;
   }
   .relation-row:hover { background: rgba(255,255,255,0.03); }
-  .rel-correct { border-left: 3px solid #82b366; }
-  .rel-wrong   { border-left: 3px solid #d79b00; }
-  .rel-extra   { border-left: 3px solid #7eb8da; font-style: italic; }
+  .rel-correct { border-left: 4px solid #10b981; }
+  .rel-wrong   { border-left: 4px solid #720f32; }
+  .rel-extra   { border-left: 4px solid #114665; font-style: italic; }
   .rel-icon { font-size: 1rem; }
   .rel-type-tag {
     display: inline-block;
@@ -203,16 +217,16 @@ const studentHTMLTemplate = `<!DOCTYPE html>
 
   /* ── Hint Box ─────────────────────────────────── */
   .hint-box {
-    background: rgba(126,184,218,0.08);
-    border: 1px solid #2a3a4a;
-    border-radius: 10px;
-    padding: 1.2rem 1.5rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.82rem;
-    color: #9ab8d0;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    color: #475569;
     line-height: 1.7;
   }
-  .hint-box strong { color: #7eb8da; }
+  .hint-box strong { color: #114665; }
 
   /* ── Footer ───────────────────────────────────── */
   .report-footer {
@@ -233,12 +247,11 @@ const studentHTMLTemplate = `<!DOCTYPE html>
 
 <!-- ═══ HEADER ═══ -->
 <div class="report-header">
-  <h1>📋 UML Diagram Feedback</h1>
+  <h1> UML Diagram Feedback</h1>
   <div class="subtitle">Your submission has been automatically checked</div>
   <div class="score-display {{.ScoreClass}}">
     {{printf "%.1f" .Percent}}%
   </div>
-  <div style="font-size:0.9rem; color:#888;">{{printf "%.2f" .Score}} / {{printf "%.2f" .MaxScore}} points</div>
   <div class="progress-wrap">
     <div class="progress-fill {{.FillClass}}" style="width:{{printf "%.1f" .Percent}}%"></div>
   </div>
@@ -257,7 +270,7 @@ const studentHTMLTemplate = `<!DOCTYPE html>
   Items marked in <span style="color:#a8d98a">green</span> are correct. 
   Items in <span style="color:#f0c040">yellow</span> have issues (wrong type, scope, or name). 
   Items in <span style="color:#9ed0ee">blue italic</span> were not expected in the solution.
-  Items you are <strong>missing</strong> are not shown here — review your diagram carefully.
+  Items you are <strong>missing</strong> are not shown here, review your diagram carefully.
 </div>
 
 <!-- ═══ YOUR CLASSES ═══ -->
@@ -294,9 +307,14 @@ const studentHTMLTemplate = `<!DOCTYPE html>
   <div class="section-title">Your Relations</div>
   {{range .Relations}}
   <div class="relation-row rel-{{.Status}}">
-    <span class="rel-icon">{{.Icon}}</span>
+    <span class="rel-icon">
+      {{if eq .Status "correct"}}<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      {{else if eq .Status "wrong"}}<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="3" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      {{else if eq .Status "extra"}}<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="3" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="12" x2="16" y2="12"></line><line x1="12" y1="8" x2="12" y2="16"></line></svg>
+      {{end}}
+    </span>
     <span>{{.Source}}</span>
-    <span style="color:#555">──▷</span>
+    <span style="color:#cbd5e1">──▷</span>
     <span>{{.Target}}</span>
     <span class="rel-type-tag">{{.RelType}}</span>
   </div>
@@ -306,7 +324,7 @@ const studentHTMLTemplate = `<!DOCTYPE html>
 </div>
 
 <div class="report-footer">
-  Generated by UML Comparator • {{.Timestamp}}
+  Generated by UML Comparator {{.Timestamp}}
 </div>
 
 </body>

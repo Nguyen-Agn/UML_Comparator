@@ -12,78 +12,92 @@ const htmlTemplate = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UML Grading Report — {{.Percent}}%</title>
 <style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
   /* ── Reset & Base ─────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: #0f0f1a;
-    color: #e0e0e0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #16202b;
     line-height: 1.6;
-    padding: 2rem;
+    padding: 3rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
   }
-  a { color: #7eb8da; }
+  a { color: #114665; }
 
   /* ── Header ───────────────────────────────────── */
   .report-header {
     text-align: center;
-    padding: 2rem 1rem 1.5rem;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    border-radius: 16px;
-    margin-bottom: 2rem;
-    border: 1px solid #2a2a4a;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    padding: 3rem 2rem;
+    background: #ffffff;
+    border-radius: 20px;
+    margin-bottom: 2.5rem;
+    border: 1px solid rgba(22, 32, 43, 0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .report-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #720f32, #114665);
   }
   .report-header h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    background: linear-gradient(90deg, #e0e0e0, #7eb8da);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #16202b;
+    letter-spacing: -0.02em;
     margin-bottom: 0.8rem;
   }
   .score-display {
-    font-size: 2.4rem;
+    font-size: 3rem;
     font-weight: 800;
     margin: 0.5rem 0;
+    letter-spacing: -0.04em;
   }
-  .score-green  { color: #82b366; }
+  .score-green  { color: #10b981; }
   .score-yellow { color: #d79b00; }
-  .score-red    { color: #b85450; }
+  .score-red    { color: #720f32; }
 
   /* ── Progress Bar ─────────────────────────────── */
   .progress-wrap {
-    width: 320px;
+    width: 380px;
     height: 12px;
-    background: #2a2a3a;
-    border-radius: 6px;
-    margin: 0.8rem auto 0;
+    background: #edf2f7;
+    border-radius: 10px;
+    margin: 1.5rem auto 0;
     overflow: hidden;
   }
   .progress-fill {
     height: 100%;
-    border-radius: 6px;
-    transition: width 1s ease;
+    border-radius: 10px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .fill-green  { background: linear-gradient(90deg, #82b366, #a8d98a); }
-  .fill-yellow { background: linear-gradient(90deg, #d79b00, #f0c040); }
-  .fill-red    { background: linear-gradient(90deg, #b85450, #e07070); }
+  .fill-green  { background: #10b981; }
+  .fill-yellow { background: #d79b00; }
+  .fill-red    { background: #720f32; }
 
   /* ── Section Container ────────────────────────── */
   .section {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    background: #ffffff;
+    border: 1px solid rgba(22, 32, 43, 0.08);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   }
   .section-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #2a2a4a;
-    color: #7eb8da;
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #f1f5f9;
+    color: #114665;
+    letter-spacing: -0.01em;
   }
 
   /* ── Two-Column Grid ──────────────────────────── */
@@ -100,21 +114,21 @@ const htmlTemplate = `<!DOCTYPE html>
     margin-bottom: 0.8rem;
     text-align: center;
   }
-  .col-student  .col-header { background: #16213e; color: #7eb8da; }
-  .col-solution .col-header { background: #1a2e1a; color: #82b366; }
+  .col-student  .col-header { background: #f1f5f9; color: #114665; }
+  .col-solution .col-header { background: rgba(114, 15, 50, 0.05); color: #720f32; }
 
   /* ── Node Card ────────────────────────────────── */
   .node-card {
-    background: #12121f;
-    border: 1px solid #2a2a4a;
-    border-radius: 10px;
-    margin-bottom: 0.8rem;
+    background: #f8fafc;
+    border: 1px solid rgba(22, 32, 43, 0.06);
+    border-radius: 12px;
+    margin-bottom: 1rem;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
   }
   .node-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
   }
   .node-name {
     padding: 0.6rem 1rem;
@@ -134,10 +148,10 @@ const htmlTemplate = `<!DOCTYPE html>
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .badge-class     { background: #16213e; color: #7eb8da; }
-  .badge-interface { background: #2e1a2e; color: #da7eb8; }
-  .badge-abstract  { background: #2e2e1a; color: #b8da7e; }
-  .badge-enum      { background: #1a2e2e; color: #7edab8; }
+  .badge-class     { background: #114665; color: white; }
+  .badge-interface { background: #720f32; color: white; }
+  .badge-abstract  { background: #7b445a; color: white; }
+  .badge-enum      { background: #16202b; color: white; }
 
   .member-list {
     padding: 0.4rem 0;
@@ -161,11 +175,11 @@ const htmlTemplate = `<!DOCTYPE html>
   .member-item:hover {
     background: rgba(255,255,255,0.03);
   }
-  .status-correct { border-left-color: #82b366; color: #a8d98a; }
-  .status-wrong   { border-left-color: #d79b00; color: #f0c040; }
-  .status-missing { border-left-color: #b85450; color: #e07070; }
-  .status-extra   { border-left-color: #b85450; color: #e07070; font-style: italic; }
-  .status-neutral { border-left-color: #444; color: #999; }
+  .status-correct { border-left-color: #10b981; color: #065f46; background: rgba(16, 185, 129, 0.04); }
+  .status-wrong   { border-left-color: #720f32; color: #720f32; background: rgba(114, 15, 50, 0.04); }
+  .status-missing { border-left-color: #720f32; color: #720f32; background: rgba(114, 15, 50, 0.04); }
+  .status-extra   { border-left-color: #114665; color: #114665; font-style: italic; background: rgba(17, 70, 101, 0.04); }
+  .status-neutral { border-left-color: #cbd5e1; color: #64748b; }
 
   /* ── Relation Row ─────────────────────────────── */
   .relation-row {
@@ -180,10 +194,10 @@ const htmlTemplate = `<!DOCTYPE html>
     transition: background 0.15s;
   }
   .relation-row:hover { background: rgba(255,255,255,0.03); }
-  .rel-correct { border-left: 3px solid #82b366; }
-  .rel-missing { border-left: 3px solid #b85450; }
-  .rel-wrong   { border-left: 3px solid #d79b00; }
-  .rel-extra   { border-left: 3px solid #b85450; font-style: italic; }
+  .rel-correct { border-left: 4px solid #10b981; }
+  .rel-missing { border-left: 4px solid #720f32; opacity: 0.6; }
+  .rel-wrong   { border-left: 4px solid #d79b00; }
+  .rel-extra   { border-left: 4px solid #114665; font-style: italic; }
   .rel-icon { font-size: 1rem; }
   .rel-type-tag {
     display: inline-block;
@@ -220,14 +234,14 @@ const htmlTemplate = `<!DOCTYPE html>
     color: #888;
     margin-top: 0.3rem;
   }
-  .card-correct  { background: rgba(130,179,102,0.1); }
-  .card-correct  .stat-value { color: #82b366; }
-  .card-missing  { background: rgba(184,84,80,0.1); }
-  .card-missing  .stat-value { color: #b85450; }
-  .card-wrong    { background: rgba(215,155,0,0.1); }
+  .card-correct  { background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.1); }
+  .card-correct  .stat-value { color: #10b981; }
+  .card-missing  { background: rgba(114,15,50,0.05); border-color: rgba(114,15,50,0.1); }
+  .card-missing  .stat-value { color: #720f32; }
+  .card-wrong    { background: rgba(215,155,0,0.05); border-color: rgba(215,155,0,0.1); }
   .card-wrong    .stat-value { color: #d79b00; }
-  .card-extra    { background: rgba(126,184,218,0.1); }
-  .card-extra    .stat-value { color: #7eb8da; }
+  .card-extra    { background: rgba(17,70,101,0.05); border-color: rgba(17,70,101,0.1); }
+  .card-extra    .stat-value { color: #114665; }
 
   /* ── Feedbacks ────────────────────────────────── */
   .feedback-list {
@@ -235,12 +249,12 @@ const htmlTemplate = `<!DOCTYPE html>
     padding: 0;
   }
   .feedback-item {
-    padding: 0.5rem 1rem;
-    margin-bottom: 0.3rem;
-    border-radius: 6px;
-    background: rgba(184,84,80,0.08);
-    border-left: 3px solid #b85450;
-    font-size: 0.82rem;
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 0.5rem;
+    border-radius: 10px;
+    background: rgba(114, 15, 50, 0.03);
+    border-left: 4px solid #720f32;
+    font-size: 0.85rem;
     font-family: 'Cascadia Code', 'Consolas', monospace;
   }
 
@@ -344,12 +358,18 @@ const htmlTemplate = `<!DOCTYPE html>
   <div class="section-title">🔗 Relations</div>
   {{range .Relations}}
   <div class="relation-row rel-{{.Status}}">
-    <span class="rel-icon">{{.Icon}}</span>
+    <span class="rel-icon">
+      {{if eq .Status "correct"}}<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      {{else if eq .Status "wrong"}}<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      {{else if eq .Status "missing"}}<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      {{else if eq .Status "extra"}}<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="12" x2="16" y2="12"></line><line x1="12" y1="8" x2="12" y2="16"></line></svg>
+      {{end}}
+    </span>
     <span>{{.Source}}</span>
-    <span style="color:#555">──▷</span>
+    <span style="color:#cbd5e1">──▷</span>
     <span>{{.Target}}</span>
     <span class="rel-type-tag">{{.RelType}}</span>
-    {{if .Note}}<span style="color:#888; font-size:0.75rem; margin-left:auto;">{{.Note}}</span>{{end}}
+    {{if .Note}}<span class="rel-note">{{.Note}}</span>{{end}}
   </div>
   {{else}}
   <div style="color:#666; text-align:center; padding:1rem;">No relations found</div>

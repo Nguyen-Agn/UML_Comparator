@@ -22,10 +22,18 @@ import (
 )
 
 func main() {
-	var args []string
-	isAdmin := false
+	// If no arguments, enter INTERACTIVE mode (replaces the .bat file)
+	if len(os.Args) <= 1 {
+		fmt.Printf("📊 UML Visual Report Generator (Interactive Mode)\n")
+		fmt.Printf("   Tip: You can also drag & drop files here!\n\n")
+		runInteractiveLoop()
+		return
+	}
 
-	// Parse flags manually to keep simplicity
+	isAdmin := false
+	var args []string
+
+	// Parse flags manually
 	for _, arg := range os.Args {
 		if arg == "--admin" {
 			isAdmin = true
@@ -35,8 +43,7 @@ func main() {
 	}
 
 	if len(args) < 3 {
-		fmt.Println("Usage: go run ./cmd/visualize/main.go [--admin] <solution.drawio> <student.drawio> [output.html]")
-		fmt.Println("  Example: go run ./cmd/visualize/main.go --admin UMLs_testcase/problem1.drawio UMLs_testcase/problem_1.drawio")
+		fmt.Println("Usage: visualize_cli.exe [--admin] <solution.drawio> <student.drawio> [output.html]")
 		os.Exit(1)
 	}
 
@@ -47,20 +54,16 @@ func main() {
 	outputPath := ""
 	if len(args) >= 4 {
 		outputPath = args[3]
-	} else {
-		baseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
-		outputPath = fmt.Sprintf("report_%s.html", baseName)
 	}
 
-	fmt.Printf("📊 UML Visual Report Generator\n")
-	if isAdmin {
-		fmt.Printf("   Mode:     Admin (Solution View)\n")
-	} else {
-		fmt.Printf("   Mode:     Student (Feedback View)\n")
+	if err := runComparison(solutionPath, studentPath, outputPath, isAdmin); err != nil {
+		fmt.Printf("\n❌ Error: %v\n", err)
+		os.Exit(1)
 	}
-	fmt.Printf("   Solution: %s\n", solutionPath)
-	fmt.Printf("   Student:  %s\n", studentPath)
-	fmt.Printf("   Output:   %s\n\n", outputPath)
+}
+
+// runComparison encapsulates the full grading and visualization pipeline.
+func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) error {
 
 	// ── 1. Parse ─────────────────────────────────────────────────────────
 	p := parser.NewDrawioParser()
@@ -139,29 +142,38 @@ func main() {
 	// ── 8. Visualize ─────────────────────────────────────────────────────
 	vis := visualizer.NewHTMLVisualizer()
 
-	// 8a. Full grader report (with solution + summary)
+	// Ensure output path has .html
+	if outputPath == "" {
+		baseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
+		outputPath = fmt.Sprintf("report_%s.html", baseName)
+	}
+	if !strings.HasSuffix(strings.ToLower(outputPath), ".html") {
+		outputPath += ".html"
+	}
+
+	// 8a. Full grader report
 	if err := vis.ExportHTML(gradeResult, outputPath); err != nil {
-		fmt.Printf("❌ Export error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("export error: %w", err)
 	}
 	fmt.Printf("✅ Grader report:  %s\n", outputPath)
 
-	// 8b. Student-facing feedback report (no solution, no deduction details)
+	// 8b. Student report
 	stuBaseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
 	studentOutputPath := fmt.Sprintf("feedback_%s.html", stuBaseName)
 	if err := vis.ExportStudentHTML(gradeResult, studentOutputPath); err != nil {
-		fmt.Printf("❌ Student report export error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("student report export error: %w", err)
 	}
 	fmt.Printf("✅ Student report: %s\n", studentOutputPath)
 
-	// ── 9. Auto-open in browser ──────────────────────────────────────────
+	// ── 9. Auto-open ─────────────────────────────────────────────────────
 	targetToOpen := studentOutputPath
 	if isAdmin {
 		targetToOpen = outputPath
 	}
 	absPath, _ := filepath.Abs(targetToOpen)
 	openBrowser(absPath)
+
+	return nil
 }
 
 // openBrowser opens the given file path in the default browser.

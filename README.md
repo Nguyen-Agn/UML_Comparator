@@ -8,13 +8,16 @@ Dự án cung cấp khả năng so sánh chi tiết giữa bản vẽ **Đáp á
 
 ## 🎨 Tính năng chính
 
-- **So sánh trực quan (Visual Side-by-Side):** Hiển thị bảng so sánh hai bên với mã màu ANSI (Xanh/Vàng/Đỏ) để nhận diện nhanh sự khác biệt.
-- **Thuật toán Matching thông minh:** Sử dụng *Levenshtein Distance* để nhận diện các Class/Actor ngay cả khi sinh viên gõ sai tên (Typo).
-- **Phân tích chi tiết thành phần:** So sánh tỉ mỉ từng Thuộc tính (Attributes) và Phương thức (Methods), bao gồm cả Constructor và Getter/Setter.
-- **Kiểm tra mối quan hệ (Edges):** Nhận diện các liên kết (Inheritance, Association, Aggregation...) và phát hiện các lỗi như mũi tên ngược chiều.
-- **Chấm điểm tự động (Grading):** Tính điểm dựa trên số lượng thành phần đúng/sai/thiếu, xuất điểm + phần trăm.
-- **Báo cáo HTML trực quan (Visualizer):** Xuất file `.html` self-contained với giao diện dark theme, hiển thị side-by-side Student vs Solution, color-coded từng member, và bảng tổng kết.
-- **Tính di động cực cao:** Build ra một file thực thi duy nhất (`.exe`), chạy ngay mà không cần cài đặt môi trường Go hay Java.
+
+![USAGE](USAGE_GUIDE.md)
+
+
+### C. SVG Icons
+Biểu tượng trạng thái sử dụng chuẩn Vector (SVG) để đảm bảo độ sắc nét:
+- 🟢 **Correct** (Checkmark): Khớp hoàn toàn.
+- 🔴 **Wrong** (Alert): Tốn tại nhưng sai thông tin.
+- 🔴 **Missing** (X-Mark): Thiếu so với đáp án.
+- 🔵 **Extra** (Plus): Thừa so với đáp án.
 
 ---
 
@@ -30,10 +33,10 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 | **Matcher** | So khớp các node giữa hai bản vẽ dựa trên độ tương đồng văn bản (Mapping). |
 | **Comparator** | So sánh chi tiết thuộc tính, phương thức và các liên kết mũi tên. |
 | **Grader** | Tính điểm dựa trên DiffReport: attribute/method/edge/node scoring. |
-| **Visualizer** | Xuất báo cáo HTML self-contained với dark theme và color-coded status. |
+| **Visualizer** | Xuất báo cáo HTML "Dawn's Berry" với icon SVG và mã màu đồng bộ. |
+| **GUI Layer** | Lớp giao diện người dùng (Lorca) giúp thao tác chọn file và xem kết quả trực quan. |
+| **CLI Layer** | Lớp dòng lệnh thông minh, hỗ trợ cả tương tác (interactive) và chạy ngầm (scripting). |
 
----
-![USAGE](./USAGE_GUIDE.md)
 ---
 
 ## 📂 Cấu trúc thư mục
@@ -44,14 +47,14 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 - `visualizer/`: Module xuất báo cáo HTML self-contained.
 - `scheme/`: Tài liệu đặc tả dữ liệu giữa các module (Single Source of Truth).
 - `skills/`: Hệ thống **Skill OS** dành cho AI Agent hỗ trợ phát triển dự án.
-
+- `parser/`, `builder/`, `prematch/`, `match/`, `comparator/`: Các module chính của dự án.
 ---
 
 ## 📜 Tài liệu tham khảo
+- [Hướng dẫn sử dụng chi tiết (GUI & CLI)](USAGE_GUIDE.md)
 - [Quy trình xử lý (Flow)](flow.md)
-- [Chiến lược vibe coding (Strategy)](Stratergy.md)
+- [Chiến lược thiết kế (Morning Dawn)](Stratergy.md)
 - [Sơ đồ kiến trúc (Mermaid)](architecture.mmd)
-- [Hướng dẫn sử dụng chi tiết](USAGE_GUIDE.md)
 
 ---
 # Review 
