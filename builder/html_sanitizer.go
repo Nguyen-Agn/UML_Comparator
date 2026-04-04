@@ -11,10 +11,11 @@ import (
 // ─────────────────────────────────────────────────────────────────────────────
 
 type htmlSanitizer struct {
-	tagRe     *regexp.Regexp // matches any HTML tag: <...>
-	newlineRe *regexp.Regexp // collapses 2+ consecutive newlines
-	stereoRe  *regexp.Regexp // matches <<...>> stereotype tokens
-	spaceRe   *regexp.Regexp // collapses 2+ whitespace chars (for signatures)
+	tagStructuralRe *regexp.Regexp // matches structural tags: <br>, <div>, etc. (replace with \n)
+	tagStylingRe    *regexp.Regexp // matches styling tags: <i>, <b>, etc. (replace with "")
+	newlineRe       *regexp.Regexp // collapses 2+ consecutive newlines
+	stereoRe        *regexp.Regexp // matches <<...>> stereotype tokens
+	spaceRe         *regexp.Regexp // collapses 2+ whitespace chars (for signatures)
 }
 
 // Compile-time interface satisfaction check.
@@ -23,12 +24,13 @@ var _ ITextSanitizer = (*htmlSanitizer)(nil)
 // newHTMLSanitizer constructs a sanitizer with all regexes pre-compiled.
 func newHTMLSanitizer() *htmlSanitizer {
 	return &htmlSanitizer{
-		// Whitelist common Draw.io styling tags + structural tags mentioned by user.
-		// This prevents stripping UML generics like <String> or <T>.
-		tagRe:     regexp.MustCompile(`(?i)</?(b|i|u|font|br|div|span|p|ul|li|ol|table|tr|td|thead|tbody|tfoot|hr|strong|em|small|big|sub|sup|mxCell|mxGraphModel|root)\b[^>]*>`),
-		newlineRe: regexp.MustCompile(`\n{2,}`),
-		stereoRe:  regexp.MustCompile(`(<<[^>]+>>|«[^»]+»)`),
-		spaceRe:   regexp.MustCompile(`\s{2,}`),
+		// Structural tags that represent line breaks or container boundaries.
+		tagStructuralRe: regexp.MustCompile(`(?i)</?(br|div|p|ul|li|ol|table|tr|td|thead|tbody|tfoot|hr|mxCell|mxGraphModel|root)\b[^>]*>`),
+		// Styling tags that should not cause line breaks.
+		tagStylingRe: regexp.MustCompile(`(?i)</?(b|i|u|font|span|strong|em|small|big|sub|sup)\b[^>]*>`),
+		newlineRe:    regexp.MustCompile(`\n{2,}`),
+		stereoRe:     regexp.MustCompile(`(<<[^>]+>>|«[^»]+»)`),
+		spaceRe:      regexp.MustCompile(`\s{2,}`),
 	}
 }
 
@@ -73,8 +75,11 @@ func (s *htmlSanitizer) clean(raw string) string {
 	raw = regexp.MustCompile(`(?i)<i>`).ReplaceAllString(raw, " {abstract} ")
 	raw = regexp.MustCompile(`(?i)<u>`).ReplaceAllString(raw, " {static} ")
 
-	// Step 4: strip HTML tags (replace with newline)
-	clean := s.tagRe.ReplaceAllString(raw, "\n")
+	// Step 4: strip HTML tags
+	// Structural tags -> newline; Styling tags -> nothing (prevents name fragmentation)
+	clean := s.tagStructuralRe.ReplaceAllString(raw, "\n")
+	clean = s.tagStylingRe.ReplaceAllString(clean, "")
+
 	clean = strings.ReplaceAll(clean, "\r\n", "\n")
 	clean = strings.ReplaceAll(clean, "\r", "\n")
 
@@ -112,13 +117,13 @@ func (s *htmlSanitizer) decodeOnly(raw string) string {
 func (s *htmlSanitizer) extractCleanName(sanitized string) string {
 	for _, line := range strings.Split(sanitized, "\n") {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
+		if trimmed == "" || trimmed == "{abstract}" || trimmed == "{static}" {
 			continue
 		}
 		// Strip all <<...>> tokens anywhere in the line
 		clean := strings.TrimSpace(s.stereoRe.ReplaceAllString(trimmed, ""))
-		if clean == "" {
-			continue // entire line was stereotype annotation
+		if clean == "" || clean == "{abstract}" || clean == "{static}" {
+			continue // entire line was stereotype annotation or just a marker
 		}
 		return clean
 	}

@@ -22,6 +22,7 @@ var _ ITypeDetector = (*typeDetector)(nil)
 //  2. Style attribute keywords (shape=actor, ellipse, enumeration, swimlane, …)
 func (d *typeDetector) nodeType(style, sanitizedValue string) string {
 	v := strings.ToLower(sanitizedValue)
+	s := strings.ToLower(style)
 
 	// Priority 1: stereotype in value text
 	switch {
@@ -29,13 +30,18 @@ func (d *typeDetector) nodeType(style, sanitizedValue string) string {
 		return "Interface"
 	case strings.Contains(v, "<<abstract>>") || strings.Contains(v, "«abstract»"):
 		return "Abstract"
-	case strings.Contains(v, "<<enum>>") || strings.Contains(v, "«enum»") || 
-	     strings.Contains(v, "<<enumeration>>") || strings.Contains(v, "«enumeration»"):
+	case strings.Contains(v, "<<enum>>") || strings.Contains(v, "«enum»") ||
+		strings.Contains(v, "<<enumeration>>") || strings.Contains(v, "«enumeration»"):
 		return "Enum"
+	case strings.Contains(v, "<i>") || strings.Contains(s, "fontstyle=2") || strings.Contains(s, "fontstyle=3"):
+		// Italic often represents Abstract or Interface in Draw.io UML.
+		if strings.Contains(s, "ellipse") || strings.Contains(s, "shape=mxgraph.uml2") {
+			return "Interface"
+		}
+		return "Abstract"
 	}
 
 	// Priority 2: style attribute keywords
-	s := strings.ToLower(style)
 	switch {
 	case strings.Contains(s, "shape=actor"):
 		return "Actor"

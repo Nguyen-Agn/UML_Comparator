@@ -366,7 +366,12 @@ const htmlTemplate = `<!DOCTYPE html>
       {{end}}
     </span>
     <span>{{.Source}}</span>
-    <span style="color:#cbd5e1">──▷</span>
+    <span style="color:#cbd5e1; display:flex; align-items:center; margin: 0 4px;">
+      <svg viewBox="0 0 40 12" width="20" height="10" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="0" y1="6" x2="38" y2="6"></line>
+        <polyline points="34 2 38 6 34 10"></polyline>
+      </svg>
+    </span>
     <span>{{.Target}}</span>
     <span class="rel-type-tag">{{.RelType}}</span>
     {{if .Note}}<span class="rel-note">{{.Note}}</span>{{end}}

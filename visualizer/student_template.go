@@ -314,7 +314,12 @@ const studentHTMLTemplate = `<!DOCTYPE html>
       {{end}}
     </span>
     <span>{{.Source}}</span>
-    <span style="color:#cbd5e1">──▷</span>
+    <span style="color:#cbd5e1; display:flex; align-items:center;">
+      <svg viewBox="0 0 50 12" width="24" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="0" y1="6" x2="48" y2="6"></line>
+        <polyline points="42 1 48 6 42 11"></polyline>
+      </svg>
+    </span>
     <span>{{.Target}}</span>
     <span class="rel-type-tag">{{.RelType}}</span>
   </div>
