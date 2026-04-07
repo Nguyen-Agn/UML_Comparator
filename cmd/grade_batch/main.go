@@ -63,7 +63,7 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
-	
+
 	fuzzy := matcher.NewLevenshteinMatcher()
 	arch := matcher.NewStandardArchAnalyzer()
 	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, 0.8)
@@ -97,7 +97,7 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 	}
 
 	fmt.Printf("🚀 Processing %d submissions using Parallel Pipeline...\n", len(studentFiles))
-	
+
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	startTime := time.Now()
@@ -106,7 +106,7 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 		wg.Add(1)
 		go func(fname string) {
 			defer wg.Done()
-			
+
 			stuPath := filepath.Join(studentDir, fname)
 			stuGraph := loadGraph(stuPath)
 			if stuGraph == nil {
@@ -140,7 +140,7 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 	}
 
 	fmt.Printf("📁 Report saved to: %s\n", outputPath)
-	
+
 	// Open CSV automatically
 	absPath, _ := filepath.Abs(outputPath)
 	openFile(absPath)
@@ -163,7 +163,10 @@ func openFile(path string) {
 }
 
 func loadGraph(filePath string) *domain.UMLGraph {
-	p := parser.NewDrawioParser()
+	p, err := parser.GetParser(filePath)
+	if err != nil {
+		return nil
+	}
 	rawXML, err := p.Parse(filePath)
 	if err != nil {
 		return nil

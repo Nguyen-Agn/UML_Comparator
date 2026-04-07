@@ -66,7 +66,11 @@ func main() {
 func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) error {
 
 	// ── 1. Parse ─────────────────────────────────────────────────────────
-	p := parser.NewDrawioParser()
+	p, err := parser.GetParser(solutionPath)
+	if err != nil {
+		fmt.Printf("❌ Parser error: %v\n", err)
+		os.Exit(1)
+	}
 
 	solRaw, err := p.Parse(solutionPath)
 	if err != nil {

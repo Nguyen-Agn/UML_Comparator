@@ -1,0 +1,25 @@
+Student ID,Status,[Class] Dice,[Attr] Dice.sides,[Attr] Dice.value,[Meth] Dice.Dice,[Meth] Dice.roll,[Meth] Dice.getSides,[Meth] Dice.getValue,[Class] Player,[Attr] Player.name,[Attr] Player.points,[Meth] Player.Player,[Meth] Player.takeTurn,[Meth] Player.hasWon,[Meth] Player.getPoints,[Rel] Player -(Association)-> Dice
+problem2.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem7.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem1.drawio,FAIL,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+question1.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+question5.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem9.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+question3.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem_1.drawio,FAIL,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0
+problem10.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem3.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem6.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+question2.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem_4.drawio,FAIL,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0
+question4.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+question7.drawio,FAIL,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1
+HasEnum.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem11.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+question6.drawio,FAIL,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0
+problem4.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+InCorrectUML.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem_7.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Lab1_5.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+LAb1_5_short.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+problem5.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

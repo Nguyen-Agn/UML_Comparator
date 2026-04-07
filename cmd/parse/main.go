@@ -18,7 +18,11 @@ func main() {
 	fmt.Println("╚══════════════════════════════════════════════════╝")
 	fmt.Printf("📂 Input file : %s\n\n", filePath)
 
-	p := parser.NewDrawioParser()
+	p, err := parser.GetParser(filePath)
+	if err != nil {
+		fmt.Printf("❌ Parser error: %v\n", err)
+		os.Exit(1)
+	}
 	rawModel, err := p.Parse(filePath)
 	if err != nil {
 		fmt.Printf("❌ Error: %v\n", err)

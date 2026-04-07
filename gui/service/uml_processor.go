@@ -1,19 +1,19 @@
 package service
 
 import (
-	coreDomain "uml_compare/domain"
+	"fmt"
 	"uml_compare/builder"
 	"uml_compare/comparator"
+	coreDomain "uml_compare/domain"
 	"uml_compare/grader"
+	"uml_compare/gui/domain"
 	"uml_compare/matcher"
 	"uml_compare/parser"
 	"uml_compare/prematcher"
 	"uml_compare/visualizer"
-	"uml_compare/gui/domain"
-	"fmt"
 )
 
-type StandardUMLProcessor struct {}
+type StandardUMLProcessor struct{}
 
 // NewStandardUMLProcessor provides a new StandardUMLProcessor
 func NewStandardUMLProcessor() domain.UMLProcessor {
@@ -22,14 +22,22 @@ func NewStandardUMLProcessor() domain.UMLProcessor {
 
 // Process takes solution and assignment paths and returns the GradeResult
 func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*coreDomain.GradeResult, error) {
-	parserObj := parser.NewDrawioParser()
+	parserObjSol, err := parser.GetParser(solutionPath)
+	if err != nil {
+		return nil, fmt.Errorf("Get parser error: %v", err)
+	}
 
-	solRaw, err := parserObj.Parse(solutionPath)
+	solRaw, err := parserObjSol.Parse(solutionPath)
 	if err != nil {
 		return nil, fmt.Errorf("Parse solution error: %v", err)
 	}
 
-	stuRaw, err := parserObj.Parse(assignmentPath)
+	parserObjStu, err := parser.GetParser(assignmentPath)
+	if err != nil {
+		return nil, fmt.Errorf("Get parser error: %v", err)
+	}
+
+	stuRaw, err := parserObjStu.Parse(assignmentPath)
 	if err != nil {
 		return nil, fmt.Errorf("Parse student error: %v", err)
 	}

@@ -47,6 +47,12 @@ func main() {
 			Sources: []string{"./cmd/grade_batch/main.go", "./cmd/grade_batch/interactive.go"},
 			IsGUI:   false,
 		},
+		{
+			Name:    "Teacher Cipher (Solution Encryptor) [OPTIONAL]",
+			Output:  filepath.Join(portableDir, "teacher_cipher.exe"),
+			Sources: []string{"./cmd/cipher/main.go"},
+			IsGUI:   false,
+		},
 	}
 
 	start := time.Now()
@@ -62,7 +68,7 @@ func main() {
 	// 4. Run builds
 	for i, task := range tasks {
 		fmt.Printf("[%d/%d] Building %s...\n", i+1, len(tasks), task.Name)
-		
+
 		args := []string{"build"}
 		if task.IsGUI {
 			args = append(args, "-ldflags=-H windowsgui")
@@ -81,7 +87,7 @@ func main() {
 	fmt.Printf("✨ ALL BUILDS COMPLETED in %v\n", time.Since(start).Round(time.Millisecond))
 	fmt.Println("   Check the 'portable' folder for your executables.")
 	fmt.Println("========================================================")
-	
+
 	// Keep window open if run via double-click
 	fmt.Println("\nPress Enter to exit...")
 	fmt.Scanln()

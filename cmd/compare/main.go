@@ -83,7 +83,7 @@ func main() {
 	// ── AI Matcher Integration ───────────────────────────────────
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
-	solProc, _ := stdPM.Process(solutionGraph)  // Used for display & comparator
+	solProc, _ := stdPM.Process(solutionGraph) // Used for display & comparator
 	stuProc, _ := stdPM.Process(studentGraph)
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph) // Used for OR-aware matching
 
@@ -139,7 +139,11 @@ func main() {
 
 func loadGraph(filePath, label string) *domain.UMLGraph {
 	fmt.Printf("\n%s: %s\n", label, filePath)
-	p := parser.NewDrawioParser()
+	p, err := parser.GetParser(filePath)
+	if err != nil {
+		fmt.Printf("  ❌ Parser error: %v\n", err)
+		os.Exit(1)
+	}
 	rawXML, err := p.Parse(filePath)
 	if err != nil {
 		fmt.Printf("  ❌ Parser error: %v\n", err)
@@ -230,25 +234,33 @@ func printSideBySideNodes(sol *domain.SolutionProcessedUMLGraph, stu *domain.Pro
 			// Methods
 			for _, d := range report.CorrectDetail.Method {
 				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					if d.Sol.Type == "getter" || d.Sol.Type == "setter" { continue }
+					if d.Sol.Type == "getter" || d.Sol.Type == "setter" {
+						continue
+					}
 					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, limitStr("    ✔ [Meth] "+methString(d.Sol), col), Reset, Green, col, limitStr(" ✔ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
 			}
 			for _, d := range report.WrongDetail.Method {
 				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					if d.Sol.Type == "getter" || d.Sol.Type == "setter" { continue }
+					if d.Sol.Type == "getter" || d.Sol.Type == "setter" {
+						continue
+					}
 					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Yellow, col, limitStr("    ≈ [Meth] "+methString(d.Sol), col), Reset, Yellow, col, limitStr(" ≈ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
 			}
 			for _, d := range report.MissingDetail.Method {
 				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					if d.Sol.Type == "getter" || d.Sol.Type == "setter" { continue }
+					if d.Sol.Type == "getter" || d.Sol.Type == "setter" {
+						continue
+					}
 					fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, limitStr("    ✗ [Meth] "+methString(d.Sol), col), Reset, col, "")
 				}
 			}
 			for _, d := range report.ExtraDetail.Method {
 				if d.ParentClassName == stuNode.Name && d.Stu != nil {
-					if d.Stu.Type == "getter" || d.Stu.Type == "setter" { continue }
+					if d.Stu.Type == "getter" || d.Stu.Type == "setter" {
+						continue
+					}
 					fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, limitStr(" ✗ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
 			}
@@ -535,5 +547,3 @@ func max(a, b int) int {
 	}
 	return b
 }
-
-

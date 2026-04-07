@@ -327,7 +327,7 @@ func (v *lorcaMainView) chooseSol() {
 
 	file, err := zenity.SelectFile(
 		zenity.Title("Select Solution (.drawio)"),
-		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio"}}},
+		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio", "*.solution"}}},
 	)
 	if err == nil && file != "" {
 		v.solPath = file

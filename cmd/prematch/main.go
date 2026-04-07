@@ -36,7 +36,11 @@ func main() {
 
 	// 1. Initialize Pipeline
 	fmt.Printf("%s[1] Initializing Pipeline...%s\n", Blue, Reset)
-	p := parser.NewDrawioParser()
+	p, err := parser.GetParser(filePath)
+	if err != nil {
+		fmt.Printf("❌ Parser error: %v\n", err)
+		os.Exit(1)
+	}
 	b := builder.NewStandardModelBuilder()
 	pm := prematcher.NewStandardPreMatcher()
 
@@ -64,14 +68,18 @@ func main() {
 	fmt.Printf("\n%s── [RESULTS] Processed Nodes & ArchWeights ──────────────────%s\n", Cyan+Bold, Reset)
 	for _, n := range processedGraph.Nodes {
 		fmt.Printf("\n%s● NODE: %s%s (Type: %s%s%s)\n", Bold+Cyan, n.Name, Reset, Yellow, n.Type, Reset)
-		
+
 		fmt.Printf("  %s├─ ArchWeight:%s %d\n", Blue, Reset, n.ArchWeight)
 		printArchWeightBreakdown(n.ArchWeight)
 
 		if n.Shortcut != 0 {
 			fmt.Printf("  %s├─ Shortcuts:%s ", Blue, Reset)
-			if (n.Shortcut & 1) != 0 { fmt.Printf("[Getters] ") }
-			if (n.Shortcut & 2) != 0 { fmt.Printf("[Setters] ") }
+			if (n.Shortcut & 1) != 0 {
+				fmt.Printf("[Getters] ")
+			}
+			if (n.Shortcut & 2) != 0 {
+				fmt.Printf("[Setters] ")
+			}
 			fmt.Println()
 		}
 
@@ -81,7 +89,7 @@ func main() {
 				fmt.Printf("  │  • %s %s%-15s%s : %s%-10s%s [%s]\n", a.Scope, Bold, a.Name, Reset, Yellow, a.Type, Reset, a.Kind)
 			}
 		}
-		
+
 		if len(n.Methods) > 0 {
 			fmt.Printf("  %s└─ Methods (%d):%s\n", Blue, len(n.Methods), Reset)
 			for _, m := range n.Methods {
@@ -104,10 +112,14 @@ func printArchWeightBreakdown(weight uint32) {
 	typeVal := (weight >> 29) & 0x7
 	typeName := "Unknown"
 	switch typeVal {
-	case 1: typeName = "Class"
-	case 2: typeName = "Interface"
-	case 3: typeName = "Abstract"
-	case 4: typeName = "Enum"
+	case 1:
+		typeName = "Class"
+	case 2:
+		typeName = "Interface"
+	case 3:
+		typeName = "Abstract"
+	case 4:
+		typeName = "Enum"
 	}
 
 	// Bit 28: Thừa kế

@@ -26,7 +26,10 @@ func main() {
 
 	// 1. Initialize Interfaces
 	fmt.Println("[1] Initializing Pipeline Interfaces...")
-	var fileParser parser.IFileParser = parser.NewDrawioParser()
+	fileParser, err := parser.GetParser(solPath)
+	if err != nil {
+		log.Fatalf("Failed to get parser: %v\n", err)
+	}
 	var modelBuilder builder.IModelBuilder = builder.NewStandardModelBuilder()
 	var stdPreMatcher prematcher.IPreMatcher = prematcher.NewStandardPreMatcher()
 	var solPreMatcher prematcher.IUMLSolutionPreMatcher = prematcher.NewUMLSolutionPreMatcher()
