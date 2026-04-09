@@ -14,15 +14,13 @@ func TestSplitOR(t *testing.T) {
 		{"void | boolean", []string{"void", "boolean"}},
 		{"String", []string{"String"}},
 		{"int | long | String", []string{"int", "long", "String"}},
-		{" | ", []string{}}, // Only empty tokens — should fall back to 1 slice of original trimmed
+		{" | ", []string{}},
 		{"", []string{}},
 	}
 
 	for _, tt := range tests {
 		result := splitOR(tt.input)
 		if tt.input == " | " || tt.input == "" {
-			// Edge case: splitOR returns the trimmed input as single element if all empty
-			// (or empty slice if the input itself is empty after trim)
 			continue
 		}
 		if len(result) != len(tt.expected) {
@@ -40,7 +38,7 @@ func TestSplitOR(t *testing.T) {
 func TestParseSolutionAttribute_NoOR(t *testing.T) {
 	p := NewUMLSolutionPreMatcher()
 
-	result := p.parseSolutionAttribute("- name : String")
+	result := p.Parser.ParseAttribute("- name : String", false)
 	if result.Scope != "-" {
 		t.Errorf("Scope: got %q, want %q", result.Scope, "-")
 	}
@@ -58,7 +56,7 @@ func TestParseSolutionAttribute_NoOR(t *testing.T) {
 func TestParseSolutionAttribute_ORType(t *testing.T) {
 	p := NewUMLSolutionPreMatcher()
 
-	result := p.parseSolutionAttribute("- id : int|long")
+	result := p.Parser.ParseAttribute("- id : int|long", false)
 	if len(result.Names) != 1 || result.Names[0] != "id" {
 		t.Errorf("Names: got %v, want [id]", result.Names)
 	}
@@ -70,7 +68,7 @@ func TestParseSolutionAttribute_ORType(t *testing.T) {
 func TestParseSolutionAttribute_ORName(t *testing.T) {
 	p := NewUMLSolutionPreMatcher()
 
-	result := p.parseSolutionAttribute("+ x | y : int")
+	result := p.Parser.ParseAttribute("+ x | y : int", false)
 	if len(result.Names) != 2 || result.Names[0] != "x" || result.Names[1] != "y" {
 		t.Errorf("Names: got %v, want [x y]", result.Names)
 	}
@@ -82,8 +80,7 @@ func TestParseSolutionAttribute_ORName(t *testing.T) {
 func TestParseSolutionAttribute_ORBoth(t *testing.T) {
 	p := NewUMLSolutionPreMatcher()
 
-	// Both name and type have OR
-	result := p.parseSolutionAttribute("+ a | b : int|long")
+	result := p.Parser.ParseAttribute("+ a | b : int|long", false)
 	if len(result.Names) != 2 {
 		t.Errorf("Names: got %v, want 2 items", result.Names)
 	}
@@ -95,7 +92,7 @@ func TestParseSolutionAttribute_ORBoth(t *testing.T) {
 func TestParseSolutionAttribute_Static(t *testing.T) {
 	p := NewUMLSolutionPreMatcher()
 
-	result := p.parseSolutionAttribute("{static} - count : int")
+	result := p.Parser.ParseAttribute("{static} - count : int", false)
 	if result.Kind != "static" {
 		t.Errorf("Kind: got %q, want static", result.Kind)
 	}
@@ -109,7 +106,7 @@ func TestParseSolutionMethod_NoOR(t *testing.T) {
 	emptyG := make(map[string]bool)
 	emptyS := make(map[string]bool)
 
-	result := p.parseSolutionMethod("+ calculate(a: int, b: int) : int", "Calculator", nil, emptyG, emptyS)
+	result := p.Parser.ParseMethod("+ calculate(a: int, b: int) : int", "Calculator", nil, emptyG, emptyS)
 	if len(result.Names) != 1 || result.Names[0] != "calculate" {
 		t.Errorf("Names: got %v, want [calculate]", result.Names)
 	}
@@ -129,9 +126,7 @@ func TestParseSolutionMethod_ORReturn(t *testing.T) {
 	emptyG := make(map[string]bool)
 	emptyS := make(map[string]bool)
 
-	// The user's example: doing(a : int|long): void|boolean
-	// Param type int|long is NOT split (kept as-is)
-	result := p.parseSolutionMethod("doing(a : int|long): void|boolean", "Foo", nil, emptyG, emptyS)
+	result := p.Parser.ParseMethod("doing(a : int|long): void|boolean", "Foo", nil, emptyG, emptyS)
 
 	if len(result.Names) != 1 || result.Names[0] != "doing" {
 		t.Errorf("Names: got %v, want [doing]", result.Names)
@@ -139,7 +134,6 @@ func TestParseSolutionMethod_ORReturn(t *testing.T) {
 	if len(result.Outputs) != 2 || result.Outputs[0] != "void" || result.Outputs[1] != "boolean" {
 		t.Errorf("Outputs: got %v, want [void boolean]", result.Outputs)
 	}
-	// Param type kept as-is (not split)
 	if len(result.Inputs) != 1 || result.Inputs[0].Type != "int|long" {
 		t.Errorf("Inputs[0].Type: got %q, want %q", result.Inputs[0].Type, "int|long")
 	}
@@ -150,7 +144,7 @@ func TestParseSolutionMethod_ORName(t *testing.T) {
 	emptyG := make(map[string]bool)
 	emptyS := make(map[string]bool)
 
-	result := p.parseSolutionMethod("doA | doB(p: int): void", "Foo", nil, emptyG, emptyS)
+	result := p.Parser.ParseMethod("doA | doB(p: int): void", "Foo", nil, emptyG, emptyS)
 	if len(result.Names) != 2 || result.Names[0] != "doA" || result.Names[1] != "doB" {
 		t.Errorf("Names: got %v, want [doA doB]", result.Names)
 	}
@@ -164,7 +158,7 @@ func TestParseSolutionMethod_Constructor(t *testing.T) {
 	emptyG := make(map[string]bool)
 	emptyS := make(map[string]bool)
 
-	result := p.parseSolutionMethod("+ MyClass(id: int)", "MyClass", nil, emptyG, emptyS)
+	result := p.Parser.ParseMethod("+ MyClass(id: int)", "MyClass", nil, emptyG, emptyS)
 	if result.Type != "constructor" {
 		t.Errorf("Type: got %q, want constructor", result.Type)
 	}
@@ -178,8 +172,7 @@ func TestParseSolutionMethod_DefaultVoid(t *testing.T) {
 	emptyG := make(map[string]bool)
 	emptyS := make(map[string]bool)
 
-	// No return type specified — defaults to ["void"]
-	result := p.parseSolutionMethod("doSomething(data: string)", "DataHandler", nil, emptyG, emptyS)
+	result := p.Parser.ParseMethod("doSomething(data: string)", "DataHandler", nil, emptyG, emptyS)
 	if len(result.Outputs) != 1 || result.Outputs[0] != "void" {
 		t.Errorf("Outputs: got %v, want [void]", result.Outputs)
 	}
@@ -190,8 +183,7 @@ func TestParseSolutionMethod_GenericParam(t *testing.T) {
 	emptyG := make(map[string]bool)
 	emptyS := make(map[string]bool)
 
-	// Generic param should not be split by comma inside <>
-	result := p.parseSolutionMethod("+ process(data: Map<String, int>): boolean", "Foo", nil, emptyG, emptyS)
+	result := p.Parser.ParseMethod("+ process(data: Map<String, int>): boolean", "Foo", nil, emptyG, emptyS)
 	if len(result.Inputs) != 1 {
 		t.Errorf("Inputs: got %d params, want 1 (generic not split)", len(result.Inputs))
 	}
@@ -211,10 +203,10 @@ func TestProcessSolution_Integration(t *testing.T) {
 				Name: "Shape",
 				Type: "Abstract",
 				Attributes: []string{
-					"- color | fill : String|int", // OR name + OR type
+					"- color | fill : String|int",
 				},
 				Methods: []string{
-					"draw | render(): void|boolean", // OR name + OR return
+					"draw | render(): void|boolean",
 					"+ getArea(): double",
 				},
 			},
@@ -226,7 +218,7 @@ func TestProcessSolution_Integration(t *testing.T) {
 					"- radius : double {getter, setter}",
 				},
 				Methods: []string{
-					"+ doing(a: int|long): void|boolean", // User example
+					"+ doing(a: int|long): void|boolean",
 				},
 			},
 		},
@@ -243,7 +235,6 @@ func TestProcessSolution_Integration(t *testing.T) {
 		t.Fatalf("Expected 2 nodes, got %d", len(processed.Nodes))
 	}
 
-	// Find Shape node
 	var shape, circle *domain.SolutionProcessedNode
 	for i := range processed.Nodes {
 		if processed.Nodes[i].ID == "N1" {
@@ -258,7 +249,6 @@ func TestProcessSolution_Integration(t *testing.T) {
 		t.Fatal("Could not find expected nodes")
 	}
 
-	// Check Shape attribute OR
 	if len(shape.Attributes) == 0 {
 		t.Fatal("Shape has no attributes")
 	}
@@ -270,7 +260,6 @@ func TestProcessSolution_Integration(t *testing.T) {
 		t.Errorf("Shape attr Types: got %v, want [String int]", attr.Types)
 	}
 
-	// Check draw|render method OR name + OR return
 	var drawMethod *domain.SolutionProcessedMethod
 	for i := range shape.Methods {
 		if len(shape.Methods[i].Names) > 1 {
@@ -286,12 +275,10 @@ func TestProcessSolution_Integration(t *testing.T) {
 		}
 	}
 
-	// Check Circle inherits Shape
 	if circle.Inherits != "N1" {
 		t.Errorf("Circle.Inherits: got %q, want N1", circle.Inherits)
 	}
 
-	// Check doing() method param type kept as-is
 	var doingMethod *domain.SolutionProcessedMethod
 	for i := range circle.Methods {
 		for _, n := range circle.Methods[i].Names {

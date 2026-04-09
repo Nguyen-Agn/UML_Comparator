@@ -131,3 +131,26 @@ func splitOR(s string) []string {
 	}
 	return result
 }
+
+// splitParams splits a parameter string on commas while respecting angle brackets
+// (generics like "Map<String, int>" are not split at the inner comma).
+func splitParams(paramStr string) []string {
+	var parts []string
+	depth := 0
+	start := 0
+	for i, ch := range paramStr {
+		switch ch {
+		case '<':
+			depth++
+		case '>':
+			depth--
+		case ',':
+			if depth == 0 {
+				parts = append(parts, paramStr[start:i])
+				start = i + 1
+			}
+		}
+	}
+	parts = append(parts, paramStr[start:])
+	return parts
+}

@@ -44,7 +44,7 @@ func (a *EncryptorApp) ParseArgs() bool {
 	flag.Usage = func() {
 		exe := filepath.Base(os.Args[0])
 		fmt.Fprintf(os.Stderr, "Usage: %s <input.drawio> [options]\n", exe)
-		fmt.Fprintf(os.Stderr, "\nOptions:")
+		fmt.Fprintf(os.Stderr, "\nOptions:\n")
 		flag.PrintDefaults()
 	}
 

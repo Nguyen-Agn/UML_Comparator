@@ -24,7 +24,7 @@ func TestParseAttribute(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := matcher.parseAttribute(tt.input)
+		result := matcher.Parser.ParseAttribute(tt.input, false)
 		if !reflect.DeepEqual(result, tt.expected) {
 			t.Errorf("parseAttribute(%q) = %+v, want %+v", tt.input, result, tt.expected)
 		}
@@ -166,7 +166,7 @@ func TestParseMethod(t *testing.T) {
 			attrs = append(attrs, domain.ProcessedAttribute{Name: base})
 		}
 
-		result := matcher.parseMethod(tt.input, tt.className, attrs, emptyG, emptyS)
+		result := matcher.Parser.ParseMethod(tt.input, tt.className, attrs, emptyG, emptyS)
 		if !reflect.DeepEqual(result, tt.expected) {
 			t.Errorf("parseMethod(%q, %q) = %+v, want %+v", tt.input, tt.className, result, tt.expected)
 		}
@@ -197,7 +197,7 @@ func TestFuzzyGetterSetter(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		res := p.parseMethod(tt.input, "User", attrs, tt.claimedG, tt.claimedS)
+		res := p.Parser.ParseMethod(tt.input, "User", attrs, tt.claimedG, tt.claimedS)
 		if res.Type != tt.expected {
 			t.Errorf("Test %s: parseMethod type = %s, want %s", tt.name, res.Type, tt.expected)
 		}
@@ -216,7 +216,7 @@ func TestCalculateArchWeight(t *testing.T) {
 	// Bit 6-8: Custom type (0) -> 0 << 6
 	// Bit 2-5: Static members (0) -> 0 << 2
 	
-	weight := matcher.calculateArchWeight("Interface", true, 1, 2, 3, 0, 0, 0)
+	weight := matcher.Calc.Calculate("Interface", true, 1, 2, 3, 0, 0, 0)
 	
 	expectedType := uint32(2) << 29
 	expectedInherit := uint32(1) << 28

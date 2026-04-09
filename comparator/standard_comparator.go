@@ -48,6 +48,8 @@ func (c *StandardComparator) Compare(solution *domain.SolutionProcessedUMLGraph,
 	mappedStudentNodeIDs := make(map[string]bool)
 	for _, solNode := range solution.Nodes {
 		mapped, ok := mapping[solNode.ID]
+		// check exist?
+
 		if !ok {
 			if strings.EqualFold(solNode.Type, "class") {
 				report.MissingDetail.Class = append(report.MissingDetail.Class, domain.NodeDiff{Sol: &solNode, Stu: nil, Description: "Missing class"})
