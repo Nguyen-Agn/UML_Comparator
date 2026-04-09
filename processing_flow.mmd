@@ -1,0 +1,64 @@
+---
+config:
+    layout: elk
+---
+graph TD
+    Start([".drawio/.solution Files"]) 
+    
+    %% PARSER STAGE
+    Start -->|.drawio File| Parser1["📄 Parser Drawio<br/>IFileParser"]
+    Start -->|.solution File| Parser2["📄 Parser Solution<br/>IFileParser"]
+    
+    Parser1 -->|RawModelData| Build1["🏗️ Builder<br/>IModelBuilder"]
+    Parser2 -->|RawModelData| Build1["🏗️ Builder<br/>IModelBuilder"]
+    
+    %% BUILDER OUTPUT
+    Build1 -->|UMLGraph| PreMatcher1["⚙️ Pre-Matcher<br/>IPreMatcher"]
+    Build1 -->|UMLGraph| PreMatcher2["⚙️ Pre-Matcher<br/>IUMLSolutionPreMatcher"]
+    
+    %% PRE-MATCHER OUTPUT
+    PreMatcher1 -->|ProcessedUMLGraph| Matcher["🔗 Entity Matcher<br/>IEntityMatcher"]
+    PreMatcher2 -->|SolutionProcessedUMLGraph| Matcher
+    
+    %% MATCHER OUTPUT
+    Matcher -->|MappingTable| Comparator["🔍 Comparator<br/>IComparator"]
+    
+    %% MATCHER also passes graphs
+    PreMatcher1 -.->|ProcessedUMLGraph| Comparator
+    PreMatcher2 -.->|SolutionProcessedUMLGraph| Comparator
+    
+    %% COMPARATOR OUTPUT
+    Comparator -->|DiffReport| Grader["⭐ Grader<br/>IGrader"]
+    PreMatcher1 -.->|ProcessedUMLGraph| Grader
+    PreMatcher2 -.->|SolutionProcessedUMLGraph| Grader
+    
+    %% GRADER OUTPUT
+    Grader -->|GradeResult| Fork{"Distribution"}
+    
+    %% OUTPUTS
+    Fork -->|CSV/Console| Reporter["📊 Reporter<br/>IReporter"]
+    Fork -->|HTML Report| Visualizer["🎨 Visualizer<br/>IVisualizer"]
+    Fork -->|Display| GUI["🖥️ GUI<br/>MainView"]
+    
+    Reporter --> End1(["📁 Output Files"])
+    Visualizer --> End2(["📄 HTML Report"])
+    GUI --> End3(["Display Result"])
+    
+    %% STYLING
+    classDef parser fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef builder fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef preMatcher fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef matcher fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef comparator fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef grader fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef reporter fill:#ede7f6,stroke:#311b92,stroke-width:2px
+    classDef output fill:#c8e6c9,stroke:#1b5e20,stroke-width:2px
+    
+    class Parser1,Parser2 parser
+    class Build1,Build2 builder
+    class PreMatcher1,PreMatcher2 preMatcher
+    class Matcher matcher
+    class Comparator comparator
+    class Grader grader
+    class Reporter,Visualizer,GUI reporter
+    class End1,End2,End3 output

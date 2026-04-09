@@ -1,139 +1,322 @@
+---
+config:
+    layout: elk
+---
 classDiagram
-    %% ==========================================
-    %% CORE DOMAIN MODELS (Data Structures)
-    %% ==========================================
+    %% CORE DATA MODELS
+    class RawModelData {
+        <<type>>
+        string
+    }
+
     class UMLGraph {
-        +String ID
-        +List~UMLNode~ Nodes
-        +List~UMLEdge~ Edges
+        - ID: string
+        - Nodes: []UMLNode
+        - Edges: []UMLEdge
     }
-    
+
     class UMLNode {
-        +String ID
-        +String Name
-        +String Type
-        +List~String~ Attributes
-        +List~String~ Methods
+        - ID: string
+        - Name: string
+        - Type: string
+        - Attributes: []string
+        - Methods: []string
     }
-    
+
     class UMLEdge {
-        +String SourceID
-        +String TargetID
-        +String RelationType
-        +String SourceLabel
-        +String TargetLabel
-    }
-    
-    class DiffReport {
-        +List~String~ MissingNodes
-        +List~String~ MissingEdges
-        +List~String~ WrongAttributes
-        +float MatchPercentage
+        - SourceID: string
+        - TargetID: string
+        - RelationType: string
     }
 
-    class GradeResult {
-        +float TotalScore
-        +List~String~ Feedbacks
-    }
-
-    %% ==========================================
-    %% INTERFACES (SOLID: Dependency Inversion)
-    %% ==========================================
+    %% PARSER LAYER
     class IFileParser {
         <<interface>>
-        +Parse(filePath: String) RawXMLData
+        +Parse(filePath) RawModelData
     }
 
+    class DrawioParser {
+        +Parse(filePath) RawModelData
+    }
+
+    class SolutionParser {
+        +Parse(filePath) RawModelData
+    }
+
+    %% BUILDER LAYER
     class IModelBuilder {
         <<interface>>
-        +Build(rawData: RawModelData) UMLGraph
+        +Build(raw) UMLGraph
+    }
+
+    class StandardModelBuilder {
+        -xmlParser: IXMLParser
+        -sanitizer: ITextSanitizer
+        +Build(raw) UMLGraph
+    }
+
+    class IXMLParser {
+        <<interface>>
+    }
+
+    class ITextSanitizer {
+        <<interface>>
+    }
+
+    class ITypeDetector {
+        <<interface>>
+    }
+
+    class IMemberParser {
+        <<interface>>
+    }
+
+    %% PRE-MATCHER: STUDENT
+    class ProcessedUMLGraph {
+        - ID: string
+        - Nodes: []ProcessedNode
+        - Edges: []ProcessedEdge
+    }
+
+    class ProcessedNode {
+        - NodeID: string
+        - ClassName: string
+        - Attributes: []ProcessedAttribute
+        - Methods: []ProcessedMethod
+    }
+
+    class ProcessedAttribute {
+        - Name: string
+        - AttrType: string
+    }
+
+    class ProcessedMethod {
+        - Name: string
+        - ReturnType: string
+        - Params: []MethodParam
+    }
+
+    class ProcessedEdge {
+        - SourceID: string
+        - TargetID: string
+        - RelationType: string
     }
 
     class IPreMatcher {
         <<interface>>
-        +Process(graph: UMLGraph) ProcessedUMLGraph
+        +Process(graph) ProcessedUMLGraph
     }
 
+    class StandardPreMatcher {
+        +Process(graph) ProcessedUMLGraph
+    }
+
+    %% PRE-MATCHER: SOLUTION (OR-AWARE)
+    class SolutionProcessedUMLGraph {
+        - ID: string
+        - Nodes: []SolutionProcessedNode
+        - ScoreConfig: ScoreConfig
+    }
+
+    class SolutionProcessedNode {
+        - NodeID: string
+        - ClassNames: string
+        - Attributes: []SolutionProcessedAttribute
+    }
+
+    class SolutionProcessedAttribute {
+        - Names: string
+        - AttrTypes: string
+    }
+
+    class ScoreConfig {
+        - NodeScore: float64
+        - AttributeScore: float64
+        - MethodScore: float64
+        - EdgeScore: float64
+    }
+
+    class IUMLSolutionPreMatcher {
+        <<interface>>
+        +ProcessSolution(graph) SolutionProcessedUMLGraph
+    }
+
+    class UMLSolutionPreMatcher {
+        +ProcessSolution(graph) SolutionProcessedUMLGraph
+    }
+
+    %% MATCHER LAYER
     class IEntityMatcher {
         <<interface>>
-        +Match(solution: ProcessedUMLGraph, student: ProcessedUMLGraph) MappingTable
+        +Match(solution, student) MappingTable
     }
 
+    class StandardEntityMatcher {
+        -fuzzyMatcher: IFuzzyMatcher
+        -archAnalyzer: IArchAnalyzer
+        +Match(solution, student) MappingTable
+    }
+
+    class MappingTable {
+        <<type>>
+        map[SolutionNodeID]MappedNode
+    }
+
+    class MappedNode {
+        - StudentID: string
+        - Similarity: float64
+    }
+
+    class IFuzzyMatcher {
+        <<interface>>
+        +Compare(s1, s2) float64
+    }
+
+    class IArchAnalyzer {
+        <<interface>>
+        +IsArchitectureSimilar() bool
+    }
+
+    %% COMPARATOR LAYER
     class IComparator {
         <<interface>>
-        +Compare(solution: ProcessedUMLGraph, student: ProcessedUMLGraph, mapping: MappingTable) DiffReport
+        +Compare(solution, student, mapping) DiffReport
     }
 
+    class StandardComparator {
+        +Compare(solution, student, mapping) DiffReport
+    }
+
+    class DiffReport {
+        - MissingDetail: DetailError
+        - WrongDetail: DetailError
+        - ExtraDetail: DetailError
+        - CorrectDetail: DetailError
+    }
+
+    class DetailError {
+        - Class: []NodeDiff
+        - Method: []MethodDiff
+        - Attribute: []AttributeDiff
+        - Edge: []EdgeDiff
+    }
+
+    %% GRADER LAYER
     class IGrader {
         <<interface>>
-        +Grade(report: DiffReport, criteria: GradingRules) GradeResult
+        +Grade(report, solution, student) GradeResult
     }
 
+    class StandardGrader {
+        +Grade(report, solution, student) GradeResult
+    }
+
+    class GradeResult {
+        - TotalScore: float64
+        - CorrectPercent: float64
+        - Feedbacks: []string
+        - Report: DiffReport
+    }
+
+    %% REPORTER LAYER
+    class IReporter {
+        <<interface>>
+        +GenerateReport(batchResult)
+    }
+
+    class CSVReporter {
+        +GenerateReport(batchResult)
+    }
+
+    class ConsoleReporter {
+        +GenerateReport(batchResult)
+    }
+
+    %% VISUALIZER LAYER
     class IVisualizer {
         <<interface>>
-        +VisualizeDiff(report: DiffReport, solution: UMLGraph, student: UMLGraph) Image
-        +ExportReport(report: DiffReport) String
-    }
-
-    %% ==========================================
-    %% CONCRETE IMPLEMENTATIONS (SOLID: Single Responsibility)
-    %% ==========================================
-    class DrawioParser {
-        +Parse(filePath: String) RawXMLData
-    }
-    
-    class StandardModelBuilder {
-        +Build(rawData: RawXMLData) UMLGraph
-    }
-
-    class TextSimilarityMatcher {
-        +Match(solution: UMLGraph, student: UMLGraph) MappingTable
-    }
-
-    class StrictComparator {
-        +Compare(solution: UMLGraph, student: UMLGraph, mapping: MappingTable) DiffReport
-    }
-
-    class RuleBasedGrader {
-        +Grade(report: DiffReport, criteria: GradingRules) GradeResult
+        +ExportHTML(result) string
     }
 
     class HTMLVisualizer {
-        +VisualizeDiff(report: DiffReport, solution: UMLGraph, student: UMLGraph) Image
-        +ExportReport(report: DiffReport) String
+        +ExportHTML(result) string
     }
 
-    %% Relationships: Implementations
+    %% ORCHESTRATOR
+    class UMLProcessor {
+        -parser: IFileParser
+        -builder: IModelBuilder
+        -preMatcher: IPreMatcher
+        -solutionPreMatcher: IUMLSolutionPreMatcher
+        -matcher: IEntityMatcher
+        -comparator: IComparator
+        -grader: IGrader
+        +Process(solPath, stuPath) GradeResult
+    }
+
+    %% RELATIONSHIPS
     IFileParser <|.. DrawioParser
+    IFileParser <|.. SolutionParser
+    IFileParser --> RawModelData
+
+    RawModelData --> IModelBuilder
     IModelBuilder <|.. StandardModelBuilder
-    IEntityMatcher <|.. TextSimilarityMatcher
-    IComparator <|.. StrictComparator
-    IGrader <|.. RuleBasedGrader
+    StandardModelBuilder --> IXMLParser
+    StandardModelBuilder --> ITextSanitizer
+    StandardModelBuilder --> ITypeDetector
+    StandardModelBuilder --> IMemberParser
+    IModelBuilder --> UMLGraph
+    UMLGraph --> UMLNode
+    UMLGraph --> UMLEdge
+
+    UMLGraph --> IPreMatcher
+    IPreMatcher <|.. StandardPreMatcher
+    IPreMatcher --> ProcessedUMLGraph
+    ProcessedUMLGraph --> ProcessedNode
+    ProcessedNode --> ProcessedAttribute
+    ProcessedNode --> ProcessedMethod
+    ProcessedNode --> ProcessedEdge
+
+    UMLGraph --> IUMLSolutionPreMatcher
+    IUMLSolutionPreMatcher <|.. UMLSolutionPreMatcher
+    IUMLSolutionPreMatcher --> SolutionProcessedUMLGraph
+    SolutionProcessedUMLGraph --> SolutionProcessedNode
+    SolutionProcessedUMLGraph --> ScoreConfig
+
+    ProcessedUMLGraph --> IEntityMatcher
+    SolutionProcessedUMLGraph --> IEntityMatcher
+    IEntityMatcher <|.. StandardEntityMatcher
+    StandardEntityMatcher --> IFuzzyMatcher
+    StandardEntityMatcher --> IArchAnalyzer
+    IEntityMatcher --> MappingTable
+    MappingTable --> MappedNode
+
+    ProcessedUMLGraph --> IComparator
+    SolutionProcessedUMLGraph --> IComparator
+    MappingTable --> IComparator
+    IComparator <|.. StandardComparator
+    IComparator --> DiffReport
+    DiffReport --> DetailError
+
+    DiffReport --> IGrader
+    ProcessedUMLGraph --> IGrader
+    SolutionProcessedUMLGraph --> IGrader
+    IGrader <|.. StandardGrader
+    IGrader --> GradeResult
+    GradeResult --> DiffReport
+
+    GradeResult --> IReporter
+    IReporter <|.. CSVReporter
+    IReporter <|.. ConsoleReporter
+
+    GradeResult --> IVisualizer
     IVisualizer <|.. HTMLVisualizer
 
-    %% ==========================================
-    %% SYSTEM FACADE / CONTROLLER
-    %% ==========================================
-    class UMLCompareSystem {
-        -IFileParser parser
-        -IModelBuilder builder
-        -IEntityMatcher matcher
-        -IComparator comparator
-        -IGrader grader
-        -IVisualizer visualizer
-        +RunComparison(solutionPath: String, studentPath: String, rulesPath: String) GradeResult
-    }
-
-    %% Relationships: Dependency Injection
-    UMLCompareSystem o--> IFileParser
-    UMLCompareSystem o--> IModelBuilder
-    UMLCompareSystem o--> IEntityMatcher
-    UMLCompareSystem o--> IComparator
-    UMLCompareSystem o--> IGrader
-    UMLCompareSystem o--> IVisualizer
-
-    %% Relationships: Data flow
-    IModelBuilder ..> UMLGraph : produces
-    IPreMatcher ..> ProcessedUMLGraph : produces
-    IComparator ..> DiffReport : produces
-    IGrader ..> GradeResult : produces
+    UMLProcessor --> IFileParser
+    UMLProcessor --> IModelBuilder
+    UMLProcessor --> IPreMatcher
+    UMLProcessor --> IUMLSolutionPreMatcher
+    UMLProcessor --> IEntityMatcher
+    UMLProcessor --> IComparator
+    UMLProcessor --> IGrader
+    UMLProcessor --> GradeResult

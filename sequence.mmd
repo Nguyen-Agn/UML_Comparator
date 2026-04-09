@@ -1,0 +1,66 @@
+---
+config:
+    layout: elk
+---
+sequenceDiagram
+    participant User
+    participant GUI as GUI/CLI
+    participant Parser
+    participant Builder
+    participant PreMatcher
+    participant Matcher as Matcher<br/>3-Tier
+    participant Comparator
+    participant Grader
+    participant Reporter as Reporter/<br/>Visualizer
+    participant FileSystem as File System
+
+    User->>GUI: Submit solution + student files
+    
+    par Student Processing
+        GUI->>Parser: Parse(studentFile)
+        Parser->>FileSystem: Read .drawio
+        FileSystem-->>Parser: Raw XML
+        Parser-->>GUI: RawModelData
+        
+        GUI->>Builder: Build(rawData)
+        Builder-->>GUI: UMLGraph
+        
+        GUI->>PreMatcher: Process(graph)
+        Note over PreMatcher: Extract attributes,<br/>methods, edges
+        PreMatcher-->>GUI: ProcessedUMLGraph
+    and Solution Processing
+        GUI->>Parser: Parse(solutionFile)
+        Parser->>FileSystem: Read .solution
+        FileSystem-->>Parser: Raw XML/JSON
+        Parser-->>GUI: RawModelData
+        
+        GUI->>Builder: Build(rawData)
+        Builder-->>GUI: UMLGraph
+        
+        GUI->>PreMatcher: ProcessSolution(graph)
+        Note over PreMatcher: OR-aware parsing<br/>A|B|C aliases
+        PreMatcher-->>GUI: SolutionProcessedUMLGraph
+    end
+    
+    GUI->>Matcher: Match(solution, student)
+    Note over Matcher: Tier 1: Architecture<br/>Tier 2: Fuzzy Names<br/>Tier 3: Delta
+    Matcher-->>GUI: MappingTable
+    
+    GUI->>Comparator: Compare(solution, student, mapping)
+    Note over Comparator: Node diff<br/>Attribute diff<br/>Method diff<br/>Edge diff
+    Comparator-->>GUI: DiffReport
+    
+    GUI->>Grader: Grade(report, solution, student)
+    Note over Grader: Calculate scores<br/>Generate feedbacks
+    Grader-->>GUI: GradeResult
+    
+    par Output Generation
+        Reporter->>FileSystem: Write CSV report
+        Reporter-->>FileSystem: ✓ lab1_results.csv
+    and
+        Reporter->>FileSystem: Write HTML report
+        Reporter-->>FileSystem: ✓ report.html
+    end
+    
+    GUI-->>User: Display grade + feedback
+    User->>FileSystem: Download reports

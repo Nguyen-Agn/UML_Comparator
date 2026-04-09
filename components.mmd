@@ -1,0 +1,40 @@
+---
+config:
+    layout: elk
+---
+C4Context
+    title UML Comparator - System Architecture
+
+    System_Boundary(uml_comparator, "UML Comparator System") {
+        Container(parser, "Parser Module", "Go", "Reads .drawio/.solution files from disk")
+        Container(builder, "Builder Module", "Go", "Parses XML and constructs UMLGraph with nodes/edges")
+        Container(preMatcher, "Pre-Matcher Module", "Go", "Converts UMLGraph → ProcessedUMLGraph (student) and SolutionProcessedUMLGraph (solution with OR-awareness)")
+        Container(matcher, "Entity Matcher", "Go", "3-tier matching: Architecture → Fuzzy Name → Delta to produce MappingTable")
+        Container(comparator, "Comparator Module", "Go", "Deep diff analysis: compares nodes, attributes, methods, edges → DiffReport")
+        Container(grader, "Grader Module", "Go", "Calculates final score and generates feedback based on DiffReport")
+        Container(reporter, "Reporter Module", "Go", "Outputs results to CSV or console (batch processing)")
+        Container(visualizer, "Visualizer Module", "Go", "Generates interactive HTML report with SVG icons")
+        Container(gui, "GUI Layer", "Lorca/Electron", "User-friendly desktop interface for file selection and result viewing")
+        Container(cli, "CLI Layer", "Go", "Command-line interface for batch processing and scripting")
+    }
+
+    System_Ext(files, "File System", "Stores .drawio/.solution files and outputs")
+    System_Ext(user, "User", "Interacts via GUI or CLI")
+
+    Rel(user, gui, "Uses GUI to select files")
+    Rel(user, cli, "Uses CLI commands")
+    Rel(gui, parser, "Calls Parser.Parse()")
+    Rel(cli, parser, "Calls Parser.Parse()")
+    Rel(files, parser, "Reads files from")
+    Rel(parser, builder, "RawModelData →")
+    Rel(builder, preMatcher, "UMLGraph →")
+    Rel(preMatcher, matcher, "ProcessedUMLGraph + SolutionProcessedUMLGraph →")
+    Rel(matcher, comparator, "MappingTable →")
+    Rel(comparator, grader, "DiffReport →")
+    Rel(grader, reporter, "GradeResult →")
+    Rel(grader, visualizer, "GradeResult →")
+    Rel(grader, gui, "GradeResult →")
+    Rel(reporter, files, "Writes CSV/Console to")
+    Rel(visualizer, files, "Writes HTML to")
+    Rel(gui, user, "Shows result to")
+    Rel(cli, user, "Outputs result to")

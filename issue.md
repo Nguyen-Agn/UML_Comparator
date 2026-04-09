@@ -1,0 +1,9 @@
+- [ ] Cải thiện phát hiện cách mối quan hệ
+- [ ] Cải thiện phát hiện <T,U>
+- [ ] Cải thiện phông: tên lớp in đậm
+- [ ] Đổi tên cột cho student ID --> Student name
+- [ ] Cải thiện nhận biết static + final
+- [ ] Tăng cường ràng buộc tên lớp
+- [ ] Viết phương pháp matching
+- [ ] Viết thông tin: videcode? khó khăn? giải pháp? phòng ngừa?
+- [ ] Tăng cường phương pháp syntax getters, setters

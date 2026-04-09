@@ -1,0 +1,52 @@
+---
+config:
+    layout: elk
+---
+graph LR
+    A["📄 Input Files<br/>(.drawio, .solution)"] 
+    
+    A -->|Parser| B["RawModelData<br/><<type>><br/>string"]
+    
+    B -->|Builder| C["UMLGraph<br/>- ID<br/>- Nodes: UMLNode[]<br/>- Edges: UMLEdge[]"]
+    
+    C -->|Split| D["Two Parallel Paths"]
+    
+    D -->|Student Path| E["ProcessedUMLGraph<br/>- ID<br/>- Nodes: ProcessedNode[]<br/>- Edges: ProcessedEdge[]<br/>⚡ 1 name per attribute/method"]
+    
+    D -->|Solution Path| F["SolutionProcessedUMLGraph<br/>- ID<br/>- Nodes: SolutionProcessedNode[]<br/>- ScoreConfig<br/>🔥 OR-aware aliases<br/>A|B|C format"]
+    
+    E -->|Matcher Input| G["ProcessedNode<br/>- NodeID<br/>- ClassName<br/>- Attributes[]<br/>- Methods[]"]
+    
+    F -->|Matcher Input| H["SolutionProcessedNode<br/>- NodeID<br/>- ClassNames: A|B|C<br/>- Attributes[]<br/>- Methods[]"]
+    
+    G -->|3-Tier Match<br/>Arch→Fuzzy→Delta| I["MappingTable<br/>map[SolNodeID]MappedNode<br/>- StudentID<br/>- Similarity: float64"]
+    
+    H -->|Comparator Input| I
+    E -->|Comparator Input| I
+    F -->|Comparator Input| I
+    
+    I -->|Deep Diff| J["DiffReport<br/>📌 MissingDetail<br/>❌ WrongDetail<br/>➕ ExtraDetail<br/>✅ CorrectDetail"]
+    
+    J -->|Grading| K["GradeResult<br/>- TotalScore<br/>- CorrectPercent<br/>- Feedbacks[]<br/>- Report<br/>- SolutionGraph<br/>- StudentGraph"]
+    
+    K -->|Split| L["Output Stage"]
+    
+    L -->|Reporter| M1["CSV Report<br/>student_name,score,percent"]
+    L -->|Visualizer| M2["HTML Report<br/>🎨 Interactive<br/>SVG Icons<br/>Color Coded"]
+    L -->|GUI| M3["Desktop App<br/>Display Results<br/>Export HTML"]
+    
+    style A fill:#fff9c4,stroke:#f57f17
+    style B fill:#e0f2f1,stroke:#00695c
+    style C fill:#f3e5f5,stroke:#512da8
+    style D fill:#fce4ec,stroke:#c2185b
+    style E fill:#e1f5fe,stroke:#01579b
+    style F fill:#fff3e0,stroke:#e65100
+    style G fill:#dcedc8,stroke:#558b2f
+    style H fill:#ffebee,stroke:#b71c1c
+    style I fill:#f0f4c3,stroke:#827717
+    style J fill:#ede7f6,stroke:#512da8
+    style K fill:#c8e6c9,stroke:#1b5e20
+    style L fill:#ffccbc,stroke:#d84315
+    style M1 fill:#cfg9,stroke:#1565c0
+    style M2 fill:#ce93d8,stroke:#6a1b9a
+    style M3 fill:#a1887f,stroke:#3e2723

@@ -1,0 +1,118 @@
+---
+config:
+    layout: elk
+---
+graph TB
+    subgraph Parser["🔵 PARSER LAYER"]
+        IFP["IFileParser<br/><<interface>>"]
+        DP["DrawioParser"]
+        SP["SolutionParser"]
+        IFP <|.. DP
+        IFP <|.. SP
+    end
+
+    subgraph Builder["🟣 BUILDER LAYER"]
+        IMB["IModelBuilder<br/><<interface>>"]
+        SMB["StandardModelBuilder"]
+        IMB <|.. SMB
+        IXP["IXMLParser<br/><<interface>>"]
+        ITS["ITextSanitizer<br/><<interface>>"]
+        ITD["ITypeDetector<br/><<interface>>"]
+        IMP["IMemberParser<br/><<interface>>"]
+        SMB --> IXP
+        SMB --> ITS
+        SMB --> ITD
+        SMB --> IMP
+    end
+
+    subgraph PreMatcher["🟢 PRE-MATCHER LAYER"]
+        IPM["IPreMatcher<br/><<interface>>"]
+        SPM["StandardPreMatcher"]
+        ISPM["IUMLSolutionPreMatcher<br/><<interface>>"]
+        USPM["UMLSolutionPreMatcher"]
+        IPM <|.. SPM
+        ISPM <|.. USPM
+    end
+
+    subgraph Matcher["🟠 MATCHER LAYER (3-Tier)"]
+        IEM["IEntityMatcher<br/><<interface>>"]
+        SEM["StandardEntityMatcher"]
+        IFM["IFuzzyMatcher<br/><<interface>>"]
+        IAA["IArchAnalyzer<br/><<interface>>"]
+        IEM <|.. SEM
+        SEM --> IFM
+        SEM --> IAA
+        Note1["🔹 Tier 1: Architecture-based<br/>🔹 Tier 2: Fuzzy name matching<br/>🔹 Tier 3: Delta fallback"]
+    end
+
+    subgraph Comparator["🔴 COMPARATOR LAYER (Deep Diff)"]
+        ICP["IComparator<br/><<interface>>"]
+        SCP["StandardComparator"]
+        ITA["ITypeAnalyzer<br/><<interface>>"]
+        IMG["IMemberComparator<br/><<interface>>"]
+        IEC["IEdgeComparator<br/><<interface>>"]
+        ICP <|.. SCP
+        SCP --> ITA
+        SCP --> IMG
+        SCP --> IEC
+        Note2["🔹 Node-level diff<br/>🔹 Attribute/Method diff<br/>🔹 Edge/Relationship diff"]
+    end
+
+    subgraph Grader["🟡 GRADER LAYER"]
+        IGR["IGrader<br/><<interface>>"]
+        SGR["StandardGrader"]
+        IGR <|.. SGR
+        Note3["Calculates:<br/>- Penalty scores<br/>- CorrectPercent<br/>- Feedbacks"]
+    end
+
+    subgraph Reporter["🟦 REPORTER LAYER"]
+        IRP["IReporter<br/><<interface>>"]
+        CSV["CSVReporter"]
+        CRS["ConsoleReporter"]
+        IRP <|.. CSV
+        IRP <|.. CRS
+    end
+
+    subgraph Visualizer["🎨 VISUALIZER LAYER"]
+        IVZ["IVisualizer<br/><<interface>>"]
+        HVZ["HTMLVisualizer"]
+        IVZ <|.. HVZ
+        Note4["Generates self-contained<br/>HTML with SVG icons:<br/>✓ Correct<br/>✗ Wrong<br/>⊘ Missing<br/>⊕ Extra"]
+    end
+
+    subgraph GUI["🖥️ GUI/CLI LAYER"]
+        UML["UMLProcessor<br/><<orchestrator>>"]
+        MC["MainController"]
+        MV["MainView"]
+        UML -.->|uses all interfaces| Parser
+        UML -.->|uses all interfaces| Builder
+        UML -.->|uses all interfaces| PreMatcher
+        UML -.->|uses all interfaces| Matcher
+        UML -.->|uses all interfaces| Comparator
+        UML -.->|uses all interfaces| Grader
+        UML -.->|uses all interfaces| Reporter
+        UML -.->|uses all interfaces| Visualizer
+        MC --> UML
+        MC --> MV
+    end
+
+    %% Data Flow
+    Parser -->|RawModelData| Builder
+    Builder -->|UMLGraph| PreMatcher
+    PreMatcher -->|ProcessedUMLGraph| Matcher
+    PreMatcher -->|SolutionProcessedUMLGraph| Matcher
+    Matcher -->|MappingTable| Comparator
+    Comparator -->|DiffReport| Grader
+    Grader -->|GradeResult| Reporter
+    Grader -->|GradeResult| Visualizer
+    Grader -->|GradeResult| GUI
+
+    %% Styling
+    classDef interface fill:#e8f4f8,stroke:#0277bd,stroke-width:2px,font-weight:bold
+    classDef concrete fill:#f5f5f5,stroke:#424242,stroke-width:2px
+    classDef note fill:#fffde7,stroke:#f57f17,stroke-width:1px
+    classDef subgraph_fill fill:#f0f0f0,stroke:#666,stroke-width:2px
+
+    class IFP,IMB,IXP,ITS,ITD,IMP,IPM,ISPM,IEM,IFM,IAA,ICP,ITA,IMG,IEC,IGR,IRP,IVZ interface
+    class DP,SP,SMB,SPM,USPM,SEM,SCP,SGR,CSV,CRS,HVZ,UML,MC,MV concrete
+    class Note1,Note2,Note3,Note4 note
