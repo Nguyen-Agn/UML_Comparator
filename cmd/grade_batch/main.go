@@ -64,14 +64,9 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 
-	fuzzy := matcher.NewLevenshteinMatcher()
-	arch := matcher.NewStandardArchAnalyzer()
-	validator := matcher.NewStandardIdentityValidator(matcher.NewAntonymDetector())
-	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, validator, 0.8)
-	ta := comparator.NewStandardTypeAnalyzer()
-	mc := comparator.NewStandardMemberComparator(fuzzy, ta)
-	ec := comparator.NewStandardEdgeComparator()
-	comp := comparator.NewStandardComparator(fuzzy, ta, mc, ec)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
+
+	comp := comparator.NewStandardComparator()
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 

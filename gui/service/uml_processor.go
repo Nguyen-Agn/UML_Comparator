@@ -67,16 +67,10 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*co
 	stuProc, _ := stdPM.Process(stuGraph)
 	solForMatch, _ := solPM.ProcessSolution(solGraph)
 
-	fuzzy := matcher.NewLevenshteinMatcher()
-	arch := matcher.NewStandardArchAnalyzer()
-	validator := matcher.NewStandardIdentityValidator(matcher.NewAntonymDetector())
-	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, validator, 0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
-	ta := comparator.NewStandardTypeAnalyzer()
-	mc := comparator.NewStandardMemberComparator(fuzzy, ta)
-	ec := comparator.NewStandardEdgeComparator()
-	comp := comparator.NewStandardComparator(fuzzy, ta, mc, ec)
+	comp := comparator.NewStandardComparator()
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	gr := grader.NewStandardGrader()

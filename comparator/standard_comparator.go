@@ -15,12 +15,12 @@ type StandardComparator struct {
 
 var _ IComparator = (*StandardComparator)(nil)
 
-func NewStandardComparator(fz matcher.IFuzzyMatcher, ta ITypeAnalyzer, mc IMemberComparator, ec IEdgeComparator) *StandardComparator {
+func NewStandardComparator() *StandardComparator {
 	return &StandardComparator{
-		fuzzyMatcher:     fz,
-		typeAnalyzer:     ta,
-		memberComparator: mc,
-		edgeComparator:   ec,
+		fuzzyMatcher:     matcher.NewLevenshteinMatcher(),
+		typeAnalyzer:     NewStandardTypeAnalyzer(),
+		memberComparator: NewStandardMemberComparator(matcher.NewLevenshteinMatcher(), NewStandardTypeAnalyzer()),
+		edgeComparator:   NewStandardEdgeComparator(),
 	}
 }
 

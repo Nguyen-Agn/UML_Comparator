@@ -8,17 +8,16 @@ import (
 
 // mockFuzzy is a simple matcher for testing
 type mockFuzzy struct{}
+
 func (m *mockFuzzy) Compare(s1, s2 string) float64 {
-	if strings.EqualFold(s1, s2) { return 1.0 }
+	if strings.EqualFold(s1, s2) {
+		return 1.0
+	}
 	return 0.0
 }
 
 func TestStandardComparator(t *testing.T) {
-	fz := &mockFuzzy{}
-	ta := NewStandardTypeAnalyzer()
-	mc := NewStandardMemberComparator(fz, ta)
-	ec := NewStandardEdgeComparator()
-	comp := NewStandardComparator(fz, ta, mc, ec)
+	comp := NewStandardComparator()
 
 	mapping := domain.MappingTable{
 		"S1": {StudentID: "Stu1", Similarity: 1.0},
@@ -64,11 +63,7 @@ func TestStandardComparator(t *testing.T) {
 }
 
 func TestComparatorGenerics(t *testing.T) {
-	fz := &mockFuzzy{}
-	ta := NewStandardTypeAnalyzer()
-	mc := NewStandardMemberComparator(fz, ta)
-	ec := NewStandardEdgeComparator()
-	c := NewStandardComparator(fz, ta, mc, ec)
+	c := NewStandardComparator()
 
 	sol := &domain.SolutionProcessedUMLGraph{
 		Nodes: []domain.SolutionProcessedNode{
@@ -111,11 +106,7 @@ func TestComparatorGenerics(t *testing.T) {
 }
 
 func TestComparatorPointers(t *testing.T) {
-	fz := &mockFuzzy{}
-	ta := NewStandardTypeAnalyzer()
-	mc := NewStandardMemberComparator(fz, ta)
-	ec := NewStandardEdgeComparator()
-	c := NewStandardComparator(fz, ta, mc, ec)
+	c := NewStandardComparator()
 
 	sol := &domain.SolutionProcessedUMLGraph{
 		Nodes: []domain.SolutionProcessedNode{

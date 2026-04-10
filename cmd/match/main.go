@@ -34,10 +34,7 @@ func main() {
 	var stdPreMatcher prematcher.IPreMatcher = prematcher.NewStandardPreMatcher()
 	var solPreMatcher prematcher.IUMLSolutionPreMatcher = prematcher.NewUMLSolutionPreMatcher()
 
-	fuzzy := matcher.NewLevenshteinMatcher()
-	arch := matcher.NewStandardArchAnalyzer()
-	validator := matcher.NewStandardIdentityValidator(matcher.NewAntonymDetector())
-	var entityMatcher matcher.IEntityMatcher = matcher.NewStandardEntityMatcher(fuzzy, arch, validator, 0.8)
+	var entityMatcher matcher.IEntityMatcher = matcher.NewStandardEntityMatcher(0.8)
 
 	// 2. Process Solution
 	fmt.Println("[2] Processing Solution Graph...")

@@ -1,7 +1,7 @@
-- [ ] Cải thiện phát hiện cách mối quan hệ
+- [x] Cải thiện phát hiện cách mối quan hệ
 - [x] Cải thiện phát hiện <T,U>
 - [ ] Cải thiện phông: tên lớp in đậm
-- [ ] Đổi tên cột cho student ID --> Student name
+- [x] Đổi tên cột cho student ID --> Student name
 - [x] Cải thiện nhận biết static + final
 - [ ] Tăng cường ràng buộc tên lớp
 - [ ] Viết phương pháp matching

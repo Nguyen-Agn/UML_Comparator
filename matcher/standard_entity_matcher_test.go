@@ -22,7 +22,6 @@ func solNode(id, name, nodeType string, archWeight uint32) domain.SolutionProces
 	}
 }
 
-
 func buildStuGraph(nodes ...domain.ProcessedNode) *domain.ProcessedUMLGraph {
 	return &domain.ProcessedUMLGraph{Nodes: nodes}
 }
@@ -51,10 +50,7 @@ func TestFuzzyMatcher(t *testing.T) {
 }
 
 func TestStandardEntityMatcher(t *testing.T) {
-	fz := NewLevenshteinMatcher()
-	arch := NewStandardArchAnalyzer()
-	validator := NewStandardIdentityValidator(NewAntonymDetector())
-	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.8)
+	matcher := NewStandardEntityMatcher(0.75)
 
 	solGraph := buildSolGraph(
 		solNode("Sol1", "User", "Class", 100),
@@ -91,10 +87,7 @@ func TestStandardEntityMatcher(t *testing.T) {
 }
 
 func TestArchWeightPriority(t *testing.T) {
-	fz := NewLevenshteinMatcher()
-	arch := NewStandardArchAnalyzer()
-	validator := NewStandardIdentityValidator(NewAntonymDetector())
-	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.75)
+	matcher := NewStandardEntityMatcher(0.75)
 
 	solGraph := buildSolGraph(solNode("S1", "Manager", "Class", 500))
 	stuGraph := buildStuGraph(
@@ -109,10 +102,7 @@ func TestArchWeightPriority(t *testing.T) {
 }
 
 func TestInterfaceArchitectureMatch(t *testing.T) {
-	fz := NewLevenshteinMatcher()
-	arch := NewStandardArchAnalyzer()
-	validator := NewStandardIdentityValidator(NewAntonymDetector())
-	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.75)
+	matcher := NewStandardEntityMatcher(0.75)
 
 	solGraph := buildSolGraph(solNode("S1", "IProductRepository", "Interface", 1000))
 	stuGraph := buildStuGraph(
@@ -128,16 +118,13 @@ func TestInterfaceArchitectureMatch(t *testing.T) {
 }
 
 func TestToleranceArchitectureMatch(t *testing.T) {
-	fz := NewLevenshteinMatcher()
-	arch := NewStandardArchAnalyzer()
-	validator := NewStandardIdentityValidator(NewAntonymDetector())
-	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.75)
+	matcher := NewStandardEntityMatcher(0.75)
 
 	solGraph := buildSolGraph(solNode("S1", "UserService", "Class", 539492352))
 	stuGraph := buildStuGraph(
-		stuNode("Stu1", "UserServic", "Class", 539492352),   // typo, perfect arch
-		stuNode("Stu2", "UserService", "Class", 539230208),  // exact name, -1 method (within 15%)
-		stuNode("Stu3", "UserService", "Class", 537657344),  // exact name, bad arch
+		stuNode("Stu1", "UserServic", "Class", 539492352),  // typo, perfect arch
+		stuNode("Stu2", "UserService", "Class", 539230208), // exact name, -1 method (within 15%)
+		stuNode("Stu3", "UserService", "Class", 537657344), // exact name, bad arch
 	)
 
 	mapping, _ := matcher.Match(solGraph, stuGraph)
@@ -147,10 +134,7 @@ func TestToleranceArchitectureMatch(t *testing.T) {
 }
 
 func TestTwoPassMatching(t *testing.T) {
-	fz := NewLevenshteinMatcher()
-	arch := NewStandardArchAnalyzer()
-	validator := NewStandardIdentityValidator(NewAntonymDetector())
-	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.8)
+	matcher := NewStandardEntityMatcher(0.8)
 
 	solGraph := buildSolGraph(solNode("S1", "CruiseShip", "Class", 539492352))
 	stuGraph := buildStuGraph(
@@ -167,5 +151,3 @@ func TestTwoPassMatching(t *testing.T) {
 		t.Errorf("Expected Similarity >= 0.80 (Arch=1.0*0.7+Text*0.3), got %.4f", val.Similarity)
 	}
 }
-
-

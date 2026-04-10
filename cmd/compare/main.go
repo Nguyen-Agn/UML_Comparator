@@ -87,17 +87,11 @@ func main() {
 	stuProc, _ := stdPM.Process(studentGraph)
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph) // Used for OR-aware matching
 
-	fuzzy := matcher.NewLevenshteinMatcher()
-	arch := matcher.NewStandardArchAnalyzer()
-	validator := matcher.NewStandardIdentityValidator(matcher.NewAntonymDetector())
-	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, validator, 0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	// ── Advanced Comparator ──────────────────────────────────────
-	ta := comparator.NewStandardTypeAnalyzer()
-	mc := comparator.NewStandardMemberComparator(fuzzy, ta)
-	ec := comparator.NewStandardEdgeComparator()
-	comp := comparator.NewStandardComparator(fuzzy, ta, mc, ec)
+	comp := comparator.NewStandardComparator()
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	// ── Side-by-side Node Comparison ─────────────────────────────
@@ -235,33 +229,21 @@ func printSideBySideNodes(sol *domain.SolutionProcessedUMLGraph, stu *domain.Pro
 			// Methods
 			for _, d := range report.CorrectDetail.Method {
 				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					if d.Sol.Type == "getter" || d.Sol.Type == "setter" {
-						continue
-					}
 					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, limitStr("    ✔ [Meth] "+methString(d.Sol), col), Reset, Green, col, limitStr(" ✔ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
 			}
 			for _, d := range report.WrongDetail.Method {
 				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					if d.Sol.Type == "getter" || d.Sol.Type == "setter" {
-						continue
-					}
 					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Yellow, col, limitStr("    ≈ [Meth] "+methString(d.Sol), col), Reset, Yellow, col, limitStr(" ≈ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
 			}
 			for _, d := range report.MissingDetail.Method {
 				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					if d.Sol.Type == "getter" || d.Sol.Type == "setter" {
-						continue
-					}
 					fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, limitStr("    ✗ [Meth] "+methString(d.Sol), col), Reset, col, "")
 				}
 			}
 			for _, d := range report.ExtraDetail.Method {
 				if d.ParentClassName == stuNode.Name && d.Stu != nil {
-					if d.Stu.Type == "getter" || d.Stu.Type == "setter" {
-						continue
-					}
 					fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, limitStr(" ✗ [Meth] "+stuMethString(d.Stu), col), Reset)
 				}
 			}
