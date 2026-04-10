@@ -31,16 +31,9 @@ func (p *StandardMemberParser) ParseAttribute(raw string, isEnumType bool) domai
 
 	// 1. Identify Kind and handle annotations
 	lowerRaw := strings.ToLower(raw)
-	isStatic := strings.Contains(lowerRaw, "static") || strings.Contains(lowerRaw, "{static}")
+	isStatic := strings.Contains(lowerRaw, "{static}") || strings.Contains(lowerRaw, "static")
 	isFinal := strings.Contains(lowerRaw, "final") || strings.Contains(lowerRaw, "const") || strings.Contains(lowerRaw, "{readonly}")
-
-	if isStatic && isFinal {
-		attr.Kind = "static-final"
-	} else if isStatic {
-		attr.Kind = "static"
-	} else if isFinal {
-		attr.Kind = "final"
-	}
+	isAbstract := strings.Contains(lowerRaw, "{abstract}") || strings.Contains(lowerRaw, "abstract")
 
 	// 2. Clean the string for structural parsing (remove keywords and annotations)
 	working := cleanMemberString(raw)
@@ -76,6 +69,27 @@ func (p *StandardMemberParser) ParseAttribute(raw string, isEnumType bool) domai
 		}
 	}
 
+	// --- Logic: Detect final by Naming (ALL_CAPS or name=value) ---
+	// 1. Case: name = value
+	if idx := strings.Index(attr.Name, "="); idx != -1 {
+		isFinal = true
+		attr.Name = strings.TrimSpace(attr.Name[:idx])
+	}
+	// 2. Case: ALL_CAPS (excluding visibility symbols)
+	if isAllUpperCase(strings.TrimLeft(attr.Name, "+-#~ ")) {
+		isFinal = true
+	}
+
+	if isStatic && isFinal {
+		attr.Kind = "static-final"
+	} else if isStatic {
+		attr.Kind = "static"
+	} else if isFinal {
+		attr.Kind = "final"
+	} else if isAbstract {
+		attr.Kind = "abstract"
+	}
+
 	// Enums: default missing type to "void"
 	if attr.Type == "" && isEnumType {
 		attr.Type = "void"
@@ -98,9 +112,9 @@ func (p *StandardMemberParser) ParseMethod(raw string, className string, attribu
 	lowerRaw := strings.ToLower(raw)
 
 	// Identify Kind
-	if strings.Contains(lowerRaw, "static") || strings.Contains(lowerRaw, "{static}") {
+	if strings.Contains(lowerRaw, "{static}") || strings.Contains(lowerRaw, "static") {
 		method.Kind = "static"
-	} else if strings.Contains(lowerRaw, "abstract") || strings.Contains(lowerRaw, "{abstract}") {
+	} else if strings.Contains(lowerRaw, "{abstract}") || strings.Contains(lowerRaw, "abstract") {
 		method.Kind = "abstract"
 	}
 

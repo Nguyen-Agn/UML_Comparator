@@ -94,12 +94,17 @@ func main() {
 			fmt.Printf("  %s└─ Methods (%d):%s\n", Blue, len(n.Methods), Reset)
 			for _, m := range n.Methods {
 				mColor := Reset
-				if m.Type == "getter" || m.Type == "setter" {
+				switch m.Type {
+				case "getter", "setter":
 					mColor = Green
-				} else if m.Type == "constructor" {
+				case "constructor":
 					mColor = Yellow + Bold
 				}
-				fmt.Printf("     • %s %s%-20s%s : %s%-10s%s (Type: %s%s%s)\n", m.Scope, mColor, m.Name+"()", Reset, Yellow, m.Output, Reset, Cyan, m.Type, Reset)
+				kindStr := ""
+				if m.Kind != "normal" {
+					kindStr = fmt.Sprintf(" [%s]", m.Kind)
+				}
+				fmt.Printf("     • %s %s%-20s%s : %s%-10s%s (Type: %s%s%s)%s\n", m.Scope, mColor, m.Name+"()", Reset, Yellow, m.Output, Reset, Cyan, m.Type, Reset, kindStr)
 			}
 		}
 	}

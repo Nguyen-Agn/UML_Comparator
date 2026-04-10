@@ -154,3 +154,20 @@ func splitParams(paramStr string) []string {
 	parts = append(parts, paramStr[start:])
 	return parts
 }
+
+// isAllUpperCase returns true if the string contains at least one letter and no lowercase letters.
+func isAllUpperCase(s string) bool {
+	if s == "" {
+		return false
+	}
+	hasAlpha := false
+	for _, r := range s {
+		if r >= 'a' && r <= 'z' {
+			return false
+		}
+		if r >= 'A' && r <= 'Z' {
+			hasAlpha = true
+		}
+	}
+	return hasAlpha
+}
