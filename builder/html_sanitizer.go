@@ -72,8 +72,8 @@ func (s *htmlSanitizer) clean(raw string) string {
 	// Step 3.5: Translate UML semantic styling tags (<i>, <u>) to keywords
 	// <i> -> italic -> abstract in UML
 	// <u> -> underline -> static in UML
-	raw = regexp.MustCompile(`(?i)<i>`).ReplaceAllString(raw, " {abstract} ")
-	raw = regexp.MustCompile(`(?i)<u>`).ReplaceAllString(raw, " {static} ")
+	raw = regexp.MustCompile(`(?i)<i\b[^>]*>`).ReplaceAllString(raw, " {abstract} ")
+	raw = regexp.MustCompile(`(?i)<u\b[^>]*>`).ReplaceAllString(raw, " {static} ")
 
 	// Step 4: strip HTML tags
 	// Structural tags -> newline; Styling tags -> nothing (prevents name fragmentation)

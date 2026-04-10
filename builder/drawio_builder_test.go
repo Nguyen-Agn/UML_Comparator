@@ -309,3 +309,39 @@ func TestBuild_EdgeNoteExtraction(t *testing.T) {
 	}
 	t.Logf("✔ edge note extracted: %s", edge.Note)
 }
+
+func TestBuild_StaticByStyleFontStyle4(t *testing.T) {
+	// fontStyle=4 is Underline -> represents static in UML
+	xml := `<mxGraphModel><root>
+	  <mxCell id="0"/><mxCell id="1" parent="0"/>
+	  <mxCell id="2" value="Config" style="swimlane;" vertex="1" parent="1">
+	    <mxGeometry width="140" height="60" as="geometry"/>
+	  </mxCell>
+	  <mxCell id="3" value="+ VERSION : String" style="text;fontStyle=4" vertex="1" parent="2">
+	    <mxGeometry y="26" width="140" height="26" as="geometry"/>
+	  </mxCell>
+	</root></mxGraphModel>`
+
+	b := builder.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(graph.Nodes) == 0 {
+		t.Fatal("expected 1 node")
+	}
+	n := graph.Nodes[0]
+
+	// Verify Attribute has {static} injected
+	found := false
+	for _, attr := range n.Attributes {
+		if strings.Contains(strings.ToLower(attr), "{static}") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected attribute to contain '{static}', got %v", n.Attributes)
+	}
+	t.Logf("✔ static by fontStyle=4 detection OK: Attrs=%v", n.Attributes)
+}
