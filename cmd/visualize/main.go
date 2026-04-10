@@ -126,7 +126,8 @@ func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) e
 	// ── 5. Match ─────────────────────────────────────────────────────────
 	fuzzy := matcher.NewLevenshteinMatcher()
 	arch := matcher.NewStandardArchAnalyzer()
-	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, 0.8)
+	validator := matcher.NewStandardIdentityValidator(matcher.NewAntonymDetector())
+	entityMatcher := matcher.NewStandardEntityMatcher(fuzzy, arch, validator, 0.8)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	// ── 6. Compare ───────────────────────────────────────────────────────
