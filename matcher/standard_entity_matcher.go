@@ -11,16 +11,18 @@ import (
 type StandardEntityMatcher struct {
 	fuzzyMatcher     IFuzzyMatcher
 	archAnalyzer     IArchAnalyzer
+	identValidator   IIdentityValidator
 	similarityThresh float64
 }
 
 var _ IEntityMatcher = (*StandardEntityMatcher)(nil)
 
-// NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher and architecture analyzer.
-func NewStandardEntityMatcher(fz IFuzzyMatcher, arch IArchAnalyzer, threshold float64) *StandardEntityMatcher {
+// NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher, architecture analyzer, and identity validator.
+func NewStandardEntityMatcher(fz IFuzzyMatcher, arch IArchAnalyzer, validator IIdentityValidator, threshold float64) *StandardEntityMatcher {
 	return &StandardEntityMatcher{
 		fuzzyMatcher:     fz,
 		archAnalyzer:     arch,
+		identValidator:   validator,
 		similarityThresh: threshold,
 	}
 }
@@ -56,9 +58,15 @@ func (m *StandardEntityMatcher) Match(solution *domain.SolutionProcessedUMLGraph
 			for _, stuNode := range student.Nodes {
 				if !studentAssigned[stuNode.ID] {
 
+					// Semantic Identity Check (Filter out antonyms early)
+					if m.identValidator != nil && !m.identValidator.IsValid(solNode.Name, stuNode.Name) {
+						continue
+					}
+
 					simScore := m.fuzzyMatcher.Compare(solNode.Name, stuNode.Name)
 					exactMatch := solNode.Type == stuNode.Type &&
 						strings.EqualFold(strings.TrimSpace(solNode.Name), strings.TrimSpace(stuNode.Name))
+
 					if exactMatch {
 						simScore = 1.0
 					}

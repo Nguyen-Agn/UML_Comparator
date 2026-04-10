@@ -53,7 +53,8 @@ func TestFuzzyMatcher(t *testing.T) {
 func TestStandardEntityMatcher(t *testing.T) {
 	fz := NewLevenshteinMatcher()
 	arch := NewStandardArchAnalyzer()
-	matcher := NewStandardEntityMatcher(fz, arch, 0.8)
+	validator := NewStandardIdentityValidator(NewAntonymDetector())
+	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.8)
 
 	solGraph := buildSolGraph(
 		solNode("Sol1", "User", "Class", 100),
@@ -92,7 +93,8 @@ func TestStandardEntityMatcher(t *testing.T) {
 func TestArchWeightPriority(t *testing.T) {
 	fz := NewLevenshteinMatcher()
 	arch := NewStandardArchAnalyzer()
-	matcher := NewStandardEntityMatcher(fz, arch, 0.75)
+	validator := NewStandardIdentityValidator(NewAntonymDetector())
+	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.75)
 
 	solGraph := buildSolGraph(solNode("S1", "Manager", "Class", 500))
 	stuGraph := buildStuGraph(
@@ -109,7 +111,8 @@ func TestArchWeightPriority(t *testing.T) {
 func TestInterfaceArchitectureMatch(t *testing.T) {
 	fz := NewLevenshteinMatcher()
 	arch := NewStandardArchAnalyzer()
-	matcher := NewStandardEntityMatcher(fz, arch, 0.75)
+	validator := NewStandardIdentityValidator(NewAntonymDetector())
+	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.75)
 
 	solGraph := buildSolGraph(solNode("S1", "IProductRepository", "Interface", 1000))
 	stuGraph := buildStuGraph(
@@ -127,7 +130,8 @@ func TestInterfaceArchitectureMatch(t *testing.T) {
 func TestToleranceArchitectureMatch(t *testing.T) {
 	fz := NewLevenshteinMatcher()
 	arch := NewStandardArchAnalyzer()
-	matcher := NewStandardEntityMatcher(fz, arch, 0.75)
+	validator := NewStandardIdentityValidator(NewAntonymDetector())
+	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.75)
 
 	solGraph := buildSolGraph(solNode("S1", "UserService", "Class", 539492352))
 	stuGraph := buildStuGraph(
@@ -145,7 +149,8 @@ func TestToleranceArchitectureMatch(t *testing.T) {
 func TestTwoPassMatching(t *testing.T) {
 	fz := NewLevenshteinMatcher()
 	arch := NewStandardArchAnalyzer()
-	matcher := NewStandardEntityMatcher(fz, arch, 0.8)
+	validator := NewStandardIdentityValidator(NewAntonymDetector())
+	matcher := NewStandardEntityMatcher(fz, arch, validator, 0.8)
 
 	solGraph := buildSolGraph(solNode("S1", "CruiseShip", "Class", 539492352))
 	stuGraph := buildStuGraph(
