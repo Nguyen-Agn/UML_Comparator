@@ -36,7 +36,8 @@ func main() {
 
 	fuzzy := matcher.NewLevenshteinMatcher()
 	arch := matcher.NewStandardArchAnalyzer()
-	var entityMatcher matcher.IEntityMatcher = matcher.NewStandardEntityMatcher(fuzzy, arch, 0.8)
+	validator := matcher.NewStandardIdentityValidator(matcher.NewAntonymDetector())
+	var entityMatcher matcher.IEntityMatcher = matcher.NewStandardEntityMatcher(fuzzy, arch, validator, 0.8)
 
 	// 2. Process Solution
 	fmt.Println("[2] Processing Solution Graph...")

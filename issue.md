@@ -1,9 +1,9 @@
-- [ ] Cải thiện phát hiện cách mối quan hệ
-- [ ] Cải thiện phát hiện <T,U>
-- [ ] Cải thiện phông: tên lớp in đậm
-- [ ] Đổi tên cột cho student ID --> Student name
-- [ ] Cải thiện nhận biết static + final
-- [ ] Tăng cường ràng buộc tên lớp
-- [ ] Viết phương pháp matching
-- [ ] Viết thông tin: videcode? khó khăn? giải pháp? phòng ngừa?
-- [ ] Tăng cường phương pháp syntax getters, setters
+- [ ] Cải thiện phát hiện cách mối quan hệ: hiện 2 tại chỉ có 2 mối quan hệ, cần mở rộng lên cách mối quan hệ mới
+- [OK] Cải thiện phát hiện <T,U>
+- [ ] Cải thiện phông: tên lớp in đậm: bắt lỗi in đậm tên class.
+- [ ] Đổi tên cột cho student ID --> Student name ở tệp .csv khi export, và cách diễn đạt (chủ yếu là tên cột, hàng)
+- [ ] Cải thiện nhận biết static + final: keywork cần được nhận biết chính xác hơn (gạch dưới, full Uppercase)
+- [OK] Tăng cường ràng buộc tên lớp: giảm độ nhạy với tên lớp ( hiện tại 80%), có thể tìm cách khác kết hợp tên class nếu có ý tưởng
+- [ ] Viết phương pháp matching: viết tài liệu về cách nối & so sánh ( tài liệu giải thuật)
+- [ ] Viết thông tin: videcode? khó khăn? giải pháp? phòng ngừa?: viết kinh nghiệm khi dùng videcode, gặp khó khăn gì? giải pháp đối phó? giải pháp phòng tránh?: này thầy chuẩn bị kinh nghiệm để triển khai videcode trong giảng dạy
+- [ ] Tăng cường phương pháp syntax getters, setters: kiểm tra các dùng getters, setters đa dạng ( testcase) và kiểm tra nó có đúng không? nếu không tìm lỗi và sửa.
