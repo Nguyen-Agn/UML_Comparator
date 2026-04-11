@@ -100,15 +100,23 @@ func (g *StandardGrader) Grade(report *domain.DiffReport, sol *domain.SolutionPr
 		for _, n := range detail.Class {
 			if n.Sol != nil {
 				penalty := calculateNodePenalty(n.Sol)
+				if category == "Formatting" {
+					if rule != nil && rule.Format_point > 0 {
+						penalty = rule.Format_point
+					} else {
+						penalty = 0.1 // Default formatting penalty
+					}
+				}
 				totalScore -= penalty
 				feedbacks = append(feedbacks, fmt.Sprintf("%s Node '%s': %s (Penalty: -%.1f)", category, n.Sol.Name, n.Description, penalty))
 			}
 		}
 	}
 
-	// Subtract points for missing and wrong items
+	// Subtract points for missing, wrong, and formatting items
 	processDetail(&report.MissingDetail, "Missing")
 	processDetail(&report.WrongDetail, "Wrong")
+	processDetail(&report.FormattingDetail, "Formatting")
 
 	// Ensure score doesn't drop below 0
 	totalScore = math.Max(0, totalScore)

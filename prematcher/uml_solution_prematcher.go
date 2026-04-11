@@ -106,9 +106,17 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 		cleanedNodeName = cleanText(cleanedNodeName)
 		isEnum := p.Detector.IsEnumType(node.Type)
 
+		isBold := node.IsBold
+		// Support markdown-like **Bold** syntax for automated test cases
+		if strings.HasPrefix(cleanedNodeName, "**") && strings.HasSuffix(cleanedNodeName, "**") && len(cleanedNodeName) > 4 {
+			isBold = true
+			cleanedNodeName = strings.TrimSpace(cleanedNodeName[2 : len(cleanedNodeName)-2])
+		}
+
 		pNode := domain.SolutionProcessedNode{
 			ID:         node.ID,
 			Name:       cleanedNodeName,
+			IsBold:     isBold,
 			Type:       p.Detector.NormalizeNodeType(node.Type),
 			Inherits:   inheritsMap[node.ID],
 			Implements: implementsMap[node.ID],

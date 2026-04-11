@@ -25,7 +25,7 @@ type IXMLParser interface {
 type ITextSanitizer interface {
 	clean(raw string) string
 	decodeOnly(raw string) string
-	extractCleanName(sanitized string) string
+	extractNameAndFormat(rawDecoded string) (string, bool)
 	normalizeSignature(sig string) string
 }
 
@@ -41,4 +41,9 @@ type ITypeDetector interface {
 // from a list of child mxCell elements belonging to a class container.
 type IMemberParser interface {
 	parseChildren(children []mxCell) (attrs, methods []string)
+}
+
+// IStyleHelper is the contract for parsing draw.io style configurations.
+type IStyleHelper interface {
+	IsStyleBitSet(style, key string, bit int) bool
 }

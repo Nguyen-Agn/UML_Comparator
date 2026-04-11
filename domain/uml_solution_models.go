@@ -21,6 +21,7 @@ type ScoreConfig struct {
 type SolutionProcessedNode struct {
 	ID         string
 	Name       string
+	IsBold     bool     // true if the node name is formatted as bold
 	Type       string   // Class, Interface, Abstract, Enum, etc.
 	ArchWeight uint32   // Bitwise architecture descriptor (same semantics as ProcessedNode)
 	Shortcut   uint32   // Bit 0=getters generated, Bit 1=setters generated

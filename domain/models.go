@@ -17,6 +17,7 @@ type UMLGraph struct {
 type UMLNode struct {
 	ID         string
 	Name       string
+	IsBold     bool   // true if the node name is formatted as bold
 	Type       string // e.g., "Class", "Interface", "Actor"
 	Attributes []string
 	Methods    []string
@@ -80,6 +81,8 @@ type DiffReport struct {
 	ExtraDetail DetailError
 	// CorrectDetail: items that match perfectly (Described as "Match").
 	CorrectDetail DetailError
+	// FormattingDetail: items that match functionally but have styling/UI mismatch
+	FormattingDetail DetailError
 }
 
 // GradeResult contains the final score and text feedbacks.

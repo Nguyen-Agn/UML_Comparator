@@ -29,17 +29,20 @@ type DrawioModelBuilder struct {
 	san     ITextSanitizer // text cleaning + name extraction
 	types   ITypeDetector  // node type + relation type classification
 	members IMemberParser  // attribute vs method classification
+	style   IStyleHelper   // style extraction
 }
 
 // NewDrawioModelBuilder (formerly NewStandardModelBuilder) wires all sub-components
 // and returns the builder as its IModelBuilder interface.
 func NewDrawioModelBuilder() IModelBuilder {
 	san := newHTMLSanitizer()
+	style := NewStyleHelper()
 	return &DrawioModelBuilder{
 		parser:  &cellParser{},
 		san:     san,
 		types:   &typeDetector{san: san},
-		members: &memberParser{san: san},
+		members: &memberParser{san: san, style: style},
+		style:   style,
 	}
 }
 
@@ -110,14 +113,17 @@ func (b *DrawioModelBuilder) Build(rawData domain.RawModelData) (*domain.UMLGrap
 // buildNode assembles a single UMLNode from a container cell and its children.
 func (b *DrawioModelBuilder) buildNode(container mxCell, children []mxCell) domain.UMLNode {
 	// decodeOnly: entities decoded but HTML tags + stereotypes still present.
-	// Used ONLY for type detection — stereotypes must be visible here.
+	// Used ONLY for type detection and name/format extraction.
 	rawDecoded := b.san.decodeOnly(container.Value)
 
-	// clean: fully sanitized text with HTML tags + stereotypes removed.
-	// Used for name extraction and member parsing.
-	sanitizedValue := b.san.clean(container.Value)
-	name := b.san.extractCleanName(sanitizedValue)
+	// properly extract the name from the first line and check if it was bolded
+	name, isHtmlBold := b.san.extractNameAndFormat(rawDecoded)
+	isBold := isHtmlBold || b.style.IsStyleBitSet(container.Style, "fontStyle", 1)
 
+	// clean: fully sanitized text with HTML tags + stereotypes removed.
+	// Now used primarily for type detection (if it relies on clean text) or child detection,
+	// though member parser cleans child.Value on its own.
+	
 	// Type: detected from raw decoded value (stereotype visible), fallback child pattern
 	nodeType := b.types.nodeType(container.Style, rawDecoded)
 	if nodeType == "Class" && b.types.isEnumByChildPattern(children) {
@@ -129,6 +135,7 @@ func (b *DrawioModelBuilder) buildNode(container mxCell, children []mxCell) doma
 	return domain.UMLNode{
 		ID:         container.ID,
 		Name:       name,
+		IsBold:     isBold,
 		Type:       nodeType,
 		Attributes: attrs,
 		Methods:    methods,

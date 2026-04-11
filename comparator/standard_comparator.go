@@ -81,6 +81,14 @@ func (c *StandardComparator) Compare(solution *domain.SolutionProcessedUMLGraph,
 			report.CorrectDetail.Class = append(report.CorrectDetail.Class, domain.NodeDiff{Sol: &solNode, Stu: stuNode, Description: "Match"})
 		}
 
+		if solNode.IsBold != stuNode.IsBold {
+			report.FormattingDetail.Class = append(report.FormattingDetail.Class, domain.NodeDiff{
+				Sol:         &solNode,
+				Stu:         stuNode,
+				Description: "Formatting mismatch (Expected/Missing Bold)",
+			})
+		}
+
 		// Compare content inside the node via MemberComparator
 		c.memberComparator.CompareAttributes(solNode, *stuNode, typeMap, report)
 		c.memberComparator.CompareMethods(solNode, *stuNode, typeMap, report)
