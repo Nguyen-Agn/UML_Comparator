@@ -3,7 +3,7 @@
 - [ ] Cải thiện phông: tên lớp in đậm
 - [x] Đổi tên cột cho student ID --> Student name
 - [x] Cải thiện nhận biết static + final
-- [ ] Tăng cường ràng buộc tên lớp
+- [x] Tăng cường ràng buộc tên lớp
 - [ ] Viết phương pháp matching
 - [ ] Viết thông tin: videcode? khó khăn? giải pháp? phòng ngừa?
-- [ ] Tăng cường phương pháp syntax getters, setters
+- [x] Tăng cường phương pháp syntax getters, setters
