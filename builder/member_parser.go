@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"strconv"
 	"strings"
 )
 
@@ -20,7 +19,8 @@ const (
 )
 
 type memberParser struct {
-	san ITextSanitizer // depends on abstraction, not *htmlSanitizer (DIP)
+	san   ITextSanitizer // depends on abstraction, not *htmlSanitizer (DIP)
+	style IStyleHelper
 }
 
 // Compile-time interface satisfaction check.
@@ -44,12 +44,12 @@ func (m *memberParser) parseChildren(children []mxCell) (attrs, methods []string
 		// 2. Detect semantic styling from Draw.io 'style' attribute bitmask
 		// fontStyle bits: 1=Bold, 2=Italic (Abstract), 4=Underline (Static)
 		style := child.Style
-		if m.isStyleBitSet(style, "fontStyle", 4) {
+		if m.style.IsStyleBitSet(style, "fontStyle", 4) {
 			if !strings.Contains(strings.ToLower(text), "{static}") {
 				text += " {static}"
 			}
 		}
-		if m.isStyleBitSet(style, "fontStyle", 2) {
+		if m.style.IsStyleBitSet(style, "fontStyle", 2) {
 			if !strings.Contains(strings.ToLower(text), "{abstract}") {
 				text += " {abstract}"
 			}
@@ -132,19 +132,3 @@ func (m *memberParser) classify(t string) lineKind {
 	return lineAttr
 }
 
-// isStyleBitSet parses a semicolon-separated Draw.io style string and checks
-// if a specific key's integer value has a bit set.
-// Example: "fontStyle=5" & bit 4 -> true (1|4 = 5)
-func (m *memberParser) isStyleBitSet(style, key string, bit int) bool {
-	parts := strings.Split(style, ";")
-	for _, part := range parts {
-		if strings.HasPrefix(part, key+"=") {
-			valStr := part[len(key)+1:]
-			val, err := strconv.Atoi(valStr)
-			if err == nil {
-				return (val & bit) != 0
-			}
-		}
-	}
-	return false
-}

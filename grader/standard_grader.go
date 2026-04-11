@@ -67,6 +67,21 @@ func (g *StandardGrader) Grade(report *domain.DiffReport, sol *domain.SolutionPr
 	totalScore := maxScore
 	var feedbacks []string
 
+	// --- Static Validation Phase (Convention Checks) ---
+	// Scan student nodes to enforce UML convention (Bold class names) independently of the Solution.
+	if stu != nil {
+		for _, stuNode := range stu.Nodes {
+			if stuNode.Type == "Class" && !stuNode.IsBold {
+				penalty := 0.1 // DEFAULT PENALTY POINT FOR UNBOLD CLASS NAME
+				if rule != nil && rule.Format_Penalty > 0 {
+					penalty = rule.Format_Penalty
+				}
+				totalScore -= penalty
+				feedbacks = append(feedbacks, fmt.Sprintf("Formatting Penalty: Class '%s' is missing bold format (-%.1f)", stuNode.Name, penalty))
+			}
+		}
+	}
+
 	// Helper to handle DetailError category deductions
 	processDetail := func(detail *domain.DetailError, category string) {
 		// Calculate edge omissions
