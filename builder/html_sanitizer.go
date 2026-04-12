@@ -111,23 +111,40 @@ func (s *htmlSanitizer) decodeOnly(raw string) string {
 	return raw
 }
 
-// extractCleanName returns the first non-empty, non-stereotype line from a
-// sanitized multi-line string — i.e., strips <<interface>>, <<abstract>>,
-// <<enum>> tokens whether standalone or inline with the class name.
-func (s *htmlSanitizer) extractCleanName(sanitized string) string {
-	for _, line := range strings.Split(sanitized, "\n") {
+// extractNameAndFormat takes the raw decoded string (which still has HTML tags),
+// isolates the first non-empty line representing the class name, checks if it is
+// wrapped in bold tags (<b> or <strong>), and returns the clean name along with its bold status.
+func (s *htmlSanitizer) extractNameAndFormat(rawDecoded string) (string, bool) {
+	// Step 3.5 equivalent: Translate UML semantic styling tags (<i>, <u>) to keywords
+	// before structural/styling tags are stripped so they appear in the name.
+	rawDecoded = regexp.MustCompile(`(?i)<i\b[^>]*>`).ReplaceAllString(rawDecoded, " {abstract} ")
+	rawDecoded = regexp.MustCompile(`(?i)<u\b[^>]*>`).ReplaceAllString(rawDecoded, " {static} ")
+
+	// Structural tags -> newline
+	cleanStr := s.tagStructuralRe.ReplaceAllString(rawDecoded, "\n")
+
+	for _, line := range strings.Split(cleanStr, "\n") {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || trimmed == "{abstract}" || trimmed == "{static}" {
-			continue
-		}
+
 		// Strip all <<...>> tokens anywhere in the line
-		clean := strings.TrimSpace(s.stereoRe.ReplaceAllString(trimmed, ""))
-		if clean == "" || clean == "{abstract}" || clean == "{static}" {
+		stereoStripped := strings.TrimSpace(s.stereoRe.ReplaceAllString(trimmed, ""))
+
+		pureText := s.tagStylingRe.ReplaceAllString(stereoStripped, "")
+		pureText = strings.TrimSpace(pureText)
+
+		if pureText == "" || pureText == "{abstract}" || pureText == "{static}" {
 			continue // entire line was stereotype annotation or just a marker
 		}
-		return clean
+
+		// This line is the name line. Check if it contains bold tags (case insensitive)
+		lowerLine := strings.ToLower(stereoStripped)
+		isBold := strings.Contains(lowerLine, "<b>") || strings.Contains(lowerLine, "<strong>")
+
+		return pureText, isBold
 	}
-	return sanitized // fallback: return as-is
+	
+	cleanFallback := s.tagStylingRe.ReplaceAllString(cleanStr, "")
+	return strings.TrimSpace(cleanFallback), false
 }
 
 // normalizeSignature collapses redundant internal whitespace in a method

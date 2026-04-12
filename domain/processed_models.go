@@ -11,6 +11,7 @@ type ProcessedUMLGraph struct {
 type ProcessedNode struct {
 	ID         string
 	Name       string
+	IsBold     bool     // true if the student formatted the node name as bold
 	Type       string   // Class, Interface, etc.
 	ArchWeight uint32   // Bitwise description of architecture (e.g., has Singleton, has Factory)
 	Shortcut   uint32   // Bitwise: Bit 0 (1): getters, Bit 1 (2): setters

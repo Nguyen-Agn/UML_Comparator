@@ -66,6 +66,7 @@ func (p *StandardPreMatcher) Process(graph *domain.UMLGraph) (*domain.ProcessedU
 		pNode := domain.ProcessedNode{
 			ID:         node.ID,
 			Name:       cleanText(node.Name),
+			IsBold:     node.IsBold,
 			Type:       p.Detector.NormalizeNodeType(node.Type),
 			Inherits:   inheritsMap[node.ID],
 			Implements: implementsMap[node.ID],

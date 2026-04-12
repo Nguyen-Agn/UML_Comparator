@@ -17,6 +17,7 @@ type UMLGraph struct {
 type UMLNode struct {
 	ID         string
 	Name       string
+	IsBold     bool   // true if the node name is formatted as bold
 	Type       string // e.g., "Class", "Interface", "Actor"
 	Attributes []string
 	Methods    []string
