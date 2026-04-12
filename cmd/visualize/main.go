@@ -7,11 +7,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"uml_compare/builder"
+	"uml_compare/cmd/share"
 	"uml_compare/comparator"
 	"uml_compare/domain"
 	"uml_compare/grader"
@@ -22,25 +21,14 @@ import (
 )
 
 func main() {
-	// If no arguments, enter INTERACTIVE mode (replaces the .bat file)
 	if len(os.Args) <= 1 {
-		fmt.Printf("📊 UML Visual Report Generator (Interactive Mode)\n")
+		share.PrintBanner("UML Visual Report Generator — Interactive Mode")
 		fmt.Printf("   Tip: You can also drag & drop files here!\n\n")
 		runInteractiveLoop()
 		return
 	}
 
-	isAdmin := false
-	var args []string
-
-	// Parse flags manually
-	for _, arg := range os.Args {
-		if arg == "--admin" {
-			isAdmin = true
-		} else {
-			args = append(args, arg)
-		}
-	}
+	isAdmin, args := parseFlags(os.Args)
 
 	if len(args) < 3 {
 		fmt.Println("Usage: visualize_cli.exe [--admin] <solution.drawio> <student.drawio> [output.html]")
@@ -49,8 +37,6 @@ func main() {
 
 	solutionPath := args[1]
 	studentPath := args[2]
-
-	// Determine output path
 	outputPath := ""
 	if len(args) >= 4 {
 		outputPath = args[3]
@@ -62,86 +48,105 @@ func main() {
 	}
 }
 
-// runComparison encapsulates the full grading and visualization pipeline.
+// parseFlags tách flag --admin khỏi danh sách args còn lại.
+func parseFlags(rawArgs []string) (isAdmin bool, args []string) {
+	for _, arg := range rawArgs {
+		if arg == "--admin" {
+			isAdmin = true
+		} else {
+			args = append(args, arg)
+		}
+	}
+	return
+}
+
+// runComparison thực hiện toàn bộ pipeline và xuất HTML report.
 func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) error {
-
-	// ── 1. Parse ─────────────────────────────────────────────────────────
-	p, err := parser.GetParser(solutionPath)
+	// ── 1. Parse ──────────────────────────────────────────────────────────
+	solRaw, stuRaw, err := parseBothFiles(solutionPath, studentPath)
 	if err != nil {
-		fmt.Printf("❌ Parser error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
-	solRaw, err := p.Parse(solutionPath)
-	if err != nil {
-		fmt.Printf("❌ Parse solution error: %v\n", err)
-		os.Exit(1)
-	}
-
-	stuRaw, err := p.Parse(studentPath)
-	if err != nil {
-		fmt.Printf("❌ Parse student error: %v\n", err)
-		os.Exit(1)
-	}
-
-	// ── 2. Build ─────────────────────────────────────────────────────────
+	// ── 2. Build ──────────────────────────────────────────────────────────
 	b := builder.NewStandardModelBuilder()
-
 	solGraph, err := b.Build(solRaw)
 	if err != nil {
-		fmt.Printf("❌ Build solution error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("build solution: %w", err)
 	}
-
 	stuGraph, err := b.Build(stuRaw)
 	if err != nil {
-		fmt.Printf("❌ Build student error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("build student: %w", err)
 	}
+	printLoadStatus(solGraph, stuGraph)
 
-	fmt.Printf("   ✅ Loaded solution: %d nodes, %d edges\n", len(solGraph.Nodes), len(solGraph.Edges))
-	fmt.Printf("   ✅ Loaded student:  %d nodes, %d edges\n", len(stuGraph.Nodes), len(stuGraph.Edges))
-
-	// ── 3. Validate ──────────────────────────────────────────────────────
+	// ── 3. Validate ───────────────────────────────────────────────────────
 	allIssues := append(
 		domain.ValidateGraph(solGraph, "Solution"),
 		domain.ValidateGraph(stuGraph, "Student")...,
 	)
-	hardErrors := domain.FilterErrors(allIssues)
-	if len(hardErrors) > 0 {
+	if hardErrors := domain.FilterErrors(allIssues); len(hardErrors) > 0 {
 		fmt.Printf("❌ Integrity errors — pipeline halted:\n")
 		for _, e := range hardErrors {
 			fmt.Printf("   • %s\n", e.Error())
 		}
-		os.Exit(1)
+		return fmt.Errorf("integrity check failed")
 	}
 
-	// ── 4. PreMatch ──────────────────────────────────────────────────────
+	// ── 4. PreMatch ───────────────────────────────────────────────────────
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
-
 	stuProc, _ := stdPM.Process(stuGraph)
 	solForMatch, _ := solPM.ProcessSolution(solGraph)
 
-	// ── 5. Match ─────────────────────────────────────────────────────────
+	// ── 5. Match ──────────────────────────────────────────────────────────
 	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
-	// ── 6. Compare ───────────────────────────────────────────────────────
+	// ── 6. Compare ────────────────────────────────────────────────────────
 	comp := comparator.NewStandardComparator()
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
-	// ── 7. Grade ─────────────────────────────────────────────────────────
+	// ── 7. Grade ──────────────────────────────────────────────────────────
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 	gradeResult, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
-
 	fmt.Printf("   📈 Score: %.2f / %.2f (%.1f%%)\n\n", gradeResult.TotalScore, gradeResult.MaxScore, gradeResult.CorrectPercent)
 
-	// ── 8. Visualize ─────────────────────────────────────────────────────
+	// ── 8. Visualize ──────────────────────────────────────────────────────
+	return exportReports(gradeResult, studentPath, outputPath, isAdmin)
+}
+
+// ── Print / IO Layer ─────────────────────────────────────────────────────────
+
+// parseBothFiles parse cả hai file drawio/solution, trả về raw bytes.
+func parseBothFiles(solutionPath, studentPath string) (domain.RawModelData, domain.RawModelData, error) {
+	p, err := parser.GetParser(solutionPath)
+	if err != nil {
+		return "", "", fmt.Errorf("parser factory: %w", err)
+	}
+	solRaw, err := p.Parse(solutionPath)
+	if err != nil {
+		return "", "", fmt.Errorf("parse solution: %w", err)
+	}
+	stuRaw, err := p.Parse(studentPath)
+	if err != nil {
+		return "", "", fmt.Errorf("parse student: %w", err)
+	}
+	return solRaw, stuRaw, nil
+}
+
+// printLoadStatus in số node/edge sau khi build thành công.
+func printLoadStatus(solGraph, stuGraph *domain.UMLGraph) {
+	fmt.Printf("   ✅ Loaded solution: %d nodes, %d edges\n", len(solGraph.Nodes), len(solGraph.Edges))
+	fmt.Printf("   ✅ Loaded student:  %d nodes, %d edges\n", len(stuGraph.Nodes), len(stuGraph.Edges))
+}
+
+// exportReports xuất HTML report cho grader và student, rồi auto-open.
+func exportReports(gradeResult *domain.GradeResult, studentPath, outputPath string, isAdmin bool) error {
 	vis := visualizer.NewHTMLVisualizer()
 
-	// Ensure output path has .html
+	// Resolve output path
 	if outputPath == "" {
 		baseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
 		outputPath = fmt.Sprintf("report_%s.html", baseName)
@@ -150,44 +155,27 @@ func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) e
 		outputPath += ".html"
 	}
 
-	// 8a. Full grader report
+	// Full grader report
 	if err := vis.ExportHTML(gradeResult, outputPath); err != nil {
-		return fmt.Errorf("export error: %w", err)
+		return fmt.Errorf("export grader report: %w", err)
 	}
 	fmt.Printf("✅ Grader report:  %s\n", outputPath)
 
-	// 8b. Student report
+	// Student feedback report
 	stuBaseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
 	studentOutputPath := fmt.Sprintf("feedback_%s.html", stuBaseName)
 	if err := vis.ExportStudentHTML(gradeResult, studentOutputPath); err != nil {
-		return fmt.Errorf("student report export error: %w", err)
+		return fmt.Errorf("export student report: %w", err)
 	}
 	fmt.Printf("✅ Student report: %s\n", studentOutputPath)
 
-	// ── 9. Auto-open ─────────────────────────────────────────────────────
+	// Auto-open
 	targetToOpen := studentOutputPath
 	if isAdmin {
 		targetToOpen = outputPath
 	}
 	absPath, _ := filepath.Abs(targetToOpen)
-	openBrowser(absPath)
+	share.OpenFile(absPath)
 
 	return nil
-}
-
-// openBrowser opens the given file path in the default browser.
-func openBrowser(path string) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", path)
-	case "darwin":
-		cmd = exec.Command("open", path)
-	default: // linux
-		cmd = exec.Command("xdg-open", path)
-	}
-	if err := cmd.Start(); err != nil {
-		fmt.Printf("⚠️  Could not auto-open browser: %v\n", err)
-		fmt.Printf("   Open manually: %s\n", path)
-	}
 }

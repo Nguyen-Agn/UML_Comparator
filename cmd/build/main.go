@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"uml_compare/builder"
+	"uml_compare/cmd/share"
 	"uml_compare/domain"
-	"uml_compare/parser"
 )
 
 func main() {
@@ -17,40 +16,34 @@ func main() {
 		filePath = os.Args[1]
 	}
 
-	fmt.Println("╔══════════════════════════════════════════════════╗")
-	fmt.Println("║     UML Compare - Builder Visual Output Demo     ║")
-	fmt.Println("╚══════════════════════════════════════════════════╝")
+	share.PrintBanner("UML Compare - Builder Visual Output Demo")
 	fmt.Printf("📂 Input file : %s\n\n", filePath)
 
-	p, err := parser.GetParser(filePath)
+	graph, err := run(filePath)
 	if err != nil {
-		fmt.Printf("❌ Parser error: %v\n", err)
-		os.Exit(1)
-	}
-	rawModel, err := p.Parse(filePath)
-	if err != nil {
-		fmt.Printf("❌ Parser error: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("✅ [Parser]  RawModelData: %d chars\n\n", len(rawModel))
-
-	b, err := builder.GetBuilder("drawio")
-	if err != nil {
-		fmt.Printf("❌ Factory error: %v\n", err)
-		os.Exit(1)
-	}
-	graph, err := b.Build(rawModel)
-	if err != nil {
-		fmt.Printf("❌ Builder error: %v\n", err)
+		fmt.Printf("❌ Error: %v\n", err)
 		os.Exit(1)
 	}
 
+	printGraph(graph)
+}
+
+// run thực hiện toàn bộ pipeline Parse → Build và trả về UMLGraph.
+func run(filePath string) (*domain.UMLGraph, error) {
+	return share.LoadGraph(filePath)
+}
+
+// ── Print Layer ───────────────────────────────────────────────────────────────
+
+// printGraph in tổng quan graph và gọi các hàm in chi tiết.
+func printGraph(g *domain.UMLGraph) {
 	fmt.Printf("✅ [Builder] UMLGraph built successfully\n")
-	fmt.Printf("   ├─ Nodes : %d\n", len(graph.Nodes))
-	fmt.Printf("   └─ Edges : %d\n\n", len(graph.Edges))
-	printNodes(graph)
-	printEdges(graph)
-	printEdgeDiagram(graph)
+	fmt.Printf("   ├─ Nodes : %d\n", len(g.Nodes))
+	fmt.Printf("   └─ Edges : %d\n\n", len(g.Edges))
+
+	printNodes(g)
+	printEdges(g)
+	printEdgeDiagram(g)
 }
 
 func printNodes(g *domain.UMLGraph) {
@@ -107,6 +100,8 @@ func printEdgeDiagram(g *domain.UMLGraph) {
 	}
 	fmt.Println("──────────────────────────────────────────────────────")
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 func nodeNameByID(g *domain.UMLGraph, id string) string {
 	for _, n := range g.Nodes {

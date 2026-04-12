@@ -7,24 +7,24 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"uml_compare/builder"
+	"uml_compare/cmd/share"
 	"uml_compare/comparator"
 	"uml_compare/domain"
 	"uml_compare/grader"
 	"uml_compare/matcher"
-	"uml_compare/parser"
 	"uml_compare/prematcher"
 )
 
-const (
-	Reset  = "\033[0m"
-	Red    = "\033[31m"
-	Green  = "\033[32m"
-	Yellow = "\033[33m"
-	Blue   = "\033[34m"
-	Cyan   = "\033[36m"
-	Bold   = "\033[1m"
-)
+// compareResult chứa toàn bộ dữ liệu kết quả pipeline để truyền vào print layer.
+type compareResult struct {
+	SolProcessed *domain.SolutionProcessedUMLGraph
+	StuProcessed *domain.ProcessedUMLGraph
+	SolStd       *domain.ProcessedUMLGraph // dùng cho edge comparison display
+	Mapping      domain.MappingTable
+	DiffReport   *domain.DiffReport
+	GradeResult  *domain.GradeResult
+	Warnings     []domain.IntegrityError
+}
 
 func main() {
 	if len(os.Args) < 3 {
@@ -33,131 +33,144 @@ func main() {
 		os.Exit(1)
 	}
 
-	solutionPath := os.Args[1]
-	studentPath := os.Args[2]
+	share.PrintBanner("UML Compare — Data Flow Integrity Check")
 
-	fmt.Printf("%s╔══════════════════════════════════════════════════════════╗%s\n", Blue, Reset)
-	fmt.Printf("%s║          UML Compare — Data Flow Integrity Check         ║%s\n", Blue+Bold, Reset)
-	fmt.Printf("%s╚══════════════════════════════════════════════════════════╝%s\n", Blue, Reset)
-
-	solutionGraph := loadGraph(solutionPath, "📘 Solution")
-	studentGraph := loadGraph(studentPath, "📄 Student")
-
-	// ── Integrity Validation Gate ─────────────────────────────────
-	fmt.Printf("\n%s── [GATE] Data Integrity Check ──────────────────────────────%s\n", Cyan+Bold, Reset)
-	solErrs := domain.ValidateGraph(solutionGraph, "Solution")
-	stuErrs := domain.ValidateGraph(studentGraph, "Student")
-	allIssues := append(solErrs, stuErrs...)
-
-	hardErrors := domain.FilterErrors(allIssues)
-	rawWarnings := domain.FilterWarns(allIssues)
-	warnings := []domain.IntegrityError{}
-	for _, w := range rawWarnings {
-		// Suppress warnings for pure shortcuts like "+ getters / setters"
-		lowerMsg := strings.ToLower(w.Message)
-		if w.Code == "INCOMPLETE_ATTRIBUTE" && (strings.Contains(lowerMsg, "getter") || strings.Contains(lowerMsg, "setter")) {
-			continue
-		}
-		warnings = append(warnings, w)
-	}
-
-	if len(warnings) > 0 {
-		fmt.Printf("%s⚠️  UML Quality Warnings (%d) — comparison continues:%s\n", Yellow+Bold, len(warnings), Reset)
-		for _, w := range warnings {
-			fmt.Printf("   • %s\n", w.Error())
-		}
-	}
-	if len(hardErrors) > 0 {
-		fmt.Printf("%s❌ INTEGRITY ERRORS — Pipeline halted:%s\n", Red+Bold, Reset)
-		for _, e := range hardErrors {
-			fmt.Printf("   • %s\n", e.Error())
-		}
+	result, err := run(os.Args[1], os.Args[2])
+	if err != nil {
+		fmt.Printf("%s❌ Pipeline error: %v%s\n", share.Red+share.Bold, err, share.Reset)
 		os.Exit(1)
 	}
-	if len(warnings) == 0 {
-		fmt.Printf("%s✅ Both graphs pass — proceeding to comparison%s\n", Green, Reset)
-	} else {
-		fmt.Printf("%s⚠️  Continuing with warnings — results may be partially inaccurate%s\n", Yellow, Reset)
+
+	printCompareResult(result)
+}
+
+// run thực hiện toàn bộ pipeline: Load → Validate → PreMatch → Match → Compare → Grade.
+// Dừng sớm và trả lỗi nếu có integrity error.
+func run(solutionPath, studentPath string) (*compareResult, error) {
+	// 1. Load graphs
+	solutionGraph, err := share.LoadGraph(solutionPath)
+	if err != nil {
+		return nil, fmt.Errorf("load solution: %w", err)
+	}
+	studentGraph, err := share.LoadGraph(studentPath)
+	if err != nil {
+		return nil, fmt.Errorf("load student: %w", err)
 	}
 
-	// ── AI Matcher Integration ───────────────────────────────────
+	// 2. Integrity Validation
+	allIssues := append(
+		domain.ValidateGraph(solutionGraph, "Solution"),
+		domain.ValidateGraph(studentGraph, "Student")...,
+	)
+	hardErrors := domain.FilterErrors(allIssues)
+	if len(hardErrors) > 0 {
+		msgs := make([]string, len(hardErrors))
+		for i, e := range hardErrors {
+			msgs[i] = e.Error()
+		}
+		return nil, fmt.Errorf("integrity errors:\n   • %s", strings.Join(msgs, "\n   • "))
+	}
+
+	warnings := filterDisplayWarnings(domain.FilterWarns(allIssues))
+
+	// 3. PreMatch
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
-	solProc, _ := stdPM.Process(solutionGraph) // Used for display & comparator
-	stuProc, _ := stdPM.Process(studentGraph)
-	solForMatch, _ := solPM.ProcessSolution(solutionGraph) // Used for OR-aware matching
 
+	solStd, _ := stdPM.Process(solutionGraph)  // dùng cho edge display
+	stuProc, _ := stdPM.Process(studentGraph)
+	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
+
+	// 4. Match
 	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
-	// ── Advanced Comparator ──────────────────────────────────────
+	// 5. Compare
 	comp := comparator.NewStandardComparator()
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
-	// ── Side-by-side Node Comparison ─────────────────────────────
-	fmt.Printf("\n%s── [COMPARE] Nodes Side-by-Side ────────────────────────────%s\n", Cyan+Bold, Reset)
-	printSideBySideNodes(solForMatch, stuProc, mapping, diffReport)
-
-	// ── Edge Comparison ──────────────────────────────────────────
-	fmt.Printf("\n%s── [COMPARE] Edges (Relations) ──────────────────────────────%s\n", Cyan+Bold, Reset)
-	printEdgeComparison(solProc, stuProc, mapping)
-
-	// ── Detailed Report ──────────────────────────────────────────
-	fmt.Printf("\n%s── [REPORT] Detailed Diff ─────────────────────────────────%s\n", Cyan+Bold, Reset)
-	printDiffReport(diffReport)
-
-	// ── Summary ──────────────────────────────────────────────────
-	fmt.Printf("\n%s── [SUMMARY] Quick Stats ────────────────────────────────────%s\n", Cyan+Bold, Reset)
-	printSummary(solProc, stuProc, mapping)
-
-	// ── Grading ──────────────────────────────────────────────────
-	fmt.Printf("\n%s── [GRADER] Final Score ───────────────────────────────────────%s\n", Cyan+Bold, Reset)
+	// 6. Grade
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 	gradeResult, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
 
-	scoreColor := Green
-	if gradeResult.CorrectPercent < 90 {
-		scoreColor = Yellow
+	return &compareResult{
+		SolProcessed: solForMatch,
+		StuProcessed: stuProc,
+		SolStd:       solStd,
+		Mapping:      mapping,
+		DiffReport:   diffReport,
+		GradeResult:  gradeResult,
+		Warnings:     warnings,
+	}, nil
+}
+
+// filterDisplayWarnings lọc bỏ các warning không cần hiển thị (getter/setter shortcuts).
+func filterDisplayWarnings(warns []domain.IntegrityError) []domain.IntegrityError {
+	out := warns[:0]
+	for _, w := range warns {
+		lower := strings.ToLower(w.Message)
+		if w.Code == "INCOMPLETE_ATTRIBUTE" && (strings.Contains(lower, "getter") || strings.Contains(lower, "setter")) {
+			continue
+		}
+		out = append(out, w)
 	}
-	if gradeResult.CorrectPercent < 60 {
-		scoreColor = Red
+	return out
+}
+
+// ── Print Layer ───────────────────────────────────────────────────────────────
+
+// printCompareResult điều phối toàn bộ việc in kết quả ra stdout.
+func printCompareResult(r *compareResult) {
+	printIntegrityStatus(r.Warnings)
+	printSideBySideNodes(r.SolProcessed, r.StuProcessed, r.Mapping, r.DiffReport)
+	printEdgeComparison(r.SolStd, r.StuProcessed, r.Mapping)
+	printDiffReport(r.DiffReport)
+	printSummary(r.SolStd, r.StuProcessed, r.Mapping)
+	printGradeResult(r.GradeResult)
+}
+
+// printIntegrityStatus in kết quả kiểm tra integrity (warnings nếu có).
+func printIntegrityStatus(warnings []domain.IntegrityError) {
+	fmt.Printf("\n%s── [GATE] Data Integrity Check ──────────────────────────────%s\n", share.Cyan+share.Bold, share.Reset)
+	if len(warnings) > 0 {
+		fmt.Printf("%s⚠️  UML Quality Warnings (%d) — comparison continues:%s\n", share.Yellow+share.Bold, len(warnings), share.Reset)
+		for _, w := range warnings {
+			fmt.Printf("   • %s\n", w.Error())
+		}
+		fmt.Printf("%s⚠️  Continuing with warnings — results may be partially inaccurate%s\n", share.Yellow, share.Reset)
+	} else {
+		fmt.Printf("%s✅ Both graphs pass — proceeding to comparison%s\n", share.Green, share.Reset)
 	}
-	fmt.Printf("  %sScore: %.2f / %.2f (%.2f%%)%s\n", scoreColor+Bold, gradeResult.TotalScore, gradeResult.MaxScore, gradeResult.CorrectPercent, Reset)
-	if len(gradeResult.Feedbacks) > 0 {
-		fmt.Printf("\n  %sDeductions Log:%s\n", Yellow, Reset)
-		for _, f := range gradeResult.Feedbacks {
+}
+
+// printGradeResult in điểm số cuối cùng và log khấu trừ.
+func printGradeResult(gr *domain.GradeResult) {
+	fmt.Printf("\n%s── [GRADER] Final Score ───────────────────────────────────────%s\n", share.Cyan+share.Bold, share.Reset)
+
+	scoreColor := share.Green
+	if gr.CorrectPercent < 90 {
+		scoreColor = share.Yellow
+	}
+	if gr.CorrectPercent < 60 {
+		scoreColor = share.Red
+	}
+	fmt.Printf("  %sScore: %.2f / %.2f (%.2f%%)%s\n",
+		scoreColor+share.Bold, gr.TotalScore, gr.MaxScore, gr.CorrectPercent, share.Reset)
+
+	if len(gr.Feedbacks) > 0 {
+		fmt.Printf("\n  %sDeductions Log:%s\n", share.Yellow, share.Reset)
+		for _, f := range gr.Feedbacks {
 			fmt.Printf("   • %s\n", f)
 		}
 	}
 }
 
-func loadGraph(filePath, label string) *domain.UMLGraph {
-	fmt.Printf("\n%s: %s\n", label, filePath)
-	p, err := parser.GetParser(filePath)
-	if err != nil {
-		fmt.Printf("  ❌ Parser error: %v\n", err)
-		os.Exit(1)
-	}
-	rawXML, err := p.Parse(filePath)
-	if err != nil {
-		fmt.Printf("  ❌ Parser error: %v\n", err)
-		os.Exit(1)
-	}
-
-	b := builder.NewStandardModelBuilder()
-	graph, err := b.Build(rawXML)
-	if err != nil {
-		fmt.Printf("  ❌ Builder error: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  %s✅ Loaded: %d nodes, %d edges%s\n", Green, len(graph.Nodes), len(graph.Edges), Reset)
-	return graph
-}
-
 func printSideBySideNodes(sol *domain.SolutionProcessedUMLGraph, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable, report *domain.DiffReport) {
+	fmt.Printf("\n%s── [COMPARE] Nodes Side-by-Side ────────────────────────────%s\n", share.Cyan+share.Bold, share.Reset)
+
 	const col = 60
-	header := fmt.Sprintf("%s  %-*s│  %-*s%s", Bold+Blue, col, "SOLUTION (đáp án)", col, "STUDENT (bài nộp)", Reset)
+	header := fmt.Sprintf("%s  %-*s│  %-*s%s", share.Bold+share.Blue, col, "SOLUTION (đáp án)", col, "STUDENT (bài nộp)", share.Reset)
 	fmt.Println(strings.Repeat("─", col*2+4))
 	fmt.Println(header)
 	fmt.Println(strings.Repeat("─", col*2+4))
@@ -190,103 +203,100 @@ func printSideBySideNodes(sol *domain.SolutionProcessedUMLGraph, stu *domain.Pro
 			}
 		}
 
-		color := Reset
+		color := share.Reset
 		switch matchMark {
 		case "✔ ":
-			color = Green
+			color = share.Green
 		case "≈ ":
-			color = Yellow
+			color = share.Yellow
 		default:
-			color = Red
+			color = share.Red
 		}
 
-		fmt.Printf("%-*s│ %s%s%-*s%s\n", col, "  "+solPart, color, matchMark, col, stuPart, Reset)
+		fmt.Printf("%-*s│ %s%s%-*s%s\n", col, "  "+solPart, color, matchMark, col, stuPart, share.Reset)
 
-		// Print mismatched members side-by-side using DiffReport data
 		if stuNode != nil {
-			// Attributes
-			for _, d := range report.CorrectDetail.Attribute {
-				if d.ParentClassName == solNode.Name {
-					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, limitStr("    ✔ [Attr] "+attrString(d.Sol), col), Reset, Green, col, limitStr(" ✔ [Attr] "+stuAttrString(d.Stu), col), Reset)
-				}
-			}
-			for _, d := range report.WrongDetail.Attribute {
-				if d.ParentClassName == solNode.Name {
-					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Yellow, col, limitStr("    ≈ [Attr] "+attrString(d.Sol), col), Reset, Yellow, col, limitStr(" ≈ [Attr] "+stuAttrString(d.Stu), col), Reset)
-				}
-			}
-			for _, d := range report.MissingDetail.Attribute {
-				if d.ParentClassName == solNode.Name {
-					fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, limitStr("    ✗ [Attr] "+attrString(d.Sol), col), Reset, col, "")
-				}
-			}
-			for _, d := range report.ExtraDetail.Attribute {
-				if d.ParentClassName == stuNode.Name {
-					fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, limitStr(" ✗ [Attr] "+stuAttrString(d.Stu), col), Reset)
-				}
-			}
-
-			// Methods
-			for _, d := range report.CorrectDetail.Method {
-				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Green, col, limitStr("    ✔ [Meth] "+methString(d.Sol), col), Reset, Green, col, limitStr(" ✔ [Meth] "+stuMethString(d.Stu), col), Reset)
-				}
-			}
-			for _, d := range report.WrongDetail.Method {
-				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					fmt.Printf("%s%-*s%s│ %s%-*s%s\n", Yellow, col, limitStr("    ≈ [Meth] "+methString(d.Sol), col), Reset, Yellow, col, limitStr(" ≈ [Meth] "+stuMethString(d.Stu), col), Reset)
-				}
-			}
-			for _, d := range report.MissingDetail.Method {
-				if d.ParentClassName == solNode.Name && d.Sol != nil {
-					fmt.Printf("%s%-*s%s│  %-*s\n", Red, col, limitStr("    ✗ [Meth] "+methString(d.Sol), col), Reset, col, "")
-				}
-			}
-			for _, d := range report.ExtraDetail.Method {
-				if d.ParentClassName == stuNode.Name && d.Stu != nil {
-					fmt.Printf("%-*s│ %s%-*s%s\n", col, "", Red, col, limitStr(" ✗ [Meth] "+stuMethString(d.Stu), col), Reset)
-				}
-			}
+			printMemberDiffs(solNode, stuNode, report)
 		}
 	}
 
-	// Print remaining student nodes
+	// Remaining unmatched student nodes
 	for i := range stu.Nodes {
 		stuNode := &stu.Nodes[i]
 		if !mappedStu[stuNode.ID] {
 			stuPart := cleanStr(fmt.Sprintf("[%s] %s (%dA/%dM)", stuNode.Type[:1], stuNode.Name, len(stuNode.Attributes), len(stuNode.Methods)))
-			fmt.Printf("%-*s│ %s%-*s%s\n", col, "  ", Red+"✗ ", col, limitStr(stuPart, col), Reset)
+			fmt.Printf("%-*s│ %s%-*s%s\n", col, "  ", share.Red+"✗ ", col, limitStr(stuPart, col), share.Reset)
 		}
 	}
 
 	fmt.Println(strings.Repeat("─", col*2+4))
-	fmt.Printf("  %sLegend:%s [C]=Class [I]=Interface [A]=Actor  (A=attrs M=methods)\n", Bold, Reset)
-	fmt.Printf("          %s✔%s exact/perfect match  %s≈%s fuzzy/arch match  %s✗%s missing in one side\n", Green, Reset, Yellow, Reset, Red, Reset)
+	fmt.Printf("  %sLegend:%s [C]=Class [I]=Interface [A]=Actor  (A=attrs M=methods)\n", share.Bold, share.Reset)
+	fmt.Printf("          %s✔%s exact/perfect match  %s≈%s fuzzy/arch match  %s✗%s missing in one side\n",
+		share.Green, share.Reset, share.Yellow, share.Reset, share.Red, share.Reset)
+}
+
+// printMemberDiffs in attributes và methods so sánh giữa solution node và student node.
+func printMemberDiffs(solNode *domain.SolutionProcessedNode, stuNode *domain.ProcessedNode, report *domain.DiffReport) {
+	const col = 60
+
+	for _, d := range report.CorrectDetail.Attribute {
+		if d.ParentClassName == solNode.Name {
+			fmt.Printf("%s%-*s%s│ %s%-*s%s\n", share.Green, col, limitStr("    ✔ [Attr] "+attrString(d.Sol), col), share.Reset, share.Green, col, limitStr(" ✔ [Attr] "+stuAttrString(d.Stu), col), share.Reset)
+		}
+	}
+	for _, d := range report.WrongDetail.Attribute {
+		if d.ParentClassName == solNode.Name {
+			fmt.Printf("%s%-*s%s│ %s%-*s%s\n", share.Yellow, col, limitStr("    ≈ [Attr] "+attrString(d.Sol), col), share.Reset, share.Yellow, col, limitStr(" ≈ [Attr] "+stuAttrString(d.Stu), col), share.Reset)
+		}
+	}
+	for _, d := range report.MissingDetail.Attribute {
+		if d.ParentClassName == solNode.Name {
+			fmt.Printf("%s%-*s%s│  %-*s\n", share.Red, col, limitStr("    ✗ [Attr] "+attrString(d.Sol), col), share.Reset, col, "")
+		}
+	}
+	for _, d := range report.ExtraDetail.Attribute {
+		if d.ParentClassName == stuNode.Name {
+			fmt.Printf("%-*s│ %s%-*s%s\n", col, "", share.Red, col, limitStr(" ✗ [Attr] "+stuAttrString(d.Stu), col), share.Reset)
+		}
+	}
+
+	for _, d := range report.CorrectDetail.Method {
+		if d.ParentClassName == solNode.Name && d.Sol != nil {
+			fmt.Printf("%s%-*s%s│ %s%-*s%s\n", share.Green, col, limitStr("    ✔ [Meth] "+methString(d.Sol), col), share.Reset, share.Green, col, limitStr(" ✔ [Meth] "+stuMethString(d.Stu), col), share.Reset)
+		}
+	}
+	for _, d := range report.WrongDetail.Method {
+		if d.ParentClassName == solNode.Name && d.Sol != nil {
+			fmt.Printf("%s%-*s%s│ %s%-*s%s\n", share.Yellow, col, limitStr("    ≈ [Meth] "+methString(d.Sol), col), share.Reset, share.Yellow, col, limitStr(" ≈ [Meth] "+stuMethString(d.Stu), col), share.Reset)
+		}
+	}
+	for _, d := range report.MissingDetail.Method {
+		if d.ParentClassName == solNode.Name && d.Sol != nil {
+			fmt.Printf("%s%-*s%s│  %-*s\n", share.Red, col, limitStr("    ✗ [Meth] "+methString(d.Sol), col), share.Reset, col, "")
+		}
+	}
+	for _, d := range report.ExtraDetail.Method {
+		if d.ParentClassName == stuNode.Name && d.Stu != nil {
+			fmt.Printf("%-*s│ %s%-*s%s\n", col, "", share.Red, col, limitStr(" ✗ [Meth] "+stuMethString(d.Stu), col), share.Reset)
+		}
+	}
 }
 
 func printEdgeComparison(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
-	// Create lookup for node names
-	solNames := make(map[string]string)
-	for _, n := range sol.Nodes {
-		solNames[n.ID] = n.Name
-	}
-	stuNames := make(map[string]string)
-	for _, n := range stu.Nodes {
-		stuNames[n.ID] = n.Name
-	}
+	fmt.Printf("\n%s── [COMPARE] Edges (Relations) ──────────────────────────────%s\n", share.Cyan+share.Bold, share.Reset)
+
+	solNames := buildNameMap(sol.Nodes)
+	stuNames := buildNameMap(stu.Nodes)
 
 	fmt.Println("  Solution edges (mapped to student names if available):")
 	for _, se := range sol.Edges {
 		status := "  "
-		mappedSrc := ""
-		mappedTgt := ""
+		var mappedSrc, mappedTgt string
 
-		// Find if this edge exists in student graph via mapping
 		if mSrc, ok1 := mapping[se.SourceID]; ok1 {
 			if mTgt, ok2 := mapping[se.TargetID]; ok2 {
 				mappedSrc = mSrc.StudentID
 				mappedTgt = mTgt.StudentID
-
 				for _, ste := range stu.Edges {
 					if ste.SourceID == mappedSrc && ste.TargetID == mappedTgt && ste.RelationType == se.RelationType {
 						status = "✔ "
@@ -296,120 +306,98 @@ func printEdgeComparison(sol, stu *domain.ProcessedUMLGraph, mapping domain.Mapp
 			}
 		}
 
-		// Display using Student names if matched, otherwise Solution names
-		srcName := solNames[se.SourceID]
-		tgtName := solNames[se.TargetID]
-		color := Reset
+		color := share.Reset
 		if status == "✔ " {
-			color = Green
+			color = share.Green
 		}
-		fmt.Printf("    %s%s%s -[%s]-> %s%s\n", color, status, srcName, se.RelationType, tgtName, Reset)
+		fmt.Printf("    %s%s%s -[%s]-> %s%s\n", color, status, solNames[se.SourceID], se.RelationType, solNames[se.TargetID], share.Reset)
 	}
 
 	fmt.Println("  Extra/different edges in Student:")
 	for _, ste := range stu.Edges {
-		found := false
-		// reverse mapping check
-		for solID, m := range mapping {
-			if m.StudentID == ste.SourceID {
-				// check target
-				for solTgtID, m2 := range mapping {
-					if m2.StudentID == ste.TargetID {
-						// check if this specific relation exists in solution
-						for _, se := range sol.Edges {
-							if se.SourceID == solID && se.TargetID == solTgtID && se.RelationType == ste.RelationType {
-								found = true
-								break
-							}
-						}
-					}
-					if found {
-						break
-					}
-				}
-			}
-			if found {
-				break
-			}
-		}
-
-		if !found {
-			srcName := stuNames[ste.SourceID]
-			tgtName := stuNames[ste.TargetID]
-			fmt.Printf("    %s✗ %s -[%s]-> %s (not in solution)%s\n", Red, srcName, ste.RelationType, tgtName, Reset)
+		if !edgeFoundInSolution(ste, sol.Edges, mapping) {
+			fmt.Printf("    %s✗ %s -[%s]-> %s (not in solution)%s\n",
+				share.Red, stuNames[ste.SourceID], ste.RelationType, stuNames[ste.TargetID], share.Reset)
 		}
 	}
+}
+
+// edgeFoundInSolution kiểm tra xem một student edge có tương ứng với solution edge nào không.
+func edgeFoundInSolution(ste domain.ProcessedEdge, solEdges []domain.ProcessedEdge, mapping domain.MappingTable) bool {
+	for solID, m := range mapping {
+		if m.StudentID != ste.SourceID {
+			continue
+		}
+		for solTgtID, m2 := range mapping {
+			if m2.StudentID != ste.TargetID {
+				continue
+			}
+			for _, se := range solEdges {
+				if se.SourceID == solID && se.TargetID == solTgtID && se.RelationType == ste.RelationType {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func printSummary(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) {
+	fmt.Printf("\n%s── [SUMMARY] Quick Stats ────────────────────────────────────%s\n", share.Cyan+share.Bold, share.Reset)
+
 	nodeHit := len(mapping)
-	edgeHit := 0
-	for _, se := range sol.Edges {
-		if mSrc, ok1 := mapping[se.SourceID]; ok1 {
-			if mTgt, ok2 := mapping[se.TargetID]; ok2 {
-				for _, ste := range stu.Edges {
-					if ste.SourceID == mSrc.StudentID && ste.TargetID == mTgt.StudentID && ste.RelationType == se.RelationType {
-						edgeHit++
-						break
-					}
-				}
-			}
-		}
-	}
+	edgeHit := countMatchedEdges(sol, stu, mapping)
 
-	nodePct := 100.0
-	if len(sol.Nodes) > 0 {
-		nodePct = float64(nodeHit) / float64(len(sol.Nodes)) * 100
-	}
-	edgePct := 100.0
-	if len(sol.Edges) > 0 {
-		edgePct = float64(edgeHit) / float64(len(sol.Edges)) * 100
-	}
-
+	nodePct := pct(nodeHit, len(sol.Nodes))
+	edgePct := pct(edgeHit, len(sol.Edges))
 	overall := (nodePct + edgePct) / 2
-	color := Cyan
-	if overall >= 90 {
-		color = Green + Bold
-	} else if overall >= 60 {
-		color = Yellow
-	} else {
-		color = Red
+
+	color := share.Cyan
+	switch {
+	case overall >= 90:
+		color = share.Green + share.Bold
+	case overall >= 60:
+		color = share.Yellow
+	default:
+		color = share.Red
 	}
 
 	fmt.Printf("  Stats: Nodes %d/%d (%.0f%%), Edges %d/%d (%.0f%%) → %sOverall: %.1f%%%s\n",
-		nodeHit, len(sol.Nodes), nodePct, edgeHit, len(sol.Edges), edgePct, color, overall, Reset)
+		nodeHit, len(sol.Nodes), nodePct, edgeHit, len(sol.Edges), edgePct, color, overall, share.Reset)
 }
 
 func printDiffReport(report *domain.DiffReport) {
-	printDetailSection("🚨 [MISSING DETAILS]", report.MissingDetail, Red+Bold)
-	printDetailSection("⚠️ [WRONG/MISMATCHED DETAILS]", report.WrongDetail, Yellow+Bold)
-	printDetailSection("➕ [EXTRA DETAILS]", report.ExtraDetail, Cyan+Bold)
-	printDetailSection("✅ [CORRECT DETAILS]", report.CorrectDetail, Green+Bold)
+	fmt.Printf("\n%s── [REPORT] Detailed Diff ─────────────────────────────────%s\n", share.Cyan+share.Bold, share.Reset)
 
-	hasIssues := len(report.MissingDetail.Class) > 0 || len(report.MissingDetail.Method) > 0 || len(report.MissingDetail.Attribute) > 0 || len(report.MissingDetail.Edge) > 0 ||
-		len(report.WrongDetail.Class) > 0 || len(report.WrongDetail.Method) > 0 || len(report.WrongDetail.Attribute) > 0 || len(report.WrongDetail.Edge) > 0
+	printDetailSection("🚨 [MISSING DETAILS]", report.MissingDetail, share.Red+share.Bold)
+	printDetailSection("⚠️ [WRONG/MISMATCHED DETAILS]", report.WrongDetail, share.Yellow+share.Bold)
+	printDetailSection("➕ [EXTRA DETAILS]", report.ExtraDetail, share.Cyan+share.Bold)
+	printDetailSection("✅ [CORRECT DETAILS]", report.CorrectDetail, share.Green+share.Bold)
+
+	hasIssues := len(report.MissingDetail.Class) > 0 || len(report.MissingDetail.Method) > 0 ||
+		len(report.MissingDetail.Attribute) > 0 || len(report.MissingDetail.Edge) > 0 ||
+		len(report.WrongDetail.Class) > 0 || len(report.WrongDetail.Method) > 0 ||
+		len(report.WrongDetail.Attribute) > 0 || len(report.WrongDetail.Edge) > 0
 
 	if !hasIssues {
-		fmt.Printf("\n%s✅ NO ISSUES FOUND — Perfect structural match!%s\n", Green+Bold, Reset)
+		fmt.Printf("\n%s✅ NO ISSUES FOUND — Perfect structural match!%s\n", share.Green+share.Bold, share.Reset)
 	}
 }
 
 func printDetailSection(title string, detail domain.DetailError, color string) {
-	isEmpty := len(detail.Class) == 0 && len(detail.Method) == 0 && len(detail.Attribute) == 0 && len(detail.Edge) == 0
-	if isEmpty {
+	if len(detail.Class) == 0 && len(detail.Method) == 0 && len(detail.Attribute) == 0 && len(detail.Edge) == 0 {
 		return
 	}
 
-	fmt.Printf("\n%s%s%s\n", color, title, Reset)
+	fmt.Printf("\n%s%s%s\n", color, title, share.Reset)
 
 	if len(detail.Class) > 0 {
-		fmt.Printf("   %sNodes:%s\n", Bold, Reset)
+		fmt.Printf("   %sNodes:%s\n", share.Bold, share.Reset)
 		for _, d := range detail.Class {
-			solName := "?"
+			solName, stuName := "?", "?"
 			if d.Sol != nil {
 				solName = d.Sol.Name
 			}
-			stuName := "?"
 			if d.Stu != nil {
 				stuName = d.Stu.Name
 			}
@@ -417,13 +405,12 @@ func printDetailSection(title string, detail domain.DetailError, color string) {
 		}
 	}
 	if len(detail.Attribute) > 0 {
-		fmt.Printf("   %sAttributes:%s\n", Bold, Reset)
+		fmt.Printf("   %sAttributes:%s\n", share.Bold, share.Reset)
 		for _, d := range detail.Attribute {
-			solV := "?"
+			solV, stuV := "?", "?"
 			if d.Sol != nil {
 				solV = attrString(d.Sol)
 			}
-			stuV := "?"
 			if d.Stu != nil {
 				stuV = stuAttrString(d.Stu)
 			}
@@ -431,13 +418,12 @@ func printDetailSection(title string, detail domain.DetailError, color string) {
 		}
 	}
 	if len(detail.Method) > 0 {
-		fmt.Printf("   %sMethods:%s\n", Bold, Reset)
+		fmt.Printf("   %sMethods:%s\n", share.Bold, share.Reset)
 		for _, d := range detail.Method {
-			solV := "?"
+			solV, stuV := "?", "?"
 			if d.Sol != nil {
 				solV = methString(d.Sol)
 			}
-			stuV := "?"
 			if d.Stu != nil {
 				stuV = stuMethString(d.Stu)
 			}
@@ -445,19 +431,52 @@ func printDetailSection(title string, detail domain.DetailError, color string) {
 		}
 	}
 	if len(detail.Edge) > 0 {
-		fmt.Printf("   %sRelationships:%s\n", Bold, Reset)
+		fmt.Printf("   %sRelationships:%s\n", share.Bold, share.Reset)
 		for _, d := range detail.Edge {
-			solV := "?"
+			solV, stuV := "?", "?"
 			if d.Sol != nil {
 				solV = d.Sol.RelationType
 			}
-			stuV := "?"
 			if d.Stu != nil {
 				stuV = d.Stu.RelationType
 			}
 			fmt.Printf("    • [%s vs %s] %s\n", solV, stuV, d.Description)
 		}
 	}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+func buildNameMap(nodes []domain.ProcessedNode) map[string]string {
+	m := make(map[string]string, len(nodes))
+	for _, n := range nodes {
+		m[n.ID] = n.Name
+	}
+	return m
+}
+
+func countMatchedEdges(sol, stu *domain.ProcessedUMLGraph, mapping domain.MappingTable) int {
+	count := 0
+	for _, se := range sol.Edges {
+		if mSrc, ok1 := mapping[se.SourceID]; ok1 {
+			if mTgt, ok2 := mapping[se.TargetID]; ok2 {
+				for _, ste := range stu.Edges {
+					if ste.SourceID == mSrc.StudentID && ste.TargetID == mTgt.StudentID && ste.RelationType == se.RelationType {
+						count++
+						break
+					}
+				}
+			}
+		}
+	}
+	return count
+}
+
+func pct(hit, total int) float64 {
+	if total == 0 {
+		return 100.0
+	}
+	return float64(hit) / float64(total) * 100
 }
 
 func cleanStr(s string) string {
@@ -481,52 +500,17 @@ func stuAttrString(a *domain.ProcessedAttribute) string {
 }
 
 func methString(m *domain.SolutionProcessedMethod) string {
-	params := []string{}
-	for _, p := range m.Inputs {
-		params = append(params, p.Type)
+	params := make([]string, len(m.Inputs))
+	for i, p := range m.Inputs {
+		params[i] = p.Type
 	}
 	return cleanStr(fmt.Sprintf("%s %s(%s): %s", m.Scope, strings.Join(m.Names, "|"), strings.Join(params, ", "), strings.Join(m.Outputs, "|")))
 }
 
 func stuMethString(m *domain.ProcessedMethod) string {
-	params := []string{}
-	for _, p := range m.Inputs {
-		params = append(params, p.Type)
+	params := make([]string, len(m.Inputs))
+	for i, p := range m.Inputs {
+		params[i] = p.Type
 	}
 	return cleanStr(fmt.Sprintf("%s %s(%s): %s", m.Scope, m.Name, strings.Join(params, ", "), m.Output))
-}
-
-func nodeNames(g *domain.UMLGraph) []string {
-	names := make([]string, len(g.Nodes))
-	for i, n := range g.Nodes {
-		names[i] = n.Name
-	}
-	return names
-}
-
-func edgeSummaries(g *domain.UMLGraph) []string {
-	byID := make(map[string]string, len(g.Nodes))
-	for _, n := range g.Nodes {
-		byID[n.ID] = n.Name
-	}
-	sums := make([]string, len(g.Edges))
-	for i, e := range g.Edges {
-		src := byID[e.SourceID]
-		tgt := byID[e.TargetID]
-		if src == "" {
-			src = e.SourceID
-		}
-		if tgt == "" {
-			tgt = e.TargetID
-		}
-		sums[i] = fmt.Sprintf("%s -[%s]-> %s", src, e.RelationType, tgt)
-	}
-	return sums
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

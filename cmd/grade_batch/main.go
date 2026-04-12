@@ -1,27 +1,26 @@
+// cmd/grade_batch/main.go - Teacher batch grading CLI
+// Usage: lecture_cli_parallel.exe <solution.drawio> <student_dir> [report.csv]
 package main
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
-	"uml_compare/builder"
+	"uml_compare/cmd/share"
 	"uml_compare/comparator"
 	"uml_compare/domain"
 	"uml_compare/grader"
 	"uml_compare/matcher"
-	"uml_compare/parser"
 	"uml_compare/prematcher"
 	"uml_compare/report"
 )
 
 func main() {
 	if len(os.Args) <= 1 {
-		fmt.Printf("📊 UML Batch Grader (Teacher Mode)\n")
+		share.PrintBanner("UML Batch Grader — Lecture Edition (Parallel)")
 		fmt.Printf("   Tip: Drag & drop the folder here for student submissions!\n\n")
 		runBatchInteractiveLoop()
 		return
@@ -39,60 +38,70 @@ func main() {
 		outputPath = os.Args[3]
 	}
 
-	if err := runBatchGrading(solutionPath, studentDir, outputPath); err != nil {
+	result, err := runBatchGrading(solutionPath, studentDir)
+	if err != nil {
 		fmt.Printf("\n❌ Batch Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := saveBatchReport(result, outputPath); err != nil {
+		fmt.Printf("\n❌ Report Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-// runBatchGrading executes the grading pipeline for all files in a folder in parallel.
-func runBatchGrading(solutionPath, studentDir, outputPath string) error {
+// batchRunResult chứa kết quả grading để truyền vào save/print layer.
+type batchRunResult struct {
+	BatchResult  *report.BatchGradeResult
+	Duration     time.Duration
+	TotalFiles   int
+}
+
+// runBatchGrading thực hiện pipeline grading song song cho tất cả file trong thư mục.
+// Trả về batchRunResult để caller tự quyết định cách lưu/hiển thị.
+func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 	fmt.Printf("⏳ Loading solution from %s...\n", filepath.Base(solutionPath))
-	solutionGraph := loadGraph(solutionPath)
-	if solutionGraph == nil {
-		return fmt.Errorf("failed to load solution graph")
+
+	solutionGraph, err := share.LoadGraph(solutionPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load solution: %w", err)
 	}
 
 	// Integrity Check
-	solErrs := domain.ValidateGraph(solutionGraph, "Solution")
-	if len(domain.FilterErrors(solErrs)) > 0 {
-		return fmt.Errorf("solution has integrity errors (check logs)")
+	if errs := domain.FilterErrors(domain.ValidateGraph(solutionGraph, "Solution")); len(errs) > 0 {
+		return nil, fmt.Errorf("solution has integrity errors (check logs)")
 	}
 
-	// Prepare Toolchain (Immutable components shared across threads)
+	// Build shared toolchain (immutable, safe for concurrent use)
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
-
 	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
-
 	comp := comparator.NewStandardComparator()
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 
-	batchResult := &report.BatchGradeResult{
-		SolutionPath:   solutionPath,
-		StudentResults: make(map[string]*domain.GradeResult),
-	}
-
-	// Scan directory
+	// Scan student files
 	entries, err := os.ReadDir(studentDir)
 	if err != nil {
-		return fmt.Errorf("cannot read directory: %w", err)
+		return nil, fmt.Errorf("cannot read directory: %w", err)
 	}
-
 	var studentFiles []string
 	for _, e := range entries {
 		if !e.IsDir() && strings.HasSuffix(e.Name(), ".drawio") {
 			studentFiles = append(studentFiles, e.Name())
 		}
 	}
-
 	if len(studentFiles) == 0 {
-		return fmt.Errorf("no .drawio files found in %s", studentDir)
+		return nil, fmt.Errorf("no .drawio files found in %s", studentDir)
 	}
 
 	fmt.Printf("🚀 Processing %d submissions using Parallel Pipeline...\n", len(studentFiles))
+
+	batchResult := &report.BatchGradeResult{
+		SolutionPath:   solutionPath,
+		StudentResults: make(map[string]*domain.GradeResult),
+	}
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -103,10 +112,9 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 		go func(fname string) {
 			defer wg.Done()
 
-			stuPath := filepath.Join(studentDir, fname)
-			stuGraph := loadGraph(stuPath)
-			if stuGraph == nil {
-				fmt.Printf("  [!] %s: Failed to load\n", fname)
+			stuGraph, err := share.LoadGraph(filepath.Join(studentDir, fname))
+			if err != nil {
+				fmt.Printf("  [!] %s: Failed to load — %v\n", fname, err)
 				return
 			}
 
@@ -118,60 +126,37 @@ func runBatchGrading(solutionPath, studentDir, outputPath string) error {
 			mu.Lock()
 			batchResult.StudentResults[fname] = res
 			mu.Unlock()
+
 			fmt.Printf("  [✓] %s: %.1f%%\n", fname, res.CorrectPercent)
 		}(filename)
 	}
 
 	wg.Wait()
-	duration := time.Since(startTime)
-	fmt.Printf("\n✨ Finished grading in %v.\n", duration)
 
-	// Save CSV
+	return &batchRunResult{
+		BatchResult: batchResult,
+		Duration:    time.Since(startTime),
+		TotalFiles:  len(studentFiles),
+	}, nil
+}
+
+// saveBatchReport lưu kết quả ra file CSV và in tóm tắt.
+func saveBatchReport(result *batchRunResult, outputPath string) error {
+	fmt.Printf("\n✨ Finished grading in %v.\n", result.Duration)
+
 	if !strings.HasSuffix(strings.ToLower(outputPath), ".csv") {
 		outputPath += ".csv"
 	}
+
 	csvRep := report.NewCSVReporter(outputPath)
-	if err := csvRep.GenerateReport(batchResult); err != nil {
+	if err := csvRep.GenerateReport(result.BatchResult); err != nil {
 		return fmt.Errorf("CSV export failed: %w", err)
 	}
 
 	fmt.Printf("📁 Report saved to: %s\n", outputPath)
 
-	// Open CSV automatically
 	absPath, _ := filepath.Abs(outputPath)
-	openFile(absPath)
+	share.OpenFile(absPath)
 
 	return nil
-}
-
-// openFile uses the OS system call to open a file with its default application
-func openFile(path string) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", path)
-	case "darwin":
-		cmd = exec.Command("open", path)
-	default:
-		cmd = exec.Command("xdg-open", path)
-	}
-	_ = cmd.Start()
-}
-
-func loadGraph(filePath string) *domain.UMLGraph {
-	p, err := parser.GetParser(filePath)
-	if err != nil {
-		return nil
-	}
-	rawXML, err := p.Parse(filePath)
-	if err != nil {
-		return nil
-	}
-
-	b := builder.NewStandardModelBuilder()
-	graph, err := b.Build(rawXML)
-	if err != nil {
-		return nil
-	}
-	return graph
 }
