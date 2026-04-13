@@ -138,3 +138,37 @@ func TestComparatorPointers(t *testing.T) {
 		t.Error("WrongDetail.Attribute pointers should be non-nil")
 	}
 }
+
+func TestComparatorOptionalParams(t *testing.T) {
+	c := NewStandardComparator()
+
+	sol := &domain.SolutionProcessedUMLGraph{
+		Nodes: []domain.SolutionProcessedNode{
+			{ID: "S1", Name: "User", Type: "Class", Attributes: []domain.SolutionProcessedAttribute{{Names: []string{"id", "code", "identify"}, Types: []string{"int", "Interge", "String"}}}},
+		},
+	}
+	stu := &domain.ProcessedUMLGraph{
+		Nodes: []domain.ProcessedNode{
+			{ID: "Stu1", Name: "User", Type: "Class", Attributes: []domain.ProcessedAttribute{{Name: "id", Type: "String"}}},
+		},
+	}
+
+	mapping := domain.MappingTable{"S1": {StudentID: "Stu1", Similarity: 1.0}}
+	report, _ := c.Compare(sol, stu, mapping)
+
+	// Wrong Detail?
+	if len(report.WrongDetail.Class) > 0 {
+		t.Fatal("Expected Pass")
+	}
+	if len(report.WrongDetail.Attribute) > 0 {
+		t.Fatal("Expected Pass")
+	}
+	if len(report.WrongDetail.Method) > 0 {
+		t.Fatal("Expected Pass")
+	}
+
+	if len(report.MissingDetail.Class) > 0 || len(report.MissingDetail.Attribute) > 0 || len(report.MissingDetail.Method) > 0 {
+		t.Fatal("Expected Pass")
+	}
+
+}

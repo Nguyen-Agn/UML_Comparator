@@ -1,0 +1,85 @@
+<mxfile host="65bd71144e">
+    <diagram id="relationships-test" name="Page-1">
+        <mxGraphModel dx="1000" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                
+                <!-- Inheritance: SubClass -> BaseClass (endArrow=block) -->
+                <mxCell id="node-base" value="BaseClass" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="50" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-sub" value="SubClass" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="200" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-inheritance" value="Inheritance" style="edgeStyle=none;html=1;endArrow=block;endFill=0;" edge="1" parent="1" source="node-sub" target="node-base">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Realization: ClassA -> InterfaceA (endArrow=block;dashed=1) -->
+                <mxCell id="node-interface" value="&lt;i&gt;&amp;lt;&amp;lt;interface&amp;gt;&amp;gt;&lt;/i&gt;&lt;br&gt;InterfaceA" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="50" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-realizer" value="ClassA" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="200" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-realization" value="Realization" style="edgeStyle=none;html=1;endArrow=block;endFill=0;dashed=1;" edge="1" parent="1" source="node-realizer" target="node-interface">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Composition: PartC -> Whole (endArrow=diamond;endFill=1) -->
+                <mxCell id="node-whole" value="Whole" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="125" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-part-c" value="PartC" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="50" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-composition" value="Composition" style="edgeStyle=none;html=1;endArrow=diamond;endFill=1;" edge="1" parent="1" source="node-part-c" target="node-whole">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Aggregation: PartA -> Whole (endArrow=diamond;endFill=0) -->
+                <mxCell id="node-part-a" value="PartA" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="200" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-aggregation" value="Aggregation" style="edgeStyle=none;html=1;endArrow=diamond;endFill=0;" edge="1" parent="1" source="node-part-a" target="node-whole">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Dependency: Client -> Supplier (dashed=1; endArrow=classic) -->
+                <mxCell id="node-supplier" value="Supplier" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="350" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-client" value="Client" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="500" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-dependency" value="Dependency" style="edgeStyle=none;html=1;dashed=1;endArrow=classic;" edge="1" parent="1" source="node-client" target="node-supplier">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Association (Default with arrow): Src -> Tgt (endArrow=open) -->
+                <mxCell id="node-target-assoc" value="TargetAssoc" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="350" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-source-assoc" value="SourceAssoc" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="500" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-association" value="Association" style="edgeStyle=none;html=1;endArrow=open;" edge="1" parent="1" source="node-source-assoc" target="node-target-assoc">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- No Arrow (Default without arrow): Src -> Tgt (endArrow=none). Note: Builder maps this to Association. -->
+                <mxCell id="node-target-none" value="TargetNone" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="350" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-source-none" value="SourceNone" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="500" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge-none" value="Default (No Arrow)" style="edgeStyle=none;html=1;endArrow=none;" edge="1" parent="1" source="node-source-none" target="node-target-none">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
