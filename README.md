@@ -12,10 +12,15 @@ Dự án cung cấp khả năng so sánh chi tiết giữa bản vẽ **Đáp á
 ![USAGE](USAGE_GUIDE.md)
 
 
+### B. Phiên bản Tích hợp (Exam Edition)
+- **Embedded Solutions**: Cho phép giảng viên "nén" sẵn các tệp đáp án vào trong file `.exe`.
+- **Dropdown Selection**: Sinh viên chỉ cần chọn tên câu hỏi (Q1, Q2...) từ danh sách thả xuống, không cần tự chọn file đáp án.
+- **Security**: Bảo mật nội dung đáp án, chỉ hiển thị tên định danh cho sinh viên.
+
 ### C. SVG Icons
 Biểu tượng trạng thái sử dụng chuẩn Vector (SVG) để đảm bảo độ sắc nét:
 - 🟢 **Correct** (Checkmark): Khớp hoàn toàn.
-- 🔴 **Wrong** (Alert): Tốn tại nhưng sai thông tin.
+- 🔴 **Wrong** (Alert): Tồn tại nhưng sai thông tin.
 - 🔴 **Missing** (X-Mark): Thiếu so với đáp án.
 - 🔵 **Extra** (Plus): Thừa so với đáp án.
 
@@ -35,13 +40,15 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 | **Grader** | Tính điểm dựa trên DiffReport: attribute/method/edge/node scoring. |
 | **Visualizer** | Xuất báo cáo HTML "Dawn's Berry" với icon SVG và mã màu đồng bộ. |
 | **GUI Layer** | Lớp giao diện người dùng (Lorca) giúp thao tác chọn file và xem kết quả trực quan. |
-| **CLI Layer** | Lớp dòng lệnh thông minh, hỗ trợ cả tương tác (interactive) và chạy ngầm (scripting). |
+| **AppBuilder** | Module quản lý build theo chuẩn **ISP**, hỗ trợ build nén solutions và các công cụ khác. |
+| **Orchestrator** | Trình điều khiển tập trung giúp giảng viên lựa chọn pipeline build phù hợp. |
 
 ---
 
 ## 📂 Cấu trúc thư mục
 
-- `cmd/`: Chứa các tệp `main.go` cho từng công cụ (`compare`, `visualize`, `match`, `prematch`, `build`, `parse`).
+- `cmd/`: Chứa các tệp `main.go` cho từng công cụ (`compare`, `visualize`, `exam_gui`, `builder_exe`).
+- `AppBuilder/`: Module quản lý build chuyên sâu (tuân thủ nguyên tắc SOLID/ISP).
 - `domain/`: Định nghĩa các cấu trúc dữ liệu cốt lõi (`UMLGraph`, `DiffReport`, `GradeResult`).
 - `grader/`: Module chấm điểm dựa trên DiffReport.
 - `visualizer/`: Module xuất báo cáo HTML self-contained.

@@ -8,29 +8,39 @@
 
 Bạn không cần cài đặt bất kỳ môi trường nào. Chỉ cần mở thư mục `portable/` và chọn phiên bản phù hợp:
 
-### A. Phiên bản Đồ họa (`student_uml.exe`) — Khuyến nghị
+### A. Phiên bản Tích hợp (`exam_student_uml.exe`) — Khuyên dùng cho thi cử
+Phiên bản này đã được giảng viên nén sẵn các file đáp án.
+1. **Mở file** `exam_student_uml.exe`.
+2. Giao diện sẽ hiển thị danh sách thả xuống ở phần **Embedded Solution**.
+3. Chọn câu hỏi cần chấm (ví dụ: Q1, Q2...).
+4. Nhấn **CHOOSE ASSIGNMENT** và chọn bài làm của bạn (`.drawio`).
+5. Nhấn **RUN ANALYSIS**.
+
+### B. Phiên bản Đồ họa chuẩn (`student_uml.exe`)
+Dùng khi bạn có cả file đáp án và file bài làm riêng biệt.
 1. **Mở file** `student_uml.exe`.
-2. Giao diện **Dawn's Berry** sẽ xuất hiện.
-3. Nhấn **CHOOSE SOLUTION** và chọn file đáp án (`.drawio`).
-4. Nhấn **CHOOSE ASSIGNMENT** và chọn bài làm của sinh viên (`.drawio`).
-5. Nhấn **RUN ANALYSIS**. Kết quả sẽ hiển thị ngay lập tức trong ứng dụng.
-6. (Tùy chọn) Nhấn **SAVE HTML** để lưu báo cáo ra file riêng.
+2. Nhấn **CHOOSE SOLUTION** chọn file đáp án (`.drawio`).
+3. Nhấn **CHOOSE ASSIGNMENT** chọn bài làm sinh viên.
+4. Nhấn **RUN ANALYSIS**.
 
-### B. Phiên bản CLI (`student_uml_cli.exe`) — Cho sinh viên
-1. **Mở file** `student_uml_cli.exe`.
-2. Một cửa sổ Console xuất hiện với tiêu đề **UML Comparator**.
-3. Nhập đường dẫn file **Solution**.
-4. Nhập đường dẫn file **Assignment**.
-5. Nhấn **RUN ANALYSIS**. Kết quả sẽ hiển thị ngay lập tức trong ứng dụng.
-6. (Tùy chọn) Nhấn **SAVE HTML** để lưu báo cáo ra file riêng.
+### C. Phiên bản CLI (`student_uml_cli.exe`) — Dòng lệnh
+1. Chạy thông qua PowerShell hoặc CMD: `./student_uml_cli.exe <solution.drawio> <student.drawio>`
+2. Kết quả sẽ in trực tiếp ra Terminal và xuất file HTML.
 
-### C. Phiên bản Chấm điểm hàng loạt (`lecture_cli_parallel.exe`) — Cho giáo viên
-1. **Mở file** `lecture_cli_parallel.exe`.
-2. Một cửa sổ Console xuất hiện với tiêu đề **Lecture Edition (Parallel)**.
-3. Nhập đường dẫn file **Solution**.
-4. Nhập đường dẫn **Thư mục chứa bài làm** của sinh viên (Ví dụ: `D:\Lop_OOP\Bai_Tap_1`).
-5. Công cụ sẽ quét toàn bộ file `.drawio` và chấm điểm **song song (Parallel)** cực nhanh.
-6. Kết quả sẽ tự động được lưu vào file `batch_report.csv` và mở lên bằng Excel cho bạn xem ngay.
+## 2. Dành cho Giảng viên (Lecturers)
+
+### A. Quản lý Build Tập trung (`test_orchestrator.exe`)
+Đây là "bộ não" giúp giảng viên tạo ra các bản build chuyên biệt.
+1. Chạy file `test_orchestrator.exe`.
+2. Chọn **Option [1] Universal Build**: Để build lại toàn bộ bộ tool chuẩn (CLI, GUI, Batch Mode).
+3. Chọn **Option [2] Exam Build**: Để tạo bản build nén sẵn đáp án cho sinh viên.
+   - Nhập đường dẫn đến file hoặc folder chứa các tệp `.drawio` đáp án.
+   - Bạn có thể nạp nhiều file cùng lúc (ví dụ: `bai1.drawio`, `bai2.drawio`).
+   - Kết quả sẽ nằm trong thư mục `portable/exam_student_uml.exe`.
+
+### B. Chấm điểm hàng loạt (`lecture_cli_parallel.exe`)
+1. Chạy lệnh: `./lecture_cli_parallel.exe <solution.drawio> <folder_sinh_vien>`
+2. Công cụ sẽ quét toàn bộ và xuất ra file `batch_report.csv` cực nhanh nhờ cơ chế song song.
 
 ---
 
@@ -56,14 +66,17 @@ Nếu bạn muốn dùng lệnh trong PowerShell hoặc CMD (dành cho automatio
 
 ---
 
-## 2. Chạy từ mã nguồn (Go)
+## 3. Chạy từ mã nguồn (Go)
 
 ```bash
-# Xuất báo cáo HTML (full pipeline)
-go run ./cmd/visualize/main.go <solution.drawio> <student.drawio> [output.html]
+# Chạy bộ điều phối Build (Dành cho Giảng viên)
+go run ./cmd/builder_exe/main.go
 
-# So sánh CLI (chỉ in ra terminal, không xuất HTML)
-go run ./cmd/compare/main.go <solution.drawio> <student.drawio>
+# Chạy trực tiếp GUI thi cử (Dành cho test)
+go run ./cmd/exam_gui/main.go
+
+# Xuất báo cáo HTML chuẩn
+go run ./cmd/visualize/main.go <solution.drawio> <student.drawio>
 ```
 
 ---
