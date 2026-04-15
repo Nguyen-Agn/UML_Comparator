@@ -12,6 +12,16 @@ import (
 
 func main() {
 	app := &EncryptorApp{}
+	// Đảm bảo luôn đợi người dùng nhấn phím trước khi đóng cửa sổ
+	defer app.WaitIfInteractive()
+
+	if len(os.Args) <= 1 {
+		app.PrintBanner()
+		fmt.Printf("   Tip: You can also drag & drop files here!\n\n")
+		runInteractiveLoop(app)
+		return
+	}
+
 	if !app.ParseArgs() {
 		return
 	}
@@ -20,10 +30,8 @@ func main() {
 
 	if err := app.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "\n❌ Error: %v\n", err)
-		os.Exit(1)
+		return
 	}
-
-	app.WaitIfInteractive()
 }
 
 // ─── EncryptorApp ─────────────────────────────────────────────────────────────
@@ -84,6 +92,9 @@ func (a *EncryptorApp) Run() error {
 	if a.OutputPath == "" {
 		a.OutputPath = strings.TrimSuffix(a.InputPath, ".drawio") + ".solution"
 	}
+	if !strings.HasSuffix(strings.ToLower(a.OutputPath), ".solution") {
+		a.OutputPath += ".solution"
+	}
 
 	// 3. Initialize Cipher (Strategy selection)
 	c := a.buildCipher()
@@ -116,9 +127,10 @@ func (a *EncryptorApp) buildCipher() cipher.ISolutionCipher {
 	return cipher.New()
 }
 
-// WaitIfInteractive keeps the console open on Windows when run via GUI.
+// WaitIfInteractive keeps the console open on Windows when run via GUI or Drag-and-Drop.
 func (a *EncryptorApp) WaitIfInteractive() {
-	if len(os.Args) == 1 {
+	// Nếu chạy bằng cách bấm đúp (1 arg) hoặc kéo thả file (2 args), ta cần đợi người dùng xem kết quả
+	if len(os.Args) <= 2 {
 		fmt.Print("\nPress Enter to exit...")
 		var tmp string
 		fmt.Scanln(&tmp)
