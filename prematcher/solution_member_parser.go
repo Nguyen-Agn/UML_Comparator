@@ -28,9 +28,9 @@ func (p *SolutionMemberParser) ParseAttribute(raw string, isEnumType bool) domai
 	}
 
 	lowerRaw := strings.ToLower(raw)
-	isStatic := strings.Contains(lowerRaw, "{static}") || strings.Contains(lowerRaw, "static")
-	isFinal := strings.Contains(lowerRaw, "final") || strings.Contains(lowerRaw, "const") || strings.Contains(lowerRaw, "{readonly}")
-	isAbstract := strings.Contains(lowerRaw, "{abstract}") || strings.Contains(lowerRaw, "abstract")
+	isStatic := hasKeyword(raw, "static")
+	isFinal := hasKeyword(raw, "final") || hasKeyword(raw, "const") || strings.Contains(lowerRaw, "{readonly}")
+	isAbstract := hasKeyword(raw, "abstract")
 
 	working := cleanMemberString(raw)
 
@@ -103,15 +103,15 @@ func (p *SolutionMemberParser) ParseMethod(raw string, className string, attribu
 		Names:   []string{raw},
 		Type:    "",
 		Outputs: []string{},
-		Inputs:  []domain.MethodParam{},
+		Inputs:  []domain.SolutionMethodParam{},
 		Kind:    "normal",
 	}
 
 	lowerRaw := strings.ToLower(raw)
 
-	if strings.Contains(lowerRaw, "{static}") || strings.Contains(lowerRaw, "static") {
+	if hasKeyword(raw, "static") {
 		method.Kind = "static"
-	} else if strings.Contains(lowerRaw, "{abstract}") || strings.Contains(lowerRaw, "abstract") {
+	} else if hasKeyword(raw, "abstract") {
 		method.Kind = "abstract"
 	}
 
@@ -143,12 +143,13 @@ func (p *SolutionMemberParser) ParseMethod(raw string, className string, attribu
 				if part == "" {
 					continue
 				}
-				param := domain.MethodParam{}
+				param := domain.SolutionMethodParam{}
 				if idx := strings.Index(part, ":"); idx != -1 {
 					param.Name = strings.TrimSpace(part[:idx])
-					param.Type = strings.TrimSpace(part[idx+1:])
+					param.Types = splitOR(strings.TrimSpace(part[idx+1:]))
 				} else {
 					param.Name = part
+					param.Types = []string{}
 				}
 				method.Inputs = append(method.Inputs, param)
 			}
@@ -183,7 +184,7 @@ func (p *SolutionMemberParser) ParseMethod(raw string, className string, attribu
 		method.Type = "constructor"
 		return method
 	} else if len(method.Names) == 1 && strings.HasPrefix(lowerName, "get") &&
-		(len(method.Inputs) == 0 || (len(method.Inputs) == 1 && strings.EqualFold(method.Inputs[0].Type, "void"))) {
+		(len(method.Inputs) == 0 || (len(method.Inputs) == 1 && len(method.Inputs[0].Types) == 1 && strings.EqualFold(method.Inputs[0].Types[0], "void"))) {
 		baseName := primaryName[3:]
 		foundAttr := ""
 		for _, attr := range attributes {
@@ -243,7 +244,7 @@ func (p *SolutionMemberParser) GenerateGetter(attr domain.SolutionProcessedAttri
 		Names:   []string{"get" + capitalized},
 		Type:    "getter",
 		Outputs: attr.Types,
-		Inputs:  []domain.MethodParam{},
+		Inputs:  []domain.SolutionMethodParam{},
 		Kind:    "normal",
 	}
 }
@@ -254,10 +255,6 @@ func (p *SolutionMemberParser) GenerateSetter(attr domain.SolutionProcessedAttri
 	if len(attr.Names) > 0 {
 		baseName = attr.Names[0]
 	}
-	paramType := ""
-	if len(attr.Types) > 0 {
-		paramType = attr.Types[0]
-	}
 	capitalized := ""
 	if len(baseName) > 0 {
 		capitalized = strings.ToUpper(baseName[:1]) + baseName[1:]
@@ -267,7 +264,7 @@ func (p *SolutionMemberParser) GenerateSetter(attr domain.SolutionProcessedAttri
 		Names:   []string{"set" + capitalized},
 		Type:    "setter",
 		Outputs: []string{"void"},
-		Inputs:  []domain.MethodParam{{Name: baseName, Type: paramType}},
+		Inputs:  []domain.SolutionMethodParam{{Name: baseName, Types: attr.Types}},
 		Kind:    "normal",
 	}
 }

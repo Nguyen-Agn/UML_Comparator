@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	
 	"uml_compare/gui/controller"
 	"uml_compare/gui/service"
 	"uml_compare/gui/view"
@@ -11,7 +10,7 @@ import (
 func main() {
 	// 1. Initialize SOLID layers
 	proc := service.NewStandardUMLProcessor()
-	
+
 	// Create Lorca view
 	v, err := view.NewMainView()
 	if err != nil {

@@ -52,11 +52,22 @@ type SolutionProcessedAttribute struct {
 	Score float64
 }
 
-// SolutionProcessedMethod supports OR-patterns for method name and return type.
-// Param types are stored as plain strings (no OR split).
+// SolutionMethodParam represents a single method parameter with OR-aware type alternatives.
+// Example: "a: double|Double|float|Float" -> Name="a", Types=["double","Double","float","Float"]
+type SolutionMethodParam struct {
+	// Name is the parameter name.
+	Name string
+
+	// Types holds one or more type alternatives separated by "|" in the source.
+	// For a single-type param, len(Types)==1.
+	Types []string
+}
+
+// SolutionProcessedMethod supports OR-patterns for method name, return type, and param types.
 //
-// Example: "doA | doB(a:int): void|boolean"
-//   -> Names=["doA","doB"], Outputs=["void","boolean"], Inputs=[{Name:"a",Type:"int"}]
+// Example: "setPrice|setCost(a: double|Double): void|String"
+//   -> Names=["setPrice","setCost"], Outputs=["void","String"],
+//      Inputs=[{Name:"a", Types:["double","Double"]}]
 type SolutionProcessedMethod struct {
 	// Names holds one or more method name alternatives separated by "|" in the source.
 	// For a normal method, len(Names)==1.
@@ -72,9 +83,9 @@ type SolutionProcessedMethod struct {
 	// For a normal method, len(Outputs)==1. Constructors have an empty Outputs slice.
 	Outputs []string
 
-	// Inputs are the method parameters. MethodParam.Type may contain "|" but is NOT split
-	// (OR only applies to attribute type and method return type, not param types).
-	Inputs []MethodParam
+	// Inputs are the method parameters with OR-aware type alternatives.
+	// Each SolutionMethodParam.Types may have multiple alternatives split on "|".
+	Inputs []SolutionMethodParam
 
 	// Kind describes the method modifier: "normal", "static", "abstract".
 	Kind string

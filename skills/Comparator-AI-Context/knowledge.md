@@ -1,9 +1,11 @@
+
 # Logic So sánh Mũi tên và Mảng (Advanced Comparator)
 
 ## 1. TypeMap (Ánh xạ Kiểu Dữ liệu)
 Trong UML, kiểu dữ liệu tham số hoặc trả về thường mang tên của một Class khác (vd: `Ship`, `User`). Vì sinh viên có thể đổi tên Class (vd: `Ship` -> `PPShip`), Comparator CẦN xây dựng một `TypeMap` (Từ Solution Name -> Student Name dựa trên `MappingTable`) trước khi bắt đầu so sánh. Khi so sánh kiểu dữ liệu, nếu kiểu của Solution trùng với một key trong TypeMap, phải dịch nó sang tên của Student trước khi so.
 
-## 2. Quy tắc So sánh Type (Generic & Simple)
+## 2. Quy tắc So sánh Type (Generic & Simple & OR-Alternatives)
+- **OR-Alternatives (`|`)**: Trong Solution, kiểu dữ liệu của Attribute, Return Type, hoặc Param Type có thể có nhiều phương án thay thế nhau phân cách bởi dâu `|` (e.g. `double|Double|float`). Comparator sử dụng logic OR: nếu Type của Student khớp với BẤT KỲ phương án nào bên Solution (sau khi áp dụng TypeMap), thì được tính là `Match`.
 - **Simple Types**: Phải khớp sau khi mapping qua `TypeMap`.
 - **Generic Types (`List<T>`, `Map<K, V>`)**:
   - **Outer Match**: Dùng quy tắc `contains` (case-insensitive). Ví dụ: `List` khớp với `ArrayList`, `Map` khớp với `HashMap`.

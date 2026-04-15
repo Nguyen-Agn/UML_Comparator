@@ -236,7 +236,9 @@ func (p *UMLSolutionPreMatcher) ProcessSolution(graph *domain.UMLGraph) (*domain
 				customTypeCount += strings.Count(out, "<") + strings.Count(out, ",")
 			}
 			for _, param := range parsedMethod.Inputs {
-				customTypeCount += strings.Count(param.Type, "<") + strings.Count(param.Type, ",")
+				for _, t := range param.Types {
+					customTypeCount += strings.Count(t, "<") + strings.Count(t, ",")
+				}
 			}
 			if parsedMethod.Kind == "static" {
 				staticMembersCount++

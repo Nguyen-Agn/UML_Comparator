@@ -134,8 +134,8 @@ func TestParseSolutionMethod_ORReturn(t *testing.T) {
 	if len(result.Outputs) != 2 || result.Outputs[0] != "void" || result.Outputs[1] != "boolean" {
 		t.Errorf("Outputs: got %v, want [void boolean]", result.Outputs)
 	}
-	if len(result.Inputs) != 1 || result.Inputs[0].Type != "int|long" {
-		t.Errorf("Inputs[0].Type: got %q, want %q", result.Inputs[0].Type, "int|long")
+	if len(result.Inputs) != 1 || len(result.Inputs[0].Types) == 0 || result.Inputs[0].Types[0] != "int" || result.Inputs[0].Types[1] != "long" {
+		t.Errorf("Inputs[0].Types: got %v, want [int long]", result.Inputs[0].Types)
 	}
 }
 
@@ -187,8 +187,8 @@ func TestParseSolutionMethod_GenericParam(t *testing.T) {
 	if len(result.Inputs) != 1 {
 		t.Errorf("Inputs: got %d params, want 1 (generic not split)", len(result.Inputs))
 	}
-	if result.Inputs[0].Type != "Map<String, int>" {
-		t.Errorf("Inputs[0].Type: got %q, want %q", result.Inputs[0].Type, "Map<String, int>")
+	if len(result.Inputs[0].Types) != 1 || result.Inputs[0].Types[0] != "Map<String, int>" {
+		t.Errorf("Inputs[0].Types: got %v, want [Map<String, int>]", result.Inputs[0].Types)
 	}
 }
 
@@ -290,8 +290,9 @@ func TestProcessSolution_Integration(t *testing.T) {
 	if doingMethod == nil {
 		t.Fatal("doing() method not found in Circle")
 	}
-	if len(doingMethod.Inputs) != 1 || doingMethod.Inputs[0].Type != "int|long" {
-		t.Errorf("doing Inputs[0].Type: got %q, want 'int|long'", doingMethod.Inputs[0].Type)
+	if len(doingMethod.Inputs) != 1 || len(doingMethod.Inputs[0].Types) != 2 ||
+		doingMethod.Inputs[0].Types[0] != "int" || doingMethod.Inputs[0].Types[1] != "long" {
+		t.Errorf("doing Inputs[0].Types: got %v, want [int long]", doingMethod.Inputs[0].Types)
 	}
 	if len(doingMethod.Outputs) != 2 {
 		t.Errorf("doing Outputs: got %v, want [void boolean]", doingMethod.Outputs)

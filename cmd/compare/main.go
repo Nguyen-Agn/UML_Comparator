@@ -502,7 +502,7 @@ func stuAttrString(a *domain.ProcessedAttribute) string {
 func methString(m *domain.SolutionProcessedMethod) string {
 	params := make([]string, len(m.Inputs))
 	for i, p := range m.Inputs {
-		params[i] = p.Type
+		params[i] = strings.Join(p.Types, "|")
 	}
 	return cleanStr(fmt.Sprintf("%s %s(%s): %s", m.Scope, strings.Join(m.Names, "|"), strings.Join(params, ", "), strings.Join(m.Outputs, "|")))
 }

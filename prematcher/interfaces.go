@@ -19,8 +19,7 @@ type IPreMatcher interface {
 //   - Attribute Types  (e.g. "- a : int|long")
 //   - Custom Method Names (e.g. "doA | doB() : void")
 //   - Method Return Types (e.g. "doing(a:int): void|boolean")
-//
-// Param types are NOT split on "|"; they are kept as-is in MethodParam.Type.
+//   - Method Param Types  (e.g. "set(a: double|Double|float|Float): void")
 type IUMLSolutionPreMatcher interface {
 	ProcessSolution(graph *domain.UMLGraph) (*domain.SolutionProcessedUMLGraph, error)
 }
@@ -62,6 +61,7 @@ type ISolutionMemberParser interface {
 	// ParseAttribute transforms a raw string into a SolutionProcessedAttribute.
 	ParseAttribute(raw string, isEnumType bool) domain.SolutionProcessedAttribute
 	// ParseMethod transforms a raw string into a SolutionProcessedMethod.
+	// Param types in the raw string are split on "|" into SolutionMethodParam.Types.
 	ParseMethod(raw string, className string, attributes []domain.ProcessedAttribute, claimedG, claimedS map[string]bool) domain.SolutionProcessedMethod
 	// GenerateGetter creates a synthetic solution getter method for a solution attribute.
 	GenerateGetter(attr domain.SolutionProcessedAttribute) domain.SolutionProcessedMethod

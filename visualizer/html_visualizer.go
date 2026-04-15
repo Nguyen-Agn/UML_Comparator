@@ -414,7 +414,7 @@ func formatSolAttr(a *domain.SolutionProcessedAttribute) string {
 func formatSolMethod(m *domain.SolutionProcessedMethod) string {
 	params := make([]string, len(m.Inputs))
 	for i, p := range m.Inputs {
-		params[i] = p.Name + ":" + p.Type
+		params[i] = p.Name + ":" + strings.Join(p.Types, "|")
 	}
 	return fmt.Sprintf("%s %s(%s) : %s", m.Scope, strings.Join(m.Names, " | "), strings.Join(params, ", "), strings.Join(m.Outputs, " | "))
 }

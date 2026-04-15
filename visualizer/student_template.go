@@ -255,6 +255,9 @@ const studentHTMLTemplate = `<!DOCTYPE html>
   <div class="progress-wrap">
     <div class="progress-fill {{.FillClass}}" style="width:{{printf "%.1f" .Percent}}%"></div>
   </div>
+  <div class="score-display {{.ScoreClass}}" style="font-size: 1rem;">
+    {{printf "%.2f" .Score}} / {{printf "%.2f" .MaxScore}}
+  </div>
 </div>
 
 <!-- ═══ LEGEND ═══ -->

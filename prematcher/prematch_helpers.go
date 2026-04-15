@@ -171,3 +171,13 @@ func isAllUpperCase(s string) bool {
 	}
 	return hasAlpha
 }
+
+// hasKeyword checks if a string contains a specific keyword as a whole word,
+// or as an annotation inside curly braces (e.g., "{abstract}").
+func hasKeyword(s, kw string) bool {
+	if strings.Contains(strings.ToLower(s), "{"+strings.ToLower(kw)+"}") {
+		return true
+	}
+	re := regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(kw) + `\b`)
+	return re.MatchString(s)
+}

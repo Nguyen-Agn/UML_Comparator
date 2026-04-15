@@ -31,13 +31,19 @@ func (a *StandardTypeAnalyzer) CompareTypes(solType, stuType string, typeMap map
 	}
 
 	// Generic case
-	if strings.Contains(solType, "<") {
+	if strings.Contains(solType, "<") || strings.Contains(stuType, "<") {
 		solOuter, solInners := a.splitGeneric(solType)
 		stuOuter, stuInners := a.splitGeneric(stuType)
 
 		// Outer check: "contains" rule (case-insensitive)
 		if !a.isCompatibleOuter(solOuter, stuOuter) {
 			return false
+		}
+
+		// If one of the types doesn't specify generic parameters, treat it as a match 
+        // as long as the outer container matched (e.g. "List" matches "ArrayList<T>")
+		if len(solInners) == 0 || len(stuInners) == 0 {
+			return true
 		}
 
 		if len(solInners) != len(stuInners) {

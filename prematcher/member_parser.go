@@ -31,9 +31,9 @@ func (p *StandardMemberParser) ParseAttribute(raw string, isEnumType bool) domai
 
 	// 1. Identify Kind and handle annotations
 	lowerRaw := strings.ToLower(raw)
-	isStatic := strings.Contains(lowerRaw, "{static}") || strings.Contains(lowerRaw, "static")
-	isFinal := strings.Contains(lowerRaw, "final") || strings.Contains(lowerRaw, "const") || strings.Contains(lowerRaw, "{readonly}")
-	isAbstract := strings.Contains(lowerRaw, "{abstract}") || strings.Contains(lowerRaw, "abstract")
+	isStatic := hasKeyword(raw, "static")
+	isFinal := hasKeyword(raw, "final") || hasKeyword(raw, "const") || strings.Contains(lowerRaw, "{readonly}")
+	isAbstract := hasKeyword(raw, "abstract")
 
 	// 2. Clean the string for structural parsing (remove keywords and annotations)
 	working := cleanMemberString(raw)
@@ -112,9 +112,9 @@ func (p *StandardMemberParser) ParseMethod(raw string, className string, attribu
 	lowerRaw := strings.ToLower(raw)
 
 	// Identify Kind
-	if strings.Contains(lowerRaw, "{static}") || strings.Contains(lowerRaw, "static") {
+	if hasKeyword(raw, "static") {
 		method.Kind = "static"
-	} else if strings.Contains(lowerRaw, "{abstract}") || strings.Contains(lowerRaw, "abstract") {
+	} else if hasKeyword(raw, "abstract") {
 		method.Kind = "abstract"
 	}
 

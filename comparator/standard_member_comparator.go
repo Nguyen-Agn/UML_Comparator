@@ -247,19 +247,32 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 							if matchedStuParams[j] {
 								continue
 							}
-							if v.typeAnalyzer.CompareTypes(sParam.Type, stuParam.Type, typeMap) {
-								matchedStuParams[j] = true
-								foundMatch = true
+							for _, solType := range sParam.Types {
+								if v.typeAnalyzer.CompareTypes(solType, stuParam.Type, typeMap) {
+									matchedStuParams[j] = true
+									foundMatch = true
+									break
+								}
+							}
+							if foundMatch {
 								break
 							}
 						}
 						if !foundMatch {
-							issues = append(issues, "Param type '"+sParam.Type+"' not found")
+							solTypeStr := strings.Join(sParam.Types, "|")
+							issues = append(issues, "Param type '"+solTypeStr+"' not found")
 						}
 					}
 				} else {
 					for j := range sMethod.Inputs {
-						if !v.typeAnalyzer.CompareTypes(sMethod.Inputs[j].Type, matchingStu.Inputs[j].Type, typeMap) {
+						matchedType := false
+						for _, solType := range sMethod.Inputs[j].Types {
+							if v.typeAnalyzer.CompareTypes(solType, matchingStu.Inputs[j].Type, typeMap) {
+								matchedType = true
+								break
+							}
+						}
+						if !matchedType {
 							issues = append(issues, "Param "+itoa(j+1)+" type mismatch")
 							break
 						}
