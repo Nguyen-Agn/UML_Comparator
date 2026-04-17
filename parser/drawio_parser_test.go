@@ -13,7 +13,7 @@ import (
 func TestDrawioParser_Parse_PlainXML(t *testing.T) {
 	p := parser.NewDrawioParser()
 
-	result, err := p.Parse("testdata/plain_sample.drawio")
+	result, _, err := p.Parse("testdata/plain_sample.drawio")
 	if err != nil {
 		t.Fatalf("Expected no error for plain XML file, got: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestDrawioParser_Parse_PlainXML(t *testing.T) {
 func TestDrawioParser_Parse_EmptyPath(t *testing.T) {
 	p := parser.NewDrawioParser()
 
-	_, err := p.Parse("")
+	_, _, err := p.Parse("")
 	if err == nil {
 		t.Fatal("Expected an error when filePath is empty, got nil")
 	}
@@ -48,7 +48,7 @@ func TestDrawioParser_Parse_EmptyPath(t *testing.T) {
 func TestDrawioParser_Parse_NonExistentFile(t *testing.T) {
 	p := parser.NewDrawioParser()
 
-	_, err := p.Parse("testdata/does_not_exist.drawio")
+	_, _, err := p.Parse("testdata/does_not_exist.drawio")
 	if err == nil {
 		t.Fatal("Expected an error for missing file, got nil")
 	}
@@ -60,7 +60,7 @@ func TestDrawioParser_Parse_NonExistentFile(t *testing.T) {
 func TestDrawioParser_Parse_EdgeCount(t *testing.T) {
 	p := parser.NewDrawioParser()
 
-	result, err := p.Parse("testdata/plain_sample.drawio")
+	result, _, err := p.Parse("testdata/plain_sample.drawio")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

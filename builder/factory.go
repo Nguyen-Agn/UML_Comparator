@@ -1,17 +1,17 @@
 package builder
 
-import (
-	"fmt"
-)
+
 
 // GetBuilder returns the appropriate IModelBuilder based on the source type.
-// Currently supported: "drawio".
-// In the future, this can support "json", "yaml", "java", etc.
+// This implements the Strategy Pattern for builder selection.
 func GetBuilder(sourceType string) (IModelBuilder, error) {
-	switch sourceType {
-	case "drawio":
-		return NewDrawioModelBuilder(), nil
-	default:
-		return nil, fmt.Errorf("GetBuilder: unsupported source type %q", sourceType)
-	}
+	// For now, we return the AutoBuilder orchestrator.
+	// In the future, we could also return specific builders directly if needed.
+	return NewAutoBuilderDefault(), nil
+}
+
+// NewStandardModelBuilder is a compatibility factory for the main application flow.
+// It returns an IModelBuilder that can handle multiple source types via AutoBuilder.
+func NewStandardModelBuilder() IModelBuilder {
+	return NewAutoBuilderDefault()
 }

@@ -31,14 +31,18 @@ const incorrectDir = "../UMLs_testcase/incorrect/"
 // If buildError != nil the graph may be nil; callers must check.
 func loadAndBuild(t *testing.T, filename string) (*domain.UMLGraph, []domain.IntegrityError) {
 	t.Helper()
-	p := parser.NewDrawioParser()
-	raw, err := p.Parse(incorrectDir + filename)
+	p := parser.NewAutoParserDefault()
+	raw, sourceType, err := p.Parse(incorrectDir + filename)
 	if err != nil {
-		t.Fatalf("[%s] DrawioParser.Parse failed: %v", filename, err)
+		t.Fatalf("[%s] Parser.Parse failed: %v", filename, err)
 	}
 
-	b := builder.NewDrawioModelBuilder()
-	graph, buildErr := b.Build(raw)
+	b, err := builder.GetBuilder(sourceType)
+	if err != nil {
+		t.Fatalf("[%s] builder.GetBuilder failed: %v", filename, err)
+	}
+
+	graph, buildErr := b.Build(raw, sourceType)
 	if buildErr != nil {
 		// Build error (e.g. empty raw) → use empty graph for Validate
 		t.Logf("[%s] Builder.Build returned error (may be expected): %v", filename, buildErr)

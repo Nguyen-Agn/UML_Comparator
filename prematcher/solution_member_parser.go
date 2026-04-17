@@ -196,7 +196,7 @@ func (p *SolutionMemberParser) ParseMethod(raw string, className string, attribu
 			}
 		}
 		if foundAttr != "" {
-			method.Type = "custom"
+			method.Type = "getter"
 			claimedG[foundAttr] = true
 		} else {
 			method.Type = "custom"
@@ -213,7 +213,7 @@ func (p *SolutionMemberParser) ParseMethod(raw string, className string, attribu
 			}
 		}
 		if foundAttr != "" {
-			method.Type = "custom"
+			method.Type = "setter"
 			claimedS[foundAttr] = true
 		} else {
 			method.Type = "custom"

@@ -25,20 +25,20 @@ Chuỗi `jZLB...` đó đã được xuất xưởng nhờ thuật toán:
 
 ### Dạng 2: Uncompressed (Plain XML chuẩn)
 Draw.io thi thoảng nếu user tắt compress (hoặc xuất Export XML thủ công) thì nó sẽ lưu rõ ràng mọi thẻ:
-```xml
-<mxfile>
-  <diagram id="abc" name="Page-1">
-    <mxGraphModel dx="1290" dy="687" grid="1" gridSize="10">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="2" value="ClassTaikhoan" style="shape=umlClass" vertex="1" parent="1">
-            <mxGeometry x="100" y="100" width="120" height="80" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
-</mxfile>
-```
-**Cơ chế giải nén:** 
-Không cần phải Encode/Decode rườm rà. Code Golang chỉ việc bóc lấy khối text nằm bên trong thẻ `<diagram>...</diagram>` bằng Regex hoặc Simple XML Parser. Mảng block text đó chính là Data đích trả về.
+(Xem cấu trúc mxGraphModel XML chuẩn).
+
+## 2. Cấu trúc Mermaid (.mmd hoặc .mermaid)
+Mermaid là một DSL (Domain Specific Language) dạng text thuần.
+
+**Cơ chế xử lý:**
+1. Đọc file text theo dòng.
+2. **Filtering**: Loại bỏ các dòng trống hoặc các dòng comment bắt đầu bằng `%%`.
+3. Trả về nội dung text đã làm sạch và sourceType là `"mermaid"`.
+
+## 3. Strategy Pattern trong Parser
+Hệ thống sử dụng `AutoParser` để tự động điều phối file dựa trên extension:
+- `.drawio` -> `DrawioParser` (sourceType: "drawio")
+- `.solution` -> `SolutionParser` (sourceType: "drawio")
+- `.mmd` / `.mermaid` -> `MermaidParser` (sourceType: "mermaid")
+
+Điều này giúp module Builder phía sau không cần quan tâm đến logic đọc file phức tạp, chỉ cần dựa vào `sourceType` để chọn Builder tương ứng.

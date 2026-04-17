@@ -8,7 +8,7 @@
 
 Bạn không cần cài đặt bất kỳ môi trường nào. Chỉ cần mở thư mục `portable/` và chọn phiên bản phù hợp:
 
-### A. Phiên bản Tích hợp (`exam_student_uml.exe`) — Khuyên dùng cho thi cử
+### A. Phiên bản Tích hợp (`exam_student_uml.exe`) — Khuyên dùng cho nén file solution
 Phiên bản này đã được giảng viên nén sẵn các file đáp án.
 1. **Mở file** `exam_student_uml.exe`.
 2. Giao diện sẽ hiển thị danh sách thả xuống ở phần **Embedded Solution**.

@@ -18,27 +18,28 @@ func main() {
 	share.PrintBanner("UML Compare - Draw.io Parser Demo")
 	fmt.Printf("📂 Input file : %s\n\n", filePath)
 
-	data, err := run(filePath)
+	data, sourceType, err := run(filePath)
 	if err != nil {
 		fmt.Printf("❌ Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	printResult(data)
+	printResult(data, sourceType)
 }
 
-// run thực hiện parse file và trả về raw model data.
-func run(filePath string) (domain.RawModelData, error) {
+// run thực hiện parse file và trả về raw model data cùng source type.
+func run(filePath string) (domain.RawModelData, string, error) {
 	p, err := parser.GetParser(filePath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	return p.Parse(filePath)
 }
 
-// printResult in kết quả raw model ra stdout.
-func printResult(data domain.RawModelData) {
+// printResult in kết quả raw model và source type ra stdout.
+func printResult(data domain.RawModelData, sourceType string) {
 	fmt.Println("✅ Parse thành công!")
+	fmt.Printf("🎯 Detected Type  : %s\n", sourceType)
 	fmt.Printf("📏 Độ dài chuỗi dữ liệu sau parse: %d ký tự\n", len(data))
 	fmt.Println("\n─── Raw Output (domain.RawModelData) ──────────────────")
 	fmt.Println(string(data))

@@ -1,25 +1,21 @@
 package parser
 
 import (
-	"fmt"
-	"path/filepath"
 	"uml_compare/domain"
 )
 
-// IFileParser defines the contract for reading/parsing UML files (e.g., Draw.io, Lucid).
+// IFileParser defines the contract for reading/parsing UML files (e.g., Draw.io, Mermaid).
 type IFileParser interface {
-	// Parse reads a file from the given path and returns the raw model data string.
-	Parse(filePath string) (domain.RawModelData, error)
+	// Parse reads a file from the given path and returns:
+	// 1. Cleaned raw model data string.
+	// 2. Detected source type (e.g., "drawio", "mermaid").
+	// 3. Error if parsing fails.
+	Parse(filePath string) (domain.RawModelData, string, error)
 }
 
+// GetParser is a factory function that returns the default AutoParser
+// initialized with all supported formats. This implements the Strategy Pattern
+// for selecting the correct parser based on file extension.
 func GetParser(filePath string) (IFileParser, error) {
-	ext := filepath.Ext(filePath)
-	switch ext {
-	case ".drawio":
-		return NewDrawioParser(), nil
-	case ".solution":
-		return NewSolutionParserDefault(), nil
-	default:
-		return nil, fmt.Errorf("parser: no parser registered for extension %q", ext)
-	}
+	return NewAutoParserDefault(), nil
 }

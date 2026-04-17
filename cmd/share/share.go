@@ -45,14 +45,19 @@ func LoadGraph(filePath string) (*domain.UMLGraph, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parser factory: %w", err)
 	}
-	rawXML, err := p.Parse(filePath)
+	rawXML, sourceType, err := p.Parse(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("parse %q: %w", filePath, err)
 	}
-	b := builder.NewStandardModelBuilder()
-	graph, err := b.Build(rawXML)
+
+	b, err := builder.GetBuilder(sourceType)
 	if err != nil {
-		return nil, fmt.Errorf("build graph from %q: %w", filePath, err)
+		return nil, fmt.Errorf("builder factory for %q: %w", sourceType, err)
+	}
+
+	graph, err := b.Build(rawXML, sourceType)
+	if err != nil {
+		return nil, fmt.Errorf("build graph from %q (%s): %w", filePath, sourceType, err)
 	}
 	return graph, nil
 }

@@ -1,4 +1,4 @@
-package builder
+package drawio
 
 import "strings"
 
@@ -65,17 +65,24 @@ func (d *typeDetector) nodeType(style, sanitizedValue string) string {
 // relation type (Inheritance, Realization, Association, Composition, etc.).
 func (d *typeDetector) relationType(style string) string {
 	s := strings.ToLower(style)
+	isComposition := (strings.Contains(s, "endarrow=diamond") && strings.Contains(s, "endfill=1")) ||
+		(strings.Contains(s, "startarrow=diamond") && strings.Contains(s, "startfill=1"))
+	isAggregation := strings.Contains(s, "endarrow=diamond") || strings.Contains(s, "startarrow=diamond")
+	isRealization := (strings.Contains(s, "endarrow=block") || strings.Contains(s, "startarrow=block")) && strings.Contains(s, "dashed=1")
+	isInheritance := strings.Contains(s, "endarrow=block") || strings.Contains(s, "startarrow=block")
+
 	switch {
-	case strings.Contains(s, "endarrow=block") && strings.Contains(s, "dashed=1"):
+	case isRealization:
 		return "Realization"
-	case strings.Contains(s, "endarrow=block"):
+	case isInheritance:
 		return "Inheritance"
-	case strings.Contains(s, "endarrow=open") || strings.Contains(s, "endarrow=none"):
-		return "Association"
-	case strings.Contains(s, "endarrow=diamond") && strings.Contains(s, "endfill=1"):
+	case isComposition:
 		return "Composition"
-	case strings.Contains(s, "endarrow=diamond"):
+	case isAggregation:
 		return "Aggregation"
+	case strings.Contains(s, "endarrow=open") || strings.Contains(s, "endarrow=none") ||
+		strings.Contains(s, "startarrow=open") || strings.Contains(s, "startarrow=none"):
+		return "Association"
 	case strings.Contains(s, "dashed=1"):
 		return "Dependency"
 	default:

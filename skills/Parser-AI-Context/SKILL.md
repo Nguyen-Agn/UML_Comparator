@@ -1,19 +1,20 @@
 # SKILL: drawio-xml-parser
 
 ## Purpose (Mục đích)
-Phân tích file `.drawio` hoặc xml của sinh viên và đáp án, biến chúng từ dạng nén/mã hoá (hoặc raw) về dạng chuỗi `RawXMLData` (thuần text XML) một cách chính xác.
+Phân tích file `.drawio`, `.solution` hoặc `.mmd` (Mermaid), lọc bỏ các thông tin nhiễu (comments, metadata) và trả về dữ liệu `RawModelData` sạch cùng source type tương ứng.
 
 ## Use When (Khi nào dùng skill này)
-- Vừa mới bắt đầu pipeline so sánh UML.
-- Cần lập trình module con `IFileParser` bằng Golang.
-- Cần cung cấp dữ liệu sạch đầu vào (XML thô) cho cụm `IModelBuilder`.
+- Bắt đầu pipeline so sánh UML từ nhiều nguồn khác nhau.
+- Cần lập trình module con `IFileParser` (Strategy Pattern).
+- Cần cung cấp dữ liệu sạch đầu vào và định danh loại nguồn cho `IModelBuilder`.
 
 ## Required Inputs
 - Đường dẫn file vật lý trên ổ cứng (`filePath` kiểu String).
 
 ## Expected Output
-- Dữ liệu `domain.RawXMLData` chứa cấu trúc XML chuẩn của thẻ `<mxGraphModel>`.
-- Thông báo lỗi `error` (nếu hỏng file, sai định dạng).
+- Dữ liệu `domain.RawModelData` đã được lọc (clean).
+- Chuỗi `sourceType` (ví dụ: "drawio", "mermaid") để chọn Builder phù hợp.
+- Thông báo lỗi `error`.
 
 ## Execution Approach (Hướng thực thi)
 1. Đọc nội dung file ra bộ nhớ (String/Byte array).

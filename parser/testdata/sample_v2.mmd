@@ -1,0 +1,37 @@
+classDiagram
+    %% This is a comment
+    class Animal {
+        <<abstract>>
+        + age_years : int
+        + gender : String
+        +isMammal() : boolean
+        +mate() : void
+        +sleep() : void
+    }
+    class Duck {
+        + beakColor : String
+        + TYPE: String
+        +swim() : void
+        +quack() : void
+    }
+
+    class ListAnimal {
+        +list : List~Animal~
+        +add() : void
+        +remove() : void
+    }
+
+    class Flyable {
+        <<interface>>
+        +fly() : void
+    }
+
+    class Airplane {
+        <<interface>>
+        +fly() : void
+    }
+
+    Animal <|-- Duck
+    ListAnimal --> Animal
+    Duck <|-- Flyable
+    Airplane <|-- Flyable

@@ -1,4 +1,4 @@
-package builder
+package drawio
 
 import (
 	"fmt"
@@ -18,9 +18,6 @@ import (
 //     not on concrete regex or XML details.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Compile-time interface guarantee (template.md rule #1)
-var _ IModelBuilder = (*DrawioModelBuilder)(nil)
-
 // DrawioModelBuilder orchestrates the XML → UMLGraph transformation for Draw.io files.
 // Each field is an interface (DIP): the orchestrator depends only on
 // abstractions, never on concrete implementations.
@@ -32,9 +29,8 @@ type DrawioModelBuilder struct {
 	style   IStyleHelper   // style extraction
 }
 
-// NewDrawioModelBuilder (formerly NewStandardModelBuilder) wires all sub-components
-// and returns the builder as its IModelBuilder interface.
-func NewDrawioModelBuilder() IModelBuilder {
+// NewDrawioModelBuilder (formerly NewStandardModelBuilder) wires all sub-components.
+func NewDrawioModelBuilder() *DrawioModelBuilder {
 	san := newHTMLSanitizer()
 	style := NewStyleHelper()
 	return &DrawioModelBuilder{
@@ -46,11 +42,6 @@ func NewDrawioModelBuilder() IModelBuilder {
 	}
 }
 
-// NewStandardModelBuilder is a compatibility alias for NewDrawioModelBuilder.
-func NewStandardModelBuilder() IModelBuilder {
-	return NewDrawioModelBuilder()
-}
-
 // Build converts RawModelData into a fully structured *domain.UMLGraph.
 //
 // Pipeline:
@@ -58,7 +49,7 @@ func NewStandardModelBuilder() IModelBuilder {
 //  2. Build structural indexes (cell map, root layer, children groups)
 //  3. Build Nodes from top-level container cells
 //  4. Build Edges, resolving child-cell endpoints to top-level class IDs
-func (b *DrawioModelBuilder) Build(rawData domain.RawModelData) (*domain.UMLGraph, error) {
+func (b *DrawioModelBuilder) Build(rawData domain.RawModelData, sourceType string) (*domain.UMLGraph, error) {
 	if rawData == "" {
 		return nil, fmt.Errorf("DrawioModelBuilder.Build: rawData cannot be empty")
 	}

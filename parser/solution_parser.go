@@ -57,32 +57,33 @@ func resolveDefaultKey() []byte {
 }
 
 // Parse reads a .solution file, base64-decodes the payload, delegates
-// decryption to the injected IDecryptor, and returns domain.RawModelData.
-func (p *SolutionParser) Parse(filePath string) (domain.RawModelData, error) {
+// decryption to the injected IDecryptor, and returns domain.RawModelData
+// along with the source type "drawio" (since decrypted data is Draw.io XML).
+func (p *SolutionParser) Parse(filePath string) (domain.RawModelData, string, error) {
 	if filePath == "" {
-		return "", fmt.Errorf("SolutionParser.Parse: filePath cannot be empty")
+		return "", "", fmt.Errorf("SolutionParser.Parse: filePath cannot be empty")
 	}
 
 	raw, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", fmt.Errorf("SolutionParser.Parse: read file: %w", err)
+		return "", "", fmt.Errorf("SolutionParser.Parse: read file: %w", err)
 	}
 	content := string(raw)
 
 	if !strings.HasPrefix(content, solutionHeader) {
-		return "", fmt.Errorf("SolutionParser.Parse: invalid .solution file — missing header")
+		return "", "", fmt.Errorf("SolutionParser.Parse: invalid .solution file — missing header")
 	}
 	encoded := strings.TrimSpace(strings.TrimPrefix(content, solutionHeader))
 
 	packed, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return "", fmt.Errorf("SolutionParser.Parse: base64 decode: %w", err)
+		return "", "", fmt.Errorf("SolutionParser.Parse: base64 decode: %w", err)
 	}
 
 	xmlBytes, err := p.decryptor.Decrypt(packed)
 	if err != nil {
-		return "", fmt.Errorf("SolutionParser.Parse: decrypt: %w", err)
+		return "", "", fmt.Errorf("SolutionParser.Parse: decrypt: %w", err)
 	}
 
-	return domain.RawModelData(xmlBytes), nil
+	return domain.RawModelData(xmlBytes), "drawio", nil
 }

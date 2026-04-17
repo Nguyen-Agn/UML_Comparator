@@ -1,0 +1,46 @@
+classDiagram
+    class PaymentStatus {
+        <<enumeration>>
+        WAITING : void
+        COMPLETED : void
+        FAILED : void
+    }
+
+    class ICalculatable {
+        <<interface>>
+        +getTax(rate: float) : Double
+    }
+
+    class BaseEntity {
+        <<abstract>>
+        #uuid : long
+        #createdAt : LocalDateTime
+        +display()
+    }
+
+    class Product {
+        -title : String
+        -cost : Long
+        -type : Category
+        +totalProducts : Integer {static}
+        +Product(name: String)
+        +getCost() : Double
+        +setCost(p: Double) : void
+        +updatePrice(percent: float) : void
+    }
+
+    class Order~T~ {
+        -orderId : String
+        -items : Set~T~
+        +add(item: T) : void
+    }
+
+    class Category {
+        -catName : String
+    }
+
+    BaseEntity <|-- Product : Extends
+    ICalculatable <|.. Product : Implements
+    Order~T~ *-- Product : Composition
+    Category o-- Product : Aggregation
+    Product --> PaymentStatus : Association

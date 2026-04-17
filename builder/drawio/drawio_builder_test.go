@@ -1,9 +1,9 @@
-package builder_test
+package drawio_test
 
 import (
 	"strings"
 	"testing"
-	"uml_compare/builder"
+	"uml_compare/builder/drawio"
 	"uml_compare/domain"
 )
 
@@ -41,8 +41,8 @@ const sampleXML = `<mxGraphModel dx="1290" dy="687" grid="1" gridSize="10">
 // ─── Integration tests (Build pipeline) ──────────────────────────────────────
 
 func TestBuild_NodeCount(t *testing.T) {
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(sampleXML))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(sampleXML), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,8 +53,8 @@ func TestBuild_NodeCount(t *testing.T) {
 }
 
 func TestBuild_EdgeCount_And_RelationType(t *testing.T) {
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(sampleXML))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(sampleXML), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -68,8 +68,8 @@ func TestBuild_EdgeCount_And_RelationType(t *testing.T) {
 }
 
 func TestBuild_EmptyInput_ReturnsError(t *testing.T) {
-	b := builder.NewDrawioModelBuilder()
-	_, err := b.Build("")
+	b := drawio.NewDrawioModelBuilder()
+	_, err := b.Build("", "drawio")
 	if err == nil {
 		t.Fatal("expected error for empty input, got nil")
 	}
@@ -85,8 +85,8 @@ func TestBuild_HTMLSanitize_SingleCell(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(htmlXML))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(htmlXML), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,8 +113,8 @@ func TestBuild_Interface_FromValue_Stereotype(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xml))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -144,8 +144,8 @@ func TestBuild_Abstract_InlineStereotype(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xml))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestBuild_Abstract_InlineStereotype(t *testing.T) {
 	if n.Name != "BankAccount" {
 		t.Errorf("expected Name=BankAccount (inline stereotype stripped), got %q", n.Name)
 	}
-	t.Logf("\u2714 Abstract inline: Name=%s Type=%s", n.Name, n.Type)
+	t.Logf("✔ Abstract inline: Name=%s Type=%s", n.Name, n.Type)
 }
 
 // ─── Numeric entity decode test ───────────────────────────────────────────────
@@ -176,8 +176,8 @@ func TestBuild_NumericEntity_Newline(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xmlStr))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xmlStr), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -209,8 +209,8 @@ func TestBuild_MultilineMethodSignature(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xml))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -245,8 +245,8 @@ func TestBuild_GenericsAndStyling(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xml))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -295,8 +295,8 @@ func TestBuild_EdgeNoteExtraction(t *testing.T) {
       </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xml))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -322,8 +322,8 @@ func TestBuild_StaticByStyleFontStyle4(t *testing.T) {
 	  </mxCell>
 	</root></mxGraphModel>`
 
-	b := builder.NewDrawioModelBuilder()
-	graph, err := b.Build(domain.RawModelData(xml))
+	b := drawio.NewDrawioModelBuilder()
+	graph, err := b.Build(domain.RawModelData(xml), "drawio")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

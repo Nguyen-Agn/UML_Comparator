@@ -63,18 +63,18 @@ func parseFlags(rawArgs []string) (isAdmin bool, args []string) {
 // runComparison thực hiện toàn bộ pipeline và xuất HTML report.
 func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) error {
 	// ── 1. Parse ──────────────────────────────────────────────────────────
-	solRaw, stuRaw, err := parseBothFiles(solutionPath, studentPath)
+	solRaw, stuRaw, solType, stuType, err := parseBothFiles(solutionPath, studentPath)
 	if err != nil {
 		return err
 	}
 
 	// ── 2. Build ──────────────────────────────────────────────────────────
 	b := builder.NewStandardModelBuilder()
-	solGraph, err := b.Build(solRaw)
+	solGraph, err := b.Build(solRaw, solType)
 	if err != nil {
 		return fmt.Errorf("build solution: %w", err)
 	}
-	stuGraph, err := b.Build(stuRaw)
+	stuGraph, err := b.Build(stuRaw, stuType)
 	if err != nil {
 		return fmt.Errorf("build student: %w", err)
 	}
@@ -120,20 +120,20 @@ func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) e
 // ── Print / IO Layer ─────────────────────────────────────────────────────────
 
 // parseBothFiles parse cả hai file drawio/solution, trả về raw bytes.
-func parseBothFiles(solutionPath, studentPath string) (domain.RawModelData, domain.RawModelData, error) {
+func parseBothFiles(solutionPath, studentPath string) (domain.RawModelData, domain.RawModelData, string, string, error) {
 	p, err := parser.GetParser(solutionPath)
 	if err != nil {
-		return "", "", fmt.Errorf("parser factory: %w", err)
+		return "", "", "", "", fmt.Errorf("parser factory: %w", err)
 	}
-	solRaw, err := p.Parse(solutionPath)
+	solRaw, solType, err := p.Parse(solutionPath)
 	if err != nil {
-		return "", "", fmt.Errorf("parse solution: %w", err)
+		return "", "", "", "", fmt.Errorf("parse solution: %w", err)
 	}
-	stuRaw, err := p.Parse(studentPath)
+	stuRaw, stuType, err := p.Parse(studentPath)
 	if err != nil {
-		return "", "", fmt.Errorf("parse student: %w", err)
+		return "", "", "", "", fmt.Errorf("parse student: %w", err)
 	}
-	return solRaw, stuRaw, nil
+	return solRaw, stuRaw, solType, stuType, nil
 }
 
 // printLoadStatus in số node/edge sau khi build thành công.

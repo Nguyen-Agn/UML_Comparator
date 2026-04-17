@@ -1,4 +1,4 @@
-package builder
+package drawio
 
 import (
 	"encoding/xml"

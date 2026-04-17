@@ -23,35 +23,38 @@ func NewDrawioParser() IFileParser {
 	return &DrawioParser{}
 }
 
-// Parse reads a .drawio file at the given path and returns the raw mxGraphModel XML string as RawModelData.
+// Parse reads a .drawio file at the given path and returns:
+// 1. The raw mxGraphModel XML string (cleaned).
+// 2. The source type "drawio".
+// 3. Error if parsing fails.
 // It handles both compressed and uncompressed formats transparently.
-func (p *DrawioParser) Parse(filePath string) (domain.RawModelData, error) {
+func (p *DrawioParser) Parse(filePath string) (domain.RawModelData, string, error) {
 	if filePath == "" {
-		return "", fmt.Errorf("DrawioParser.Parse: filePath cannot be empty")
+		return "", "", fmt.Errorf("DrawioParser.Parse: filePath cannot be empty")
 	}
 
 	content, err := p.readFileContent(filePath)
 	if err != nil {
-		return "", fmt.Errorf("DrawioParser.Parse: failed to read file: %w", err)
+		return "", "", fmt.Errorf("DrawioParser.Parse: failed to read file: %w", err)
 	}
 
 	// Extract the raw payload inside <diagram>...</diagram>
 	payload, err := p.extractDiagramPayload(content)
 	if err != nil {
-		return "", fmt.Errorf("DrawioParser.Parse: failed to extract diagram payload: %w", err)
+		return "", "", fmt.Errorf("DrawioParser.Parse: failed to extract diagram payload: %w", err)
 	}
 
 	// Detect if compressed (Base64 content does NOT start with '<')
 	if p.isCompressed(payload) {
 		xmlStr, err := p.decodeBase64Deflate(payload)
 		if err != nil {
-			return "", fmt.Errorf("DrawioParser.Parse: failed to decompress diagram: %w", err)
+			return "", "", fmt.Errorf("DrawioParser.Parse: failed to decompress diagram: %w", err)
 		}
-		return domain.RawModelData(xmlStr), nil
+		return domain.RawModelData(xmlStr), "drawio", nil
 	}
 
 	// Plain uncompressed XML — return the payload itself
-	return domain.RawModelData(payload), nil
+	return domain.RawModelData(payload), "drawio", nil
 }
 
 // ─────────────────────────────────────────────

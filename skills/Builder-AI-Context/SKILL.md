@@ -1,31 +1,36 @@
 # SKILL: uml-model-builder
 ## Purpose
-Chuyển đổi chuỗi RawXMLData thành cấu trúc domain.UMLGraph thống nhất (bao gồm trích xuất Nodes, Edges, Attributes, Methods).
+Chuyển đổi chuỗi RawModelData (đã được Parser làm sạch) thành cấu trúc domain.UMLGraph thống nhất dựa trên sourceType (drawio, mermaid).
 
 ## Required Inputs
-- domain.RawXMLData (chuỗi XML thô từ DrawioParser)
+- domain.RawModelData (Chuỗi dữ liệu thô sạch từ IFileParser)
+- sourceType (Chuỗi: "drawio" hoặc "mermaid")
 
 ## Expected Output
 - *domain.UMLGraph (Mô hình OOP hoàn chỉnh)
 
-## Architecture (Interface-Based — DIP)
-`StandardModelBuilder` là orchestrator thuần tuý, **chỉ phụ thuộc vào 4 internal interfaces**:
+## Strategy Architecture
+Hệ thống sử dụng **AutoBuilder** làm orchestrator (Strategy Pattern) để điều phối việc build dựa trên `sourceType`.
 
-| Interface | File impl | Trách nhiệm |
-|---|---|---|
-| `IXMLParser` | `xml_parser.go` | Parse XML → `[]mxCell`, structural queries |
-| `ITextSanitizer` | `html_sanitizer.go` | Decode HTML entities, strip tags/stereotypes |
-| `ITypeDetector` | `type_detector.go` | Phân loại Class/Interface/Abstract/Actor/Enum + RelationType |
-| `IMemberParser` | `member_parser.go` | Tách Attributes vs Methods từ child cells |
+### 1. Draw.io Builder (`builder/drawio`)
+Dành cho dữ liệu XML từ Draw.io.
+- **IXMLParser**: Parse XML thô và cấu trúc cha-con.
+- **ITextSanitizer**: Làm sạch HTML entities và tags.
+- **ITypeDetector**: Nhận diện Class/Interface/Enum dựa trên metadata/style.
+- **IMemberParser**: Phân tích Attributes và Methods từ child cells.
 
-Xem `builder/interfaces.go` để biết contract đầy đủ.
-Xem `builder/builder.mmd` để thấy sơ đồ class diagram.
+### 2. Mermaid Builder (`builder/mermaid`)
+Dành cho dữ liệu text DSL từ Mermaid.
+- **RegexParser**: Sử dụng biểu thức chính quy để trích xuất class blocks, stereotypes và relationships.
+- **Stereotype Mapping**:
+    - `<<interface>>` -> Interface
+    - `<<abstract>>` -> Abstract
+- **Relationship Mapping**: Hỗ trợ `<|--`, `..|>`, `*--`, `o--`, `-->`, `..>`.
 
 ## Execution Approach
-1. `cellParser.parse()` → `[]mxCell` từ XML string
-2. Index cells (rootLayerID, cellMap, childrenByParent)
-3. Với mỗi top-level node: `typeDetector.nodeType()` + `memberParser.parseChildren()`
-4. Với mỗi edge cell: `typeDetector.relationType()` + resolve endpoint IDs
+1.  **Orchestration**: Gọi `builder.GetBuilder(sourceType)`.
+2.  **Build**: Thực thi phương thức `Build` của concrete strategy tương ứng.
+3.  **Validation**: Kết quả trả về là một `UMLGraph` chuẩn hóa, sẵn sàng cho việc so sánh.
 
 ## Compile-time Guarantees
-Mỗi concrete struct có `var _ Interface = (*struct)(nil)` để Go compiler bắt lỗi ngay nếu interface không được implement đầy đủ.
+Mỗi concrete strategy trong `AutoBuilder` được đảm bảo thoả mãn interface `IModelBuilder` tại thời điểm biên dịch.

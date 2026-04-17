@@ -27,7 +27,7 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*co
 		return nil, fmt.Errorf("Get parser error: %v", err)
 	}
 
-	solRaw, err := parserObjSol.Parse(solutionPath)
+	solRaw, solType, err := parserObjSol.Parse(solutionPath)
 	if err != nil {
 		return nil, fmt.Errorf("Parse solution error: %v", err)
 	}
@@ -37,17 +37,17 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*co
 		return nil, fmt.Errorf("Get parser error: %v", err)
 	}
 
-	stuRaw, err := parserObjStu.Parse(assignmentPath)
+	stuRaw, stuType, err := parserObjStu.Parse(assignmentPath)
 	if err != nil {
 		return nil, fmt.Errorf("Parse student error: %v", err)
 	}
 
 	b := builder.NewStandardModelBuilder()
-	solGraph, err := b.Build(solRaw)
+	solGraph, err := b.Build(solRaw, solType)
 	if err != nil {
 		return nil, fmt.Errorf("Build solution error: %v", err)
 	}
-	stuGraph, err := b.Build(stuRaw)
+	stuGraph, err := b.Build(stuRaw, stuType)
 	if err != nil {
 		return nil, fmt.Errorf("Build student error: %v", err)
 	}

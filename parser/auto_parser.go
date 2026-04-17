@@ -30,15 +30,16 @@ type AutoParser struct {
 // Compile-time interface guarantee.
 var _ IFileParser = (*AutoParser)(nil)
 
-// NewAutoParserDefault returns a ready-to-use AutoParser with both .drawio
-// and .solution already registered using the built-in default key.
-// This is the recommended constructor for the main application flow.
+// NewAutoParserDefault returns a ready-to-use AutoParser with supported extensions:
+// .drawio, .solution (type "drawio") and .mmd, .mermaid (type "mermaid").
 //
-// Key resolution order: SOLUTION_KEY env var → built-in default.
+// Key resolution order for .solution: SOLUTION_KEY env var → built-in default.
 func NewAutoParserDefault() *AutoParser {
 	p := NewAutoParser()
 	p.Register(".drawio", NewDrawioParser())
 	p.Register(".solution", NewSolutionParserDefault())
+	p.Register(".mmd", NewMermaidParser())
+	p.Register(".mermaid", NewMermaidParser())
 	return p
 }
 
@@ -55,16 +56,16 @@ func (p *AutoParser) Register(ext string, f IFileParser) {
 }
 
 // Parse dispatches to the IFileParser registered for the file's extension.
-// Returns an error if the extension has no registered parser.
-func (p *AutoParser) Parse(filePath string) (domain.RawModelData, error) {
+// Returns cleaned raw data, detected source type, and any error.
+func (p *AutoParser) Parse(filePath string) (domain.RawModelData, string, error) {
 	if filePath == "" {
-		return "", fmt.Errorf("AutoParser.Parse: filePath cannot be empty")
+		return "", "", fmt.Errorf("AutoParser.Parse: filePath cannot be empty")
 	}
 
 	ext := filepath.Ext(filePath)
 	f, ok := p.registry[ext]
 	if !ok {
-		return "", fmt.Errorf(
+		return "", "", fmt.Errorf(
 			"AutoParser.Parse: no parser registered for extension %q", ext,
 		)
 	}

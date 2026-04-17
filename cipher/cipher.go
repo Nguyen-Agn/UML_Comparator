@@ -98,7 +98,7 @@ func (c *solutionCipher) Encrypt(inputPath, outputPath string) error {
 	}
 
 	// Step 1: Parse .drawio → raw XML
-	rawXML, err := c.drawioPaser.Parse(inputPath)
+	rawXML, _, err := c.drawioPaser.Parse(inputPath)
 	if err != nil {
 		return fmt.Errorf("cipher.Encrypt: parse drawio: %w", err)
 	}

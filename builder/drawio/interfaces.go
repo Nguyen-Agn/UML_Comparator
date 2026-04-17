@@ -1,4 +1,4 @@
-package builder
+package drawio
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Internal sub-component interfaces for the Builder module.

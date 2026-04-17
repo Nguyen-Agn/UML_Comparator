@@ -1,0 +1,49 @@
+* e810b35 Add feature: compress UML into exe
+* 1b0d265 Add PolyMophism to params
+* 8872161 Add UML_testcase to git
+* 42a242c Re-SOLID cmd
+*   1ca9899 Merge pull request #9 from Nguyen-Agn/newStyler
+|\  
+| | * c070969 Fix conflicts from Quan PR
+| |/| 
+| | *   8117708 Merge pull request #4 from phamnguyenminhquan/main
+| | |\  
+| | | * 5917585 new: bold class name checking for grading
+| | |/  
+| * / bf7a560 feature: bold class name checking for grading
+|/ /  
+* / c87d0ab feat: reorganize UML documentation by moving strategy notes and adding manual explanation guide
+|/  
+* cdb8379 feat: implement member parsing logic and add unit tests for Draw.io builder
+* bcaf4b4 Improve Enscasulation & Abtraction
+*   71a0345 Merge remote-tracking branch 'origin/newMatch'
+|\  
+| *   6b88e51 Merge pull request #2 from phamnguyenminhquan/matching_improve
+| |\  
+| | * d41446c matching improve - read issue_analyzing/OVERVIEW.md
+| |/  
+* / d210cb3 Raise RelationShip dectect
+|/  
+* cc8919e Refractor solid for module prematch
+* 4cb05d5 MOve *.mmd --> folder
+* eee6c0f Add UML &  sequence graph => Explain system work
+* f1cab07 Add Encrytion solution feature
+* d614be5 Fix some bug
+* 33d0c8c Update Portable & user interface
+* 6e899e8 add grader point __d__
+* 965b1bb Add csv export
+* b321f43 Fix Constructor Mismatch
+* 83ecaa0 Update README.md
+* 3586059 Grader + Visualize Modules
+* 1ab9d6f SOLID Matcher & PreMatch module
+* 8115f72 improve generic Type
+* 2f0ea6f improve getter/setter detect
+* fa9fb65 update compare output
+* db5b838 add review 2
+* 7bd1750 add review
+* 931104d Update basic error 1
+* d5bbc2d Build .exe
+* 4e3f713 Solve Syntax Getters/Setters
+* 9f3efa8 update README & build .exe
+* b9b6f60 add README.md
+* bd076a5 First commit
