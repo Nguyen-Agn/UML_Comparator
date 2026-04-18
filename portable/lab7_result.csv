@@ -1,4 +1,0 @@
-Student ID,Status,[Class] Dice,[Attr] Dice.sides,[Attr] Dice.value,[Meth] Dice.Dice,[Meth] Dice.roll,[Meth] Dice.getSides,[Meth] Dice.getValue,[Class] Player,[Attr] Player.name,[Attr] Player.points,[Meth] Player.Player,[Meth] Player.takeTurn,[Meth] Player.hasWon,[Meth] Player.getPoints,[Rel] Player -(Association)-> Dice
-Quân.drawio,FAIL,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0
-Sỹ Nguyên.drawio,EXCELLENT,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-Phú.drawio,FAIL,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

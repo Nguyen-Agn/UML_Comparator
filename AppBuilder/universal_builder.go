@@ -64,6 +64,12 @@ func (u *UniversalBuilder) Build() error {
 			Sources: []string{"./cmd/cipher/main.go"},
 			IsGUI:   false,
 		},
+		{
+			Name:    "Instructor Suite (All-in-one GUI)",
+			Output:  filepath.Join(portableDir, "instructor_suite.exe"),
+			Sources: []string{"./cmd/instructor/main.go"},
+			IsGUI:   true,
+		},
 	}
 
 	start := time.Now()

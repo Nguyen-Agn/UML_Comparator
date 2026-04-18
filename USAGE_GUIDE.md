@@ -29,18 +29,21 @@ Dùng khi bạn có cả file đáp án và file bài làm riêng biệt.
 
 ## 2. Dành cho Giảng viên (Lecturers)
 
-### A. Quản lý Build Tập trung (`test_orchestrator.exe`)
-Đây là "bộ não" giúp giảng viên tạo ra các bản build chuyên biệt.
+Từ phiên bản mới nhất, tất cả các công cụ dành cho giảng viên đã được tích hợp vào một giao diện duy nhất: **Instructor Suite**.
+
+### A. Sử dụng Instructor Suite (`instructor_suite.exe`)
+1. **Mở file** `instructor_suite.exe` trong thư mục `portable/`.
+2. Giao diện bao gồm 4 chức năng chính (Tab):
+   - **Live Compare**: So sánh trực tiếp biểu đồ Solution và Student với đầy đủ thông số kỹ thuật (Admin mode).
+   - **Batch Grader**: Chọn 1 file đáp án và 1 thư mục chứa bài làm sinh viên để tự động chấm điểm toàn bộ và xuất ra file `batch_result.csv`.
+   - **Solution Encrypt**: Mã hóa file `.drawio` thành file `.solution` để chia sẻ an toàn cho sinh viên.
+   - **Exam Builder**: Nén các file đáp án vào một bản build GUI `exam_student_uml.exe` duy nhất dành riêng cho kỳ thi.
+
+### B. Quản lý Build Cốt lõi (`test_orchestrator.exe`)
+Nếu bạn muốn tự compile lại hệ thống:
 1. Chạy file `test_orchestrator.exe`.
 2. Chọn **Option [1] Universal Build**: Để build lại toàn bộ bộ tool chuẩn (CLI, GUI, Batch Mode).
-3. Chọn **Option [2] Exam Build**: Để tạo bản build nén sẵn đáp án cho sinh viên.
-   - Nhập đường dẫn đến file hoặc folder chứa các tệp `.drawio` đáp án.
-   - Bạn có thể nạp nhiều file cùng lúc (ví dụ: `bai1.drawio`, `bai2.drawio`).
-   - Kết quả sẽ nằm trong thư mục `portable/exam_student_uml.exe`.
-
-### B. Chấm điểm hàng loạt (`lecture_cli_parallel.exe`)
-1. Chạy lệnh: `./lecture_cli_parallel.exe <solution.drawio> <folder_sinh_vien>`
-2. Công cụ sẽ quét toàn bộ và xuất ra file `batch_report.csv` cực nhanh nhờ cơ chế song song.
+3. (Hoặc bạn có thể dùng Tab **Exam Builder** bên trong `instructor_suite.exe` thay vì dùng Orchestrator).
 
 ---
 
@@ -53,11 +56,12 @@ Nếu bạn muốn dùng lệnh trong PowerShell hoặc CMD (dành cho automatio
 ```
 > **Output**: tạo ra 1 file html chứa kết quả của sinh viên.
 
-**Dành cho Giáo viên (Đồng loạt):**
+**Dành cho Sinh viên (CLI Standalone):**
 ```bash
-./lecture_cli_parallel.exe <solution.drawio> <student_folder> [report.csv]
+./student_uml_cli.exe <solution.drawio> <student.drawio> [output.html]
 ```
-> **Output**: tạo ra 1 file csv chứa kết quả của tất cả sinh viên.
+> **Output**: tạo ra 1 file html chứa kết quả của sinh viên.
+
 **Ví dụ:**
 ```bash
 ./student_uml_cli.exe [--admin] sol.drawio assignment1.drawio
@@ -97,3 +101,21 @@ go run ./cmd/visualize/main.go <solution.drawio> <student.drawio>
 - Đảm bảo các tệp `.drawio` được export từ [diagrams.net](https://diagrams.net) và không bị lỗi định dạng.
 - Báo cáo HTML tự chứa (self-contained) — không cần internet, mở bằng bất kỳ trình duyệt nào.
 - Màu sắc CLI hiển thị tốt nhất trên Terminal hỗ trợ ANSI (Windows Terminal, PowerShell Core).
+
+
+# Build Exe
+
+## Instructor Suite
+```bash
+go build -ldflags="-H windowsgui" -o portable\instructor_suite.exe .\cmd\instructor\main.go
+```
+
+## Student GUI
+```bash
+go build -ldflags="-H windowsgui" -o portable\student_uml.exe .\gui\main.go
+```
+
+## Student CLI
+```bash
+go build -o portable\student_uml_cli.exe .\cmd\visualize\main.go .\cmd\visualize\interactive.go
+```
