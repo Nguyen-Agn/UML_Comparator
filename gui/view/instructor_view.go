@@ -273,10 +273,10 @@ const instructorHTMLContent = `<!DOCTYPE html>
 			<span>UML</span> Instructor
 		</div>
 		<div class="tab-nav">
-			<button class="tab-btn active" onclick="switchTab('tab-live')">Live Compare</button>
-			<button class="tab-btn" onclick="switchTab('tab-batch')">Batch Grader</button>
-			<button class="tab-btn" onclick="switchTab('tab-security')">Solution Encrypt</button>
-			<button class="tab-btn" onclick="switchTab('tab-exam')">Exam Builder</button>
+			<button class="tab-btn active" onclick="switchTab(event, 'tab-live')">Live Compare</button>
+			<button class="tab-btn" onclick="switchTab(event, 'tab-batch')">Batch Grader</button>
+			<button class="tab-btn" onclick="switchTab(event, 'tab-security')">Solution Encrypt</button>
+			<button class="tab-btn" onclick="switchTab(event, 'tab-exam')">Exam Builder</button>
 		</div>
 	</aside>
 
@@ -290,7 +290,7 @@ const instructorHTMLContent = `<!DOCTYPE html>
 					<label>Solution File (.drawio)</label>
 					<div class="input-row">
 						<input type="text" id="live-sol" class="input-text" readonly placeholder="Select a solution file...">
-						<button class="btn btn-outline" onclick="goSelectFile('live-sol', '*.drawio', '*.solution')">Browse</button>
+						<button class="btn btn-outline" onclick="goSelectFile('live-sol', '*.drawio;*.solution')">Browse</button>
 					</div>
 				</div>
 				<div class="field-group">
@@ -316,7 +316,7 @@ const instructorHTMLContent = `<!DOCTYPE html>
 					<label>Solution File (.drawio)</label>
 					<div class="input-row">
 						<input type="text" id="batch-sol" class="input-text" readonly placeholder="Select a solution file...">
-						<button class="btn btn-outline" onclick="goSelectFile('batch-sol', '*.drawio', '*.solution')">Browse</button>
+						<button class="btn btn-outline" onclick="goSelectFile('batch-sol', '*.drawio;*.solution')">Browse</button>
 					</div>
 				</div>
 				<div class="field-group">
@@ -404,12 +404,14 @@ const instructorHTMLContent = `<!DOCTYPE html>
 			}, 4000);
 		}
 
-		function switchTab(tabId) {
+		function switchTab(e, tabId) {
 			document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
 			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 			
 			document.getElementById(tabId).classList.add('active');
-			event.target.classList.add('active');
+			if (e && e.currentTarget) {
+				e.currentTarget.classList.add('active');
+			}
 		}
 
 		function setValue(id, val) { document.getElementById(id).value = val; }
@@ -510,11 +512,12 @@ func (v *instructorLorcaView) bindFunctions() {
 }
 
 // Helpers
-func (v *instructorLorcaView) selectFile(elementID string, patterns ...string) {
+func (v *instructorLorcaView) selectFile(elementID, patternStr string) {
 	if v.dialogBusy { return }
 	v.dialogBusy = true
 	defer func() { v.dialogBusy = false }()
 
+	patterns := strings.Split(patternStr, ";")
 	v.ui.Eval(`window.focus()`)
 	file, err := zenity.SelectFile(
 		zenity.Title("Select File"),
