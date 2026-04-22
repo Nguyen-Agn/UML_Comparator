@@ -1,0 +1,3 @@
+package cipher
+
+const key = "NHAP_KEY_CUA_BAN_TAI_DAY" // File này chỉ là ví dụ, tạo lại file go tương tự file này và nhập key của bạn -Kí tên:ntp

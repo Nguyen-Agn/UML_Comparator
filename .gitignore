@@ -13,3 +13,5 @@ Thumbs.db
 *.log
 test_output.txt
 *.html
+# Key
+key.go
