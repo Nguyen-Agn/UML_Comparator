@@ -37,6 +37,7 @@ var _ IFileParser = (*AutoParser)(nil)
 func NewAutoParserDefault() *AutoParser {
 	p := NewAutoParser()
 	p.Register(".drawio", NewDrawioParser())
+	p.Register(".drawio.xml", NewDrawioParser())
 	p.Register(".solution", NewSolutionParserDefault())
 	p.Register(".mmd", NewMermaidParser())
 	p.Register(".mermaid", NewMermaidParser())

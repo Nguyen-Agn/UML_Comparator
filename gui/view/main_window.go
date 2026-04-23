@@ -328,7 +328,7 @@ func (v *lorcaMainView) chooseSol() {
 
 	file, err := zenity.SelectFile(
 		zenity.Title("Select Solution (.drawio)"),
-		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio", "*.solution"}}},
+		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio", "*.solution", "*.mmd", "*.mermaid", "*.drawio.xml"}}},
 	)
 	if err == nil && file != "" {
 		v.solPath = file
@@ -348,7 +348,7 @@ func (v *lorcaMainView) chooseStu() {
 
 	file, err := zenity.SelectFile(
 		zenity.Title("Select Assignment (.drawio)"),
-		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio"}}},
+		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio", "*.mmd", "*.mermaid", "*.drawio.xml"}}},
 	)
 	if err == nil && file != "" {
 		v.stuPath = file
