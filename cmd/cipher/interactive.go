@@ -24,9 +24,6 @@ func runInteractiveLoop(app *EncryptorApp) {
 			continue
 		}
 		
-		// Clean quotes if user dragged file into terminal
-		input = strings.Trim(input, "\"")
-
 		if _, err := os.Stat(input); os.IsNotExist(err) {
 			fmt.Printf("❌ File not found: %s\n", input)
 			continue

@@ -121,6 +121,11 @@ func (v *examLorcaMainView) submit() {
 		return
 	}
 
+	if strings.HasSuffix(strings.ToLower(v.stuPath), ".solution") {
+		zenity.Error("Student assignment cannot be a .solution file. Please use a .drawio file.", zenity.Title("Invalid File Format"))
+		return
+	}
+
 	// Get chosen embedded solution
 	solFileName := v.ui.Eval(`document.getElementById("embeddedSolSelect") ? document.getElementById("embeddedSolSelect").value : ""`).String()
 	if solFileName == "" {
