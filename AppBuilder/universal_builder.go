@@ -61,7 +61,7 @@ func (u *UniversalBuilder) Build() error {
 		{
 			Name:    "Teacher Cipher (Solution Encryptor) [OPTIONAL]",
 			Output:  filepath.Join(portableDir, "teacher_cipher.exe"),
-			Sources: []string{"./cmd/cipher/main.go"},
+			Sources: []string{"./cmd/cipher/main.go", "./cmd/cipher/interactive.go"},
 			IsGUI:   false,
 		},
 		{

@@ -86,7 +86,8 @@ func OpenFile(path string) {
 func Prompt(scanner *bufio.Scanner, label string) string {
 	fmt.Printf("  %s: ", label)
 	if scanner.Scan() {
-		return strings.TrimSpace(scanner.Text())
+		text := strings.TrimSpace(scanner.Text())
+		return strings.Trim(text, "\"")
 	}
 	return ""
 }
