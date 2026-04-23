@@ -37,6 +37,12 @@ func main() {
 
 	solutionPath := args[1]
 	studentPath := args[2]
+
+	if strings.HasSuffix(strings.ToLower(studentPath), ".solution") {
+		fmt.Println("❌ Error: Student assignment cannot be a .solution file. Please use .drawio or .mmd instead.")
+		os.Exit(1)
+	}
+
 	outputPath := ""
 	if len(args) >= 4 {
 		outputPath = args[3]
