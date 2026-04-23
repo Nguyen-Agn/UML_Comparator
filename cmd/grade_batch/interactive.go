@@ -19,7 +19,7 @@ func runBatchInteractiveLoop() {
 		fmt.Println("  UML Batch Grader — Lecture Edition (Parallel)")
 		fmt.Println("--------------------------------------------------------")
 
-		solPath := share.Prompt(scanner, "[1/3] SOLUTION file path")
+		solPath := share.Prompt(scanner, "[1/3] SOLUTION file path (.drawio|.mmd)")
 		if solPath == "" {
 			fmt.Println("❌ Path cannot be empty.")
 			continue
@@ -49,8 +49,11 @@ func runBatchInteractiveLoop() {
 		entries, _ := os.ReadDir(stuDir)
 		count := 0
 		for _, e := range entries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), ".drawio") {
-				count++
+			if !e.IsDir() {
+				ext := strings.ToLower(filepath.Ext(e.Name()))
+				if ext == ".drawio" || ext == ".xml" || ext == ".mmd" || ext == ".mermaid" {
+					count++
+				}
 			}
 		}
 

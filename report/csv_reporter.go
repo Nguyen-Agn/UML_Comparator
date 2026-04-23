@@ -87,7 +87,7 @@ func (c *CSVReporter) GenerateReport(batchResult *BatchGradeResult) error {
 	// 2. Điền số (1/0)
 	for studentID, result := range batchResult.StudentResults {
 		if result == nil || result.Report == nil {
-			row := []string{studentID, "FAIL"}
+			row := []string{studentID, "0"}
 			for i := 0; i < len(colKeys); i++ {
 				row = append(row, "0")
 			}
@@ -95,16 +95,7 @@ func (c *CSVReporter) GenerateReport(batchResult *BatchGradeResult) error {
 			continue
 		}
 
-		status := "FAIL"
-		if result.CorrectPercent >= 60.0 {
-			if result.CorrectPercent >= 90.0 {
-				status = "EXCELLENT"
-			} else {
-				status = "PASS"
-			}
-		}
-
-		row := []string{studentID, status}
+		row := []string{studentID, fmt.Sprintf("%d", int(result.CorrectPercent))}
 
 		report := result.Report
 

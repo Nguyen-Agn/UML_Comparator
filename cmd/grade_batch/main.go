@@ -1,5 +1,5 @@
 // cmd/grade_batch/main.go - Teacher batch grading CLI
-// Usage: lecture_cli_parallel.exe <solution.drawio> <student_dir> [report.csv]
+// Usage: lecture_cli_parallel.exe <solution.drawio|.mmd> <student_dir> [report.csv]
 package main
 
 import (
@@ -27,7 +27,7 @@ func main() {
 	}
 
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: lecture_cli_parallel.exe <solution.drawio> <student_dir> [report.csv]")
+		fmt.Println("Usage: lecture_cli_parallel.exe <solution.drawio|.mmd> <student_dir> [report.csv]")
 		os.Exit(1)
 	}
 
@@ -52,9 +52,9 @@ func main() {
 
 // batchRunResult chứa kết quả grading để truyền vào save/print layer.
 type batchRunResult struct {
-	BatchResult  *report.BatchGradeResult
-	Duration     time.Duration
-	TotalFiles   int
+	BatchResult *report.BatchGradeResult
+	Duration    time.Duration
+	TotalFiles  int
 }
 
 // runBatchGrading thực hiện pipeline grading song song cho tất cả file trong thư mục.
@@ -88,12 +88,12 @@ func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 	}
 	var studentFiles []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".drawio") {
+		if !e.IsDir() && (strings.HasSuffix(e.Name(), ".drawio") || strings.HasSuffix(e.Name(), ".xml") || strings.HasSuffix(e.Name(), ".mmd") || strings.HasSuffix(e.Name(), ".mermaid")) {
 			studentFiles = append(studentFiles, e.Name())
 		}
 	}
 	if len(studentFiles) == 0 {
-		return nil, fmt.Errorf("no .drawio files found in %s", studentDir)
+		return nil, fmt.Errorf("no UML files (.drawio, .mmd, .mermaid) found in %s", studentDir)
 	}
 
 	fmt.Printf("🚀 Processing %d submissions using Parallel Pipeline...\n", len(studentFiles))
@@ -124,7 +124,9 @@ func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 			res, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
 
 			mu.Lock()
-			batchResult.StudentResults[fname] = res
+			// NAME without extension (handle multiple dots)
+			sname := strings.TrimSuffix(fname, filepath.Ext(fname))
+			batchResult.StudentResults[sname] = res
 			mu.Unlock()
 
 			fmt.Printf("  [✓] %s: %.1f%%\n", fname, res.CorrectPercent)

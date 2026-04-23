@@ -1,6 +1,6 @@
 # Hướng dẫn sử dụng UML Comparator
 
-`UML Comparator` là công cụ so sánh và chấm điểm biểu đồ UML từ file `.drawio`. Công cụ phân tích cấu trúc Class, Attributes, Methods, và Relations, sau đó xuất báo cáo HTML trực quan.
+`UML Comparator` là công cụ so sánh và chấm điểm biểu đồ UML từ file `.drawio` hoặc `.mmd` (Mermaid). Công cụ phân tích cấu trúc Class, Attributes, Methods, và Relations, sau đó xuất báo cáo HTML trực quan.
 
 ---
 

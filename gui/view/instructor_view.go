@@ -290,14 +290,14 @@ const instructorHTMLContent = `<!DOCTYPE html>
 					<label>Solution File (.drawio)</label>
 					<div class="input-row">
 						<input type="text" id="live-sol" class="input-text" readonly placeholder="Select a solution file...">
-						<button class="btn btn-outline" onclick="goSelectFile('live-sol', '*.drawio;*.solution')">Browse</button>
+						<button class="btn btn-outline" onclick="goSelectFile('live-sol', '*.drawio;*.solution;*.mmd')">Browse</button>
 					</div>
 				</div>
 				<div class="field-group">
 					<label>Student File (.drawio)</label>
 					<div class="input-row">
 						<input type="text" id="live-stu" class="input-text" readonly placeholder="Select a student file...">
-						<button class="btn btn-outline" onclick="goSelectFile('live-stu', '*.drawio')">Browse</button>
+						<button class="btn btn-outline" onclick="goSelectFile('live-stu', '*.drawio;*.mmd')">Browse</button>
 					</div>
 				</div>
 				<div style="margin-top: 10px;">
@@ -481,7 +481,7 @@ func (v *instructorLorcaView) bindFunctions() {
 			v.ShowError(fmt.Errorf("Missing input files"))
 		}
 	})
-	
+
 	v.ui.Bind("goExecBatch", func(sol, dir, outFolder string) {
 		if sol != "" && dir != "" && outFolder != "" && v.controller != nil {
 			outPath := filepath.Join(outFolder, "batch_result.csv")
@@ -500,7 +500,7 @@ func (v *instructorLorcaView) bindFunctions() {
 			v.ShowError(fmt.Errorf("Input and Output are required"))
 		}
 	})
-	
+
 	v.ui.Bind("goExecExam", func(dir, outFolder string) {
 		if dir != "" && outFolder != "" && v.controller != nil {
 			outPath := filepath.Join(outFolder, "exam_student_uml.exe")
@@ -513,7 +513,9 @@ func (v *instructorLorcaView) bindFunctions() {
 
 // Helpers
 func (v *instructorLorcaView) selectFile(elementID, patternStr string) {
-	if v.dialogBusy { return }
+	if v.dialogBusy {
+		return
+	}
 	v.dialogBusy = true
 	defer func() { v.dialogBusy = false }()
 
@@ -529,7 +531,9 @@ func (v *instructorLorcaView) selectFile(elementID, patternStr string) {
 }
 
 func (v *instructorLorcaView) selectDir(elementID string) {
-	if v.dialogBusy { return }
+	if v.dialogBusy {
+		return
+	}
 	v.dialogBusy = true
 	defer func() { v.dialogBusy = false }()
 
@@ -549,7 +553,6 @@ func sanitizeStr(s string) string {
 	s = strings.ReplaceAll(s, "\\", "\\\\")
 	return s
 }
-
 
 func (v *instructorLorcaView) ShowError(err error) {
 	v.ui.Eval(`document.getElementById("loading").style.display = "none"`)
@@ -576,7 +579,7 @@ func (v *instructorLorcaView) HideLoading() {
 func (v *instructorLorcaView) ShowLiveCompareResult(result *instructor.CompareResult) {
 	tmpPath := filepath.Join(os.TempDir(), "uml_tmp_admin_report.html")
 	vis := visualizer.NewHTMLVisualizer()
-	
+
 	err := vis.ExportHTML(result.GradeResult, tmpPath)
 	if err != nil {
 		v.ShowError(fmt.Errorf("Render Error: %w", err))
