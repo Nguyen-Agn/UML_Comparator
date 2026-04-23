@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ncruces/zenity"
 	"github.com/zserge/lorca"
@@ -360,6 +361,12 @@ func (v *lorcaMainView) submit() {
 		zenity.Error("Please select both Solution and Assignment files first.", zenity.Title("Error"))
 		return
 	}
+
+	if strings.HasSuffix(strings.ToLower(v.stuPath), ".solution") {
+		zenity.Error("Student assignment cannot be a .solution file. Please use a .drawio file.", zenity.Title("Invalid File Format"))
+		return
+	}
+
 	fmt.Printf("Submit triggered: Sol=%s, Stu=%s\n", v.solPath, v.stuPath)
 	if v.controller != nil {
 		v.controller.OnSubmit(v.solPath, v.stuPath)

@@ -33,6 +33,10 @@ func runInteractiveLoop() {
 			fmt.Println("❌ Path cannot be empty.")
 			continue
 		}
+		if strings.HasSuffix(strings.ToLower(stuPath), ".solution") {
+			fmt.Println("❌ Error: Student assignment cannot be a .solution file. Please use .drawio or .mmd instead.")
+			continue
+		}
 		if _, err := os.Stat(stuPath); os.IsNotExist(err) {
 			fmt.Printf("❌ File not found: %s\n", stuPath)
 			continue
