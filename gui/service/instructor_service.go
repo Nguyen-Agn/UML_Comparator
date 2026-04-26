@@ -93,12 +93,12 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 	}
 	var studentFiles []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".drawio") {
+		if !e.IsDir() && (strings.HasSuffix(e.Name(), ".drawio") || strings.HasSuffix(e.Name(), ".xml") || strings.HasSuffix(e.Name(), ".mmd") || strings.HasSuffix(e.Name(), ".mermaid")) {
 			studentFiles = append(studentFiles, e.Name())
 		}
 	}
 	if len(studentFiles) == 0 {
-		return nil, fmt.Errorf("no .drawio files found in %s", studentDir)
+		return nil, fmt.Errorf("no UML files (.drawio, .mmd, .mermaid, .xml) found in %s", studentDir)
 	}
 
 	batchResult := &domain.BatchGradeResult{
@@ -124,7 +124,8 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 			res, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
 
 			mu.Lock()
-			batchResult.StudentResults[fname] = res
+			sname := strings.TrimSuffix(fname, filepath.Ext(fname))
+			batchResult.StudentResults[sname] = res
 			mu.Unlock()
 		}(filename)
 	}

@@ -1,4 +1,4 @@
-package instructor
+package main
 
 import (
 	"log"

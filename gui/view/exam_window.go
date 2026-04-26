@@ -107,7 +107,7 @@ func (v *examLorcaMainView) chooseStu() {
 
 	file, err := zenity.SelectFile(
 		zenity.Title("Select Assignment (.drawio)"),
-		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio"}}},
+		zenity.FileFilters{zenity.FileFilter{Name: "UML Diagrams", Patterns: []string{"*.drawio", "*.xml", "*.mmd", "*.mermaid"}}},
 	)
 	if err == nil && file != "" {
 		v.stuPath = file
