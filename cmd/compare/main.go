@@ -9,6 +9,7 @@ import (
 	"strings"
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
+	"uml_compare/similarity"
 	"uml_compare/src/comparator"
 	"uml_compare/src/grader"
 	"uml_compare/src/matcher"
@@ -81,18 +82,27 @@ func run(solutionPath, studentPath string) (*compareResult, error) {
 	stuProc, _ := stdPM.Process(studentGraph)
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 
+	// Get model semantic
+	similar_component, err := similarity.GetHybridMatcher()
+	if err != nil {
+		return nil, fmt.Errorf("fail to load model: %v", err)
+	}
+	defer similar_component.Close()
+
 	// 4. Match
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	// 5. Compare
-	comp := comparator.NewStandardComparator()
+	comp := comparator.NewStandardComparator(similar_component)
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	// 6. Grade
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 	gradeResult, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
+
+	similar_component.Close()
 
 	return &compareResult{
 		SolProcessed: solForMatch,

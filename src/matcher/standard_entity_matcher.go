@@ -9,7 +9,7 @@ import (
 )
 
 type StandardEntityMatcher struct {
-	fuzzyMatcher     IFuzzyMatcher
+	fuzzyMatcher     domain.IHybridMatcher
 	archAnalyzer     IArchAnalyzer
 	identValidator   IIdentityValidator
 	similarityThresh float64
@@ -18,9 +18,9 @@ type StandardEntityMatcher struct {
 var _ IEntityMatcher = (*StandardEntityMatcher)(nil)
 
 // NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher, architecture analyzer, and identity validator.
-func NewStandardEntityMatcher(threshold float64) *StandardEntityMatcher {
+func NewStandardEntityMatcher(threshold float64, hybridMatcher domain.IHybridMatcher) *StandardEntityMatcher {
 	return &StandardEntityMatcher{
-		fuzzyMatcher:     NewLevenshteinMatcher(),
+		fuzzyMatcher:     hybridMatcher,
 		archAnalyzer:     NewStandardArchAnalyzer(),
 		identValidator:   NewStandardIdentityValidator(NewAntonymDetector()),
 		similarityThresh: threshold,

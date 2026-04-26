@@ -11,6 +11,7 @@ import (
 	"strings"
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
+	"uml_compare/similarity"
 	"uml_compare/src/builder"
 	"uml_compare/src/comparator"
 	"uml_compare/src/grader"
@@ -105,12 +106,18 @@ func runComparison(solutionPath, studentPath, outputPath string, isAdmin bool) e
 	stuProc, _ := stdPM.Process(stuGraph)
 	solForMatch, _ := solPM.ProcessSolution(solGraph)
 
+	// Get
+	similar_component, err := similarity.GetHybridMatcher()
+	if err != nil {
+		return nil
+	}
+	defer similar_component.Close()
 	// ── 5. Match ──────────────────────────────────────────────────────────
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	// ── 6. Compare ────────────────────────────────────────────────────────
-	comp := comparator.NewStandardComparator()
+	comp := comparator.NewStandardComparator(similar_component)
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	// ── 7. Grade ──────────────────────────────────────────────────────────
@@ -162,21 +169,21 @@ func exportReports(gradeResult *domain.GradeResult, studentPath, outputPath stri
 	}
 
 	// Full grader report
-	if err := vis.ExportHTML(gradeResult, outputPath); err != nil {
-		return fmt.Errorf("export grader report: %w", err)
-	}
-	fmt.Printf("✅ Grader report:  %s\n", outputPath)
+	// if err := vis.ExportHTML(gradeResult, outputPath); err != nil {
+	// 	return fmt.Errorf("export grader report: %w", err)
+	// }
+	// fmt.Printf("✅ Grader report:  %s\n", outputPath)
 
 	// Student feedback report
-	stuBaseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
-	studentOutputPath := fmt.Sprintf("feedback_%s.html", stuBaseName)
-	if err := vis.ExportStudentHTML(gradeResult, studentOutputPath); err != nil {
+	// stuBaseName := strings.TrimSuffix(filepath.Base(studentPath), filepath.Ext(studentPath))
+	// studentOutputPath := fmt.Sprintf("feedback_%s.html", stuBaseName)
+	if err := vis.ExportStudentHTML(gradeResult, outputPath); err != nil {
 		return fmt.Errorf("export student report: %w", err)
 	}
-	fmt.Printf("✅ Student report: %s\n", studentOutputPath)
+	// fmt.Printf("✅ Student report: %s\n", outputPath)
 
 	// Auto-open
-	targetToOpen := studentOutputPath
+	targetToOpen := outputPath
 	if isAdmin {
 		targetToOpen = outputPath
 	}

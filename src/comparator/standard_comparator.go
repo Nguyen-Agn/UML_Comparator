@@ -3,11 +3,10 @@ package comparator
 import (
 	"strings"
 	"uml_compare/domain"
-	"uml_compare/src/matcher"
 )
 
 type StandardComparator struct {
-	fuzzyMatcher     matcher.IFuzzyMatcher
+	fuzzyMatcher     domain.IHybridMatcher
 	typeAnalyzer     ITypeAnalyzer
 	memberComparator IMemberComparator
 	edgeComparator   IEdgeComparator
@@ -15,11 +14,11 @@ type StandardComparator struct {
 
 var _ IComparator = (*StandardComparator)(nil)
 
-func NewStandardComparator() *StandardComparator {
+func NewStandardComparator(fuzzyMatcher domain.IHybridMatcher) *StandardComparator {
 	return &StandardComparator{
-		fuzzyMatcher:     matcher.NewLevenshteinMatcher(),
+		fuzzyMatcher:     fuzzyMatcher,
 		typeAnalyzer:     NewStandardTypeAnalyzer(),
-		memberComparator: NewStandardMemberComparator(matcher.NewLevenshteinMatcher(), NewStandardTypeAnalyzer()),
+		memberComparator: NewStandardMemberComparator(fuzzyMatcher, NewStandardTypeAnalyzer()),
 		edgeComparator:   NewStandardEdgeComparator(),
 	}
 }

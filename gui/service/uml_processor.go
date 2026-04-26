@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"uml_compare/domain"
+	"uml_compare/similarity"
 	"uml_compare/src/builder"
 	"uml_compare/src/comparator"
 	"uml_compare/src/grader"
@@ -40,6 +41,14 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*do
 	if err != nil {
 		return nil, fmt.Errorf("Parse student error: %v", err)
 	}
+	// If Parse success
+	// Initialize semantic matcher
+
+	similar_component, err := similarity.GetHybridMatcher()
+	if err != nil {
+		return nil, fmt.Errorf("Initialize semantic matcher error: %v", err)
+	}
+	defer similar_component.Close()
 
 	b := builder.NewStandardModelBuilder()
 	solGraph, err := b.Build(solRaw, solType)
@@ -66,10 +75,10 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*do
 	stuProc, _ := stdPM.Process(stuGraph)
 	solForMatch, _ := solPM.ProcessSolution(solGraph)
 
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
-	comp := comparator.NewStandardComparator()
+	comp := comparator.NewStandardComparator(similar_component)
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	gr := grader.NewStandardGrader()

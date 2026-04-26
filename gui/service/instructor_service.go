@@ -10,10 +10,10 @@ import (
 
 	"uml_compare/AppBuilder"
 	"uml_compare/cipher"
-
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
 	"uml_compare/report"
+	"uml_compare/similarity"
 	"uml_compare/src/comparator"
 	"uml_compare/src/grader"
 	"uml_compare/src/matcher"
@@ -29,12 +29,17 @@ type InstructorService interface {
 }
 
 // StandardInstructorService implements InstructorService.
-type StandardInstructorService struct{}
+type StandardInstructorService struct {
+	similar_component domain.IHybridMatcher
+}
 
 var _ InstructorService = (*StandardInstructorService)(nil)
 
 func NewStandardInstructorService() *StandardInstructorService {
-	return &StandardInstructorService{}
+	similar_component, _ := similarity.GetHybridMatcher()
+	return &StandardInstructorService{
+		similar_component: similar_component,
+	}
 }
 
 func (s *StandardInstructorService) EncryptSolution(input, output string) error {
@@ -82,8 +87,8 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
-	comp := comparator.NewStandardComparator()
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, s.similar_component)
+	comp := comparator.NewStandardComparator(s.similar_component)
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 
@@ -182,10 +187,10 @@ func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string,
 	stuProc, _ := stdPM.Process(studentGraph)
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, s.similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
-	comp := comparator.NewStandardComparator()
+	comp := comparator.NewStandardComparator(s.similar_component)
 	diffReport, _ := comp.Compare(solForMatch, stuProc, mapping)
 
 	gr := grader.NewStandardGrader()

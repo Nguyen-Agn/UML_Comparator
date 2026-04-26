@@ -3,19 +3,18 @@ package comparator
 import (
 	"strings"
 	"uml_compare/domain"
-	"uml_compare/src/matcher"
 )
 
 // StandardMemberComparator implements IMemberComparator for class-level attribute and method comparison.
 type StandardMemberComparator struct {
-	fuzzyMatcher matcher.IFuzzyMatcher
+	fuzzyMatcher domain.IHybridMatcher
 	typeAnalyzer ITypeAnalyzer
 }
 
 var _ IMemberComparator = (*StandardMemberComparator)(nil)
 
 // NewStandardMemberComparator creates a new instance of StandardMemberComparator.
-func NewStandardMemberComparator(fz matcher.IFuzzyMatcher, ta ITypeAnalyzer) *StandardMemberComparator {
+func NewStandardMemberComparator(fz domain.IHybridMatcher, ta ITypeAnalyzer) *StandardMemberComparator {
 	return &StandardMemberComparator{
 		fuzzyMatcher: fz,
 		typeAnalyzer: ta,

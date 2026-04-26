@@ -7,6 +7,7 @@ import (
 	"os"
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
+	"uml_compare/similarity"
 	"uml_compare/src/matcher"
 	"uml_compare/src/prematcher"
 )
@@ -65,8 +66,15 @@ func run(solPath, stuPath string) (*matchResult, error) {
 		return nil, fmt.Errorf("process student: %w", err)
 	}
 
+	// Get model semantic
+	similar_component, err := similarity.GetHybridMatcher()
+	if err != nil {
+		return nil, fmt.Errorf("fail to load model: %v", err)
+	}
+	defer similar_component.Close()
+
 	// 3. Match
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
 	mapping, err := entityMatcher.Match(solProcessed, stuProcessed)
 	if err != nil {
 		return nil, fmt.Errorf("entity match: %w", err)

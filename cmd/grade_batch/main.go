@@ -12,6 +12,7 @@ import (
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
 	"uml_compare/report"
+	"uml_compare/similarity"
 	"uml_compare/src/comparator"
 	"uml_compare/src/grader"
 	"uml_compare/src/matcher"
@@ -72,12 +73,19 @@ func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 		return nil, fmt.Errorf("solution has integrity errors (check logs)")
 	}
 
+	// Get model semantic
+	similar_component, err := similarity.GetHybridMatcher()
+	if err != nil {
+		return nil, fmt.Errorf("fail to load model: %v", err)
+	}
+	defer similar_component.Close()
+
 	// Build shared toolchain (immutable, safe for concurrent use)
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8)
-	comp := comparator.NewStandardComparator()
+	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
+	comp := comparator.NewStandardComparator(similar_component)
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 

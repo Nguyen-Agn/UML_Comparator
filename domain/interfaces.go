@@ -41,3 +41,9 @@ type MainView interface {
 	// Close terminates the window
 	Close()
 }
+
+type IHybridMatcher interface {
+	Compare(s1, s2 string) float64
+	CompareMultiple(candidate string, optionals []string) (float64, string)
+	Close() error
+}
