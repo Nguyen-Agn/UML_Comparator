@@ -1,16 +1,15 @@
-package main
+package instructor
 
 import (
 	"log"
-
 	"uml_compare/gui/controller"
+	"uml_compare/gui/service"
 	"uml_compare/gui/view"
-	"uml_compare/instructor"
 )
 
 func main() {
 	// Initialize Service Layer
-	srv := instructor.NewStandardInstructorService()
+	srv := service.NewStandardInstructorService()
 
 	// Initialize View Layer
 	v, err := view.NewInstructorView()

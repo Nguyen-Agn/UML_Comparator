@@ -7,8 +7,8 @@ import (
 	"os"
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
-	"uml_compare/matcher"
-	"uml_compare/prematcher"
+	"uml_compare/src/matcher"
+	"uml_compare/src/prematcher"
 )
 
 // matchResult chứa kết quả của pipeline match để truyền vào print layer.

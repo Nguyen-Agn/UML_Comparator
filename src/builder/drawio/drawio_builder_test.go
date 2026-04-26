@@ -3,8 +3,8 @@ package drawio_test
 import (
 	"strings"
 	"testing"
-	"uml_compare/builder/drawio"
 	"uml_compare/domain"
+	"uml_compare/src/builder/drawio"
 )
 
 // ─── Inline test XML (shared) ─────────────────────────────────────────────────
@@ -193,7 +193,6 @@ func TestBuild_NumericEntity_Newline(t *testing.T) {
 	}
 	t.Logf("✔ br-newline decode: Name=%s Type=%s", n.Name, n.Type)
 }
-
 
 // ─── Multi-line method signature test ────────────────────────────────────────
 

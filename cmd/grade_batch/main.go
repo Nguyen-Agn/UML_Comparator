@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 	"uml_compare/cmd/share"
-	"uml_compare/comparator"
 	"uml_compare/domain"
-	"uml_compare/grader"
-	"uml_compare/matcher"
-	"uml_compare/prematcher"
 	"uml_compare/report"
+	"uml_compare/src/comparator"
+	"uml_compare/src/grader"
+	"uml_compare/src/matcher"
+	"uml_compare/src/prematcher"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 
 // batchRunResult chứa kết quả grading để truyền vào save/print layer.
 type batchRunResult struct {
-	BatchResult *report.BatchGradeResult
+	BatchResult *domain.BatchGradeResult
 	Duration    time.Duration
 	TotalFiles  int
 }
@@ -98,7 +98,7 @@ func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 
 	fmt.Printf("🚀 Processing %d submissions using Parallel Pipeline...\n", len(studentFiles))
 
-	batchResult := &report.BatchGradeResult{
+	batchResult := &domain.BatchGradeResult{
 		SolutionPath:   solutionPath,
 		StudentResults: make(map[string]*domain.GradeResult),
 	}

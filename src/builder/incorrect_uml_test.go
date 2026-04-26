@@ -25,7 +25,7 @@ import (
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const incorrectDir = "../UMLs_testcase/incorrect/"
+const incorrectDir = "../../UMLs_testcase/incorrect/"
 
 // loadAndBuild reads a .drawio file via DrawioParser then runs Builder.Build().
 // Returns (graph, validationErrors, buildError).

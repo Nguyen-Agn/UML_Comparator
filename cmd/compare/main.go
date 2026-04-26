@@ -8,11 +8,11 @@ import (
 	"os"
 	"strings"
 	"uml_compare/cmd/share"
-	"uml_compare/comparator"
 	"uml_compare/domain"
-	"uml_compare/grader"
-	"uml_compare/matcher"
-	"uml_compare/prematcher"
+	"uml_compare/src/comparator"
+	"uml_compare/src/grader"
+	"uml_compare/src/matcher"
+	"uml_compare/src/prematcher"
 )
 
 // compareResult chứa toàn bộ dữ liệu kết quả pipeline để truyền vào print layer.
@@ -77,7 +77,7 @@ func run(solutionPath, studentPath string) (*compareResult, error) {
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 
-	solStd, _ := stdPM.Process(solutionGraph)  // dùng cho edge display
+	solStd, _ := stdPM.Process(solutionGraph) // dùng cho edge display
 	stuProc, _ := stdPM.Process(studentGraph)
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 
