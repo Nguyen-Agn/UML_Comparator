@@ -1,20 +1,16 @@
 package domain
 
-import (
-	"uml_compare/instructor"
-)
-
 // InstructorController interface manages the application flow for the instructor suite.
 type InstructorController interface {
 	// Security Tab
 	OnEncrypt(inputPath, outputPath string)
-	
+
 	// Distribute Tab
 	OnBuildExam(solutionsDir, outputPath string)
 
 	// Batch Tab
 	OnGradeBatch(solutionPath, studentDir, outputPath string)
-	
+
 	// Live Tab
 	OnLiveCompare(solutionPath, studentPath string)
 }
@@ -26,10 +22,10 @@ type InstructorView interface {
 	ShowSuccess(msg string)
 	ShowLoading()
 	HideLoading()
-	
+
 	// Called by controller when live compare finishes
-	ShowLiveCompareResult(result *instructor.CompareResult)
-	
+	ShowLiveCompareResult(result *CompareResult)
+
 	Wait()
 	Close()
 }

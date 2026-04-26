@@ -2,17 +2,17 @@ package controller
 
 import (
 	"log"
-	
-	"uml_compare/gui/domain"
-	"uml_compare/instructor"
+
+	"uml_compare/domain"
+	"uml_compare/gui/service"
 )
 
 type instructorController struct {
-	service instructor.InstructorService
+	service service.InstructorService
 	view    domain.InstructorView
 }
 
-func NewInstructorController(srv instructor.InstructorService, v domain.InstructorView) domain.InstructorController {
+func NewInstructorController(srv service.InstructorService, v domain.InstructorView) domain.InstructorController {
 	return &instructorController{
 		service: srv,
 		view:    v,

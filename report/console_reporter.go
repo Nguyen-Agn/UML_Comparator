@@ -3,6 +3,7 @@ package report
 import (
 	"fmt"
 	"strings"
+	"uml_compare/domain"
 )
 
 // ConsoleReporter is a simple implementation of IReporter that outputs to the terminal.
@@ -14,7 +15,7 @@ func NewConsoleReporter() IReporter {
 }
 
 // GenerateReport generates a simple text report to the terminal.
-func (c *ConsoleReporter) GenerateReport(batchResult *BatchGradeResult) error {
+func (c *ConsoleReporter) GenerateReport(batchResult *domain.BatchGradeResult) error {
 	fmt.Println()
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println(" BATCH GRADING REPORT")

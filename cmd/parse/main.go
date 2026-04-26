@@ -6,7 +6,7 @@ import (
 	"os"
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
-	"uml_compare/parser"
+	"uml_compare/src/parser"
 )
 
 func main() {

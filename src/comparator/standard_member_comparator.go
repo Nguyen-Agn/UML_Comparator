@@ -3,7 +3,7 @@ package comparator
 import (
 	"strings"
 	"uml_compare/domain"
-	"uml_compare/matcher"
+	"uml_compare/src/matcher"
 )
 
 // StandardMemberComparator implements IMemberComparator for class-level attribute and method comparison.

@@ -8,9 +8,9 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"uml_compare/builder"
 	"uml_compare/domain"
-	"uml_compare/parser"
+	"uml_compare/src/builder"
+	"uml_compare/src/parser"
 )
 
 // ── ANSI Color Constants ───────────────────────────────────────────────────────

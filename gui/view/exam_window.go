@@ -10,9 +10,9 @@ import (
 	"github.com/ncruces/zenity"
 	"github.com/zserge/lorca"
 
+	"uml_compare/domain"
 	coreDomain "uml_compare/domain"
-	"uml_compare/gui/domain"
-	"uml_compare/visualizer"
+	"uml_compare/src/visualizer"
 )
 
 type examLorcaMainView struct {

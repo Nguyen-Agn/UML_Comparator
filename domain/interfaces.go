@@ -1,23 +1,19 @@
 package domain
 
-import (
-	coreDomain "uml_compare/domain"
-)
-
 // UMLProcessor interface handles parsing and comparing of UML diagrams
 type UMLProcessor interface {
 	// Process takes solution and assignment paths and returns the GradeResult
-	Process(solutionPath, assignmentPath string) (*coreDomain.GradeResult, error)
-	
+	Process(solutionPath, assignmentPath string) (*GradeResult, error)
+
 	// ExportHTML saves the generated report to a specific file path
-	ExportHTML(result *coreDomain.GradeResult, outputPath string) error
+	ExportHTML(result *GradeResult, outputPath string) error
 }
 
 // MainController interface manages the application flow
 type MainController interface {
 	// OnSubmit is called when the user submits their files
 	OnSubmit(solutionPath string, assignmentPath string)
-	
+
 	// OnExport is called when the user wants to export HTML
 	OnExport(saveFilePath string)
 }
@@ -26,22 +22,22 @@ type MainController interface {
 type MainView interface {
 	// SetController injects the controller dependency
 	SetController(c MainController)
-	
+
 	// ShowError shows an error dialog or message
 	ShowError(err error)
-	
+
 	// ShowLoading indicates the app is processing
 	ShowLoading()
-	
+
 	// ShowResult renders the GradeResult in a beautiful layout
-	ShowResult(result *coreDomain.GradeResult)
-	
+	ShowResult(result *GradeResult)
+
 	// EnableExport turns on the export button
 	EnableExport()
-	
+
 	// Wait blockingly until the window is closed
 	Wait()
-	
+
 	// Close terminates the window
 	Close()
 }

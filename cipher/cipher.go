@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"uml_compare/parser"
+	"uml_compare/src/parser"
 )
 
 // ─── Default key ──────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import (
 	"os"
 	"uml_compare/cmd/share"
 	"uml_compare/domain"
-	"uml_compare/prematcher"
+	"uml_compare/src/prematcher"
 )
 
 func main() {
@@ -119,9 +119,9 @@ func printArchWeightBreakdown(weight uint32) {
 	}
 
 	hasInherit := (weight >> 28) & 0x1 // Bit 28: Thừa kế
-	numIntf := (weight >> 24) & 0xF     // Bit 24-27: Interface count
-	numMeth := (weight >> 18) & 0x3F    // Bit 18-23: Method count
-	numAttr := (weight >> 13) & 0x1F    // Bit 13-17: Attribute count
+	numIntf := (weight >> 24) & 0xF    // Bit 24-27: Interface count
+	numMeth := (weight >> 18) & 0x3F   // Bit 18-23: Method count
+	numAttr := (weight >> 13) & 0x1F   // Bit 13-17: Attribute count
 
 	fmt.Printf("  %s│  └─ Binary:%s %032b\n", share.Blue, share.Reset, weight)
 	fmt.Printf("  %s│     [Bits 29-31] Type: %s%-10s%s | [Bit 28] Inherit: %v\n",

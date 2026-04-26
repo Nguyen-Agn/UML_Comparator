@@ -17,9 +17,10 @@ package builder_test
 
 import (
 	"testing"
-	"uml_compare/builder"
+
 	"uml_compare/domain"
-	"uml_compare/parser"
+	"uml_compare/src/builder"
+	"uml_compare/src/parser"
 )
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

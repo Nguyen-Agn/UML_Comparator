@@ -2,9 +2,9 @@ package builder
 
 import (
 	"fmt"
-	"uml_compare/builder/drawio"
-	"uml_compare/builder/mermaid"
 	"uml_compare/domain"
+	"uml_compare/src/builder/drawio"
+	"uml_compare/src/builder/mermaid"
 )
 
 // AutoBuilder implements IModelBuilder by delegating to a registered

@@ -10,9 +10,8 @@ import (
 	"github.com/ncruces/zenity"
 	"github.com/zserge/lorca"
 
-	"uml_compare/gui/domain"
-	"uml_compare/instructor"
-	"uml_compare/visualizer"
+	"uml_compare/domain"
+	"uml_compare/src/visualizer"
 )
 
 const instructorHTMLContent = `<!DOCTYPE html>
@@ -576,7 +575,7 @@ func (v *instructorLorcaView) HideLoading() {
 	v.ui.Eval(`document.getElementById("loading").style.display = "none";`)
 }
 
-func (v *instructorLorcaView) ShowLiveCompareResult(result *instructor.CompareResult) {
+func (v *instructorLorcaView) ShowLiveCompareResult(result *domain.CompareResult) {
 	tmpPath := filepath.Join(os.TempDir(), "uml_tmp_admin_report.html")
 	vis := visualizer.NewHTMLVisualizer()
 

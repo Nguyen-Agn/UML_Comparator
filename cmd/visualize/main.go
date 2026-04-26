@@ -9,15 +9,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"uml_compare/builder"
 	"uml_compare/cmd/share"
-	"uml_compare/comparator"
 	"uml_compare/domain"
-	"uml_compare/grader"
-	"uml_compare/matcher"
-	"uml_compare/parser"
-	"uml_compare/prematcher"
-	"uml_compare/visualizer"
+	"uml_compare/src/builder"
+	"uml_compare/src/comparator"
+	"uml_compare/src/grader"
+	"uml_compare/src/matcher"
+	"uml_compare/src/parser"
+	"uml_compare/src/prematcher"
+	"uml_compare/src/visualizer"
 )
 
 func main() {

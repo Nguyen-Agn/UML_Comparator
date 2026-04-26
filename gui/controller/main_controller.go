@@ -1,14 +1,13 @@
 package controller
 
 import (
-	coreDomain "uml_compare/domain"
-	"uml_compare/gui/domain"
+	"uml_compare/domain"
 )
 
 type defaultMainController struct {
 	processor  domain.UMLProcessor
 	view       domain.MainView
-	lastResult *coreDomain.GradeResult
+	lastResult *domain.GradeResult
 }
 
 // NewMainController creates a new MainController
@@ -25,7 +24,7 @@ func (c *defaultMainController) OnSubmit(solutionPath string, assignmentPath str
 		return
 	}
 	c.view.ShowLoading()
-	
+
 	// Process in a goroutine to avoid blocking the Fyne UI thread
 	go func() {
 		res, err := c.processor.Process(solutionPath, assignmentPath)
@@ -33,7 +32,7 @@ func (c *defaultMainController) OnSubmit(solutionPath string, assignmentPath str
 			c.view.ShowError(err)
 			return
 		}
-		
+
 		c.lastResult = res
 		c.view.ShowResult(res)
 		c.view.EnableExport()
@@ -45,7 +44,7 @@ func (c *defaultMainController) OnExport(saveFilePath string) {
 	if c.lastResult == nil || saveFilePath == "" {
 		return
 	}
-	
+
 	err := c.processor.ExportHTML(c.lastResult, saveFilePath)
 	if err != nil {
 		c.view.ShowError(err)

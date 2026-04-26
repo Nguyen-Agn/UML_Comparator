@@ -17,7 +17,7 @@ func NewCSVReporter(path string) IReporter {
 	return &CSVReporter{OutputPath: path}
 }
 
-func (c *CSVReporter) GenerateReport(batchResult *BatchGradeResult) error {
+func (c *CSVReporter) GenerateReport(batchResult *domain.BatchGradeResult) error {
 	file, err := os.Create(c.OutputPath)
 	if err != nil {
 		return err

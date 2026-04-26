@@ -2,15 +2,14 @@ package service
 
 import (
 	"fmt"
-	"uml_compare/builder"
-	"uml_compare/comparator"
-	coreDomain "uml_compare/domain"
-	"uml_compare/grader"
-	"uml_compare/gui/domain"
-	"uml_compare/matcher"
-	"uml_compare/parser"
-	"uml_compare/prematcher"
-	"uml_compare/visualizer"
+	"uml_compare/domain"
+	"uml_compare/src/builder"
+	"uml_compare/src/comparator"
+	"uml_compare/src/grader"
+	"uml_compare/src/matcher"
+	"uml_compare/src/parser"
+	"uml_compare/src/prematcher"
+	"uml_compare/src/visualizer"
 )
 
 type StandardUMLProcessor struct{}
@@ -21,7 +20,7 @@ func NewStandardUMLProcessor() domain.UMLProcessor {
 }
 
 // Process takes solution and assignment paths and returns the GradeResult
-func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*coreDomain.GradeResult, error) {
+func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*domain.GradeResult, error) {
 	parserObjSol, err := parser.GetParser(solutionPath)
 	if err != nil {
 		return nil, fmt.Errorf("Get parser error: %v", err)
@@ -53,10 +52,10 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*co
 	}
 
 	allIssues := append(
-		coreDomain.ValidateGraph(solGraph, "Solution"),
-		coreDomain.ValidateGraph(stuGraph, "Student")...,
+		domain.ValidateGraph(solGraph, "Solution"),
+		domain.ValidateGraph(stuGraph, "Student")...,
 	)
-	hardErrors := coreDomain.FilterErrors(allIssues)
+	hardErrors := domain.FilterErrors(allIssues)
 	if len(hardErrors) > 0 {
 		return nil, fmt.Errorf("Integrity errors: %v", hardErrors[0])
 	}
@@ -81,7 +80,7 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*co
 }
 
 // ExportHTML saves the generated report to a specific file path
-func (p *StandardUMLProcessor) ExportHTML(result *coreDomain.GradeResult, outputPath string) error {
+func (p *StandardUMLProcessor) ExportHTML(result *domain.GradeResult, outputPath string) error {
 	vis := visualizer.NewHTMLVisualizer()
 	// Using ExportStudentHTML since this offline GUI is for students.
 	return vis.ExportStudentHTML(result, outputPath)

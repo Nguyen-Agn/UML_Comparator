@@ -10,9 +10,9 @@ import (
 	"github.com/ncruces/zenity"
 	"github.com/zserge/lorca"
 
-	coreDomain "uml_compare/domain"
-	"uml_compare/gui/domain"
-	"uml_compare/visualizer"
+	"uml_compare/domain"
+
+	"uml_compare/src/visualizer"
 )
 
 // htmlContent is the gorgeous frontend embedded directly
@@ -401,7 +401,7 @@ func (v *lorcaMainView) ShowLoading() {
 	`)
 }
 
-func (v *lorcaMainView) ShowResult(result *coreDomain.GradeResult) {
+func (v *lorcaMainView) ShowResult(result *domain.GradeResult) {
 	fmt.Println("Result received, generating HTML...")
 	// Re-use logic to generate the full student feedback HTML snippet via Temp File
 	tmpPath := filepath.Join(os.TempDir(), "uml_tmp_student_report.html")

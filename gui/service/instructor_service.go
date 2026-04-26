@@ -1,4 +1,4 @@
-package instructor
+package service
 
 import (
 	"fmt"
@@ -10,39 +10,22 @@ import (
 
 	"uml_compare/AppBuilder"
 	"uml_compare/cipher"
+
 	"uml_compare/cmd/share"
-	"uml_compare/comparator"
 	"uml_compare/domain"
-	"uml_compare/grader"
-	"uml_compare/matcher"
-	"uml_compare/prematcher"
 	"uml_compare/report"
+	"uml_compare/src/comparator"
+	"uml_compare/src/grader"
+	"uml_compare/src/matcher"
+	"uml_compare/src/prematcher"
 )
-
-// BatchResult wraps the output of a batch grading run.
-type BatchResult struct {
-	BatchResult *report.BatchGradeResult
-	Duration    time.Duration
-	TotalFiles  int
-}
-
-// CompareResult wraps the output of a Live Comparison check.
-type CompareResult struct {
-	SolProcessed *domain.SolutionProcessedUMLGraph
-	StuProcessed *domain.ProcessedUMLGraph
-	SolStd       *domain.ProcessedUMLGraph // dùng cho edge comparison display
-	Mapping      domain.MappingTable
-	DiffReport   *domain.DiffReport
-	GradeResult  *domain.GradeResult
-	Warnings     []domain.IntegrityError
-}
 
 // InstructorService defines all logic capabilities exposed to the admin GUI.
 type InstructorService interface {
 	EncryptSolution(input, output string) error
 	BuildExamTool(solutionsDir, outputPath string) error
-	GradeBatch(solutionPath, studentDir, outputReport string) (*BatchResult, error)
-	CompareUML(solutionPath, studentPath string, isAdmin bool) (*CompareResult, error)
+	GradeBatch(solutionPath, studentDir, outputReport string) (*domain.BatchResult, error)
+	CompareUML(solutionPath, studentPath string, isAdmin bool) (*domain.CompareResult, error)
 }
 
 // StandardInstructorService implements InstructorService.
@@ -86,7 +69,7 @@ func (s *StandardInstructorService) BuildExamTool(solutionsDir, outputPath strin
 	return nil
 }
 
-func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputReport string) (*BatchResult, error) {
+func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputReport string) (*domain.BatchResult, error) {
 	solutionGraph, err := share.LoadGraph(solutionPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load solution: %w", err)
@@ -118,7 +101,7 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 		return nil, fmt.Errorf("no .drawio files found in %s", studentDir)
 	}
 
-	batchResult := &report.BatchGradeResult{
+	batchResult := &domain.BatchGradeResult{
 		SolutionPath:   solutionPath,
 		StudentResults: make(map[string]*domain.GradeResult),
 	}
@@ -148,7 +131,7 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 
 	wg.Wait()
 
-	res := &BatchResult{
+	res := &domain.BatchResult{
 		BatchResult: batchResult,
 		Duration:    time.Since(startTime),
 		TotalFiles:  len(studentFiles),
@@ -167,7 +150,7 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 	return res, nil
 }
 
-func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string, isAdmin bool) (*CompareResult, error) {
+func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string, isAdmin bool) (*domain.CompareResult, error) {
 	// Replicates cmd/compare logic
 	solutionGraph, err := share.LoadGraph(solutionPath)
 	if err != nil {
@@ -207,7 +190,7 @@ func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string,
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
 	gradeResult, _ := gr.Grade(diffReport, solForMatch, stuProc, rules)
-	
+
 	// Filtering warnings
 	warns := domain.FilterWarns(allIssues)
 	outWarns := warns[:0]
@@ -219,7 +202,7 @@ func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string,
 		outWarns = append(outWarns, w)
 	}
 
-	return &CompareResult{
+	return &domain.CompareResult{
 		SolProcessed: solForMatch,
 		StuProcessed: stuProc,
 		SolStd:       solStd,

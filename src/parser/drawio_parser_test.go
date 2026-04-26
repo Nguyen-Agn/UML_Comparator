@@ -3,7 +3,7 @@ package parser_test
 import (
 	"strings"
 	"testing"
-	"uml_compare/parser"
+	"uml_compare/src/parser"
 )
 
 // TestDrawioParser_Parse_PlainXML tests that the parser correctly reads an uncompressed draw.io file.
