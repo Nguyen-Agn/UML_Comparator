@@ -98,44 +98,63 @@ def step_get_tokenizer(onnx_dir: str, tmp_dir: str) -> str:
     return dst
 
 
-def step_get_onnxruntime_dll(tmp_dir: str) -> str:
-    """Download onnxruntime.dll from NuGet."""
-    print("\n[4/4] Downloading onnxruntime.dll...")
-    dll_path = os.path.join(tmp_dir, "onnxruntime.dll")
-
+def step_get_onnxruntime_libs(tmp_dir: str) -> list:
+    """Download onnxruntime native libraries from NuGet for cross-platform support."""
+    print("\n[4/4] Downloading cross-platform onnxruntime libs...")
+    
     # Download NuGet package (it's just a zip)
     nupkg_path = os.path.join(tmp_dir, "ort.nupkg")
     print(f"  -> Downloading from NuGet (v{ORT_VERSION})...")
     urllib.request.urlretrieve(ORT_NUGET_URL, nupkg_path)
 
-    # Extract the DLL from the nupkg
+    targets = {
+        "runtimes/win-x64/native/onnxruntime.dll": "onnxruntime.dll",
+        "runtimes/linux-x64/native/libonnxruntime.so": "libonnxruntime.so",
+        "runtimes/osx-x64/native/libonnxruntime.dylib": "libonnxruntime.dylib"
+    }
+
+    extracted_libs = []
+    # Extract the DLLs from the nupkg
     with zipfile.ZipFile(nupkg_path, "r") as z:
-        dll_name = "runtimes/win-x64/native/onnxruntime.dll"
-        if dll_name not in z.namelist():
-            # List available files for debugging
-            natives = [n for n in z.namelist() if "onnxruntime" in n.lower()]
-            print(f"  -> Available natives: {natives}")
-            raise FileNotFoundError(f"{dll_name} not found in nupkg")
-        with z.open(dll_name) as src, open(dll_path, "wb") as dst:
-            shutil.copyfileobj(src, dst)
+        for src_path, dst_name in targets.items():
+            if src_path in z.namelist():
+                dst_path = os.path.join(tmp_dir, dst_name)
+                with z.open(src_path) as src, open(dst_path, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                extracted_libs.append(dst_path)
+                print(f"  -> Extracted {dst_name}")
+            else:
+                print(f"  -> Warning: {dst_name} not found in nupkg")
 
-    dll_size = os.path.getsize(dll_path) / (1024 * 1024)
-    print(f"  -> onnxruntime.dll ({dll_size:.1f}MB)")
     os.remove(nupkg_path)
-    return dll_path
+    return extracted_libs
 
 
-def step_package_zip(model_path: str, tokenizer_path: str, dll_path: str):
-    """Package everything into minilm.zip."""
-    print(f"\n[Done] Packaging into {OUTPUT_ZIP}...")
-    with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.write(model_path, "model.onnx")
-        zf.write(tokenizer_path, "tokenizer.json")
-        zf.write(dll_path, "onnxruntime.dll")
+def step_package_os_zips(model_path: str, tokenizer_path: str, lib_paths: list):
+    """Package OS-specific zip files."""
+    print(f"\n[Done] Packaging OS-specific models...")
+    
+    os_map = {
+        "onnxruntime.dll": "minilm_win.ai",
+        "libonnxruntime.so": "minilm_linux.ai",
+        "libonnxruntime.dylib": "minilm_mac.ai"
+    }
 
-    total_size = os.path.getsize(OUTPUT_ZIP) / (1024 * 1024)
-    print(f"  -> {OUTPUT_ZIP} ({total_size:.1f}MB)")
-    print("\n[OK] Done! You can now run: go test -v -run E2E ./AI_translate")
+    for lib in lib_paths:
+        lib_name = os.path.basename(lib)
+        if lib_name in os_map:
+            out_name = os_map[lib_name]
+            out_path = os.path.join(SCRIPT_DIR, out_name)
+            
+            with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                zf.write(model_path, "model.onnx")
+                zf.write(tokenizer_path, "tokenizer.json")
+                zf.write(lib, lib_name)
+
+            total_size = os.path.getsize(out_path) / (1024 * 1024)
+            print(f"  -> {out_name} ({total_size:.1f}MB)")
+
+    print("\n[OK] Done! You can now copy the corresponding .ai file to your target machine.")
 
 
 def main():
@@ -143,8 +162,8 @@ def main():
         onnx_dir = step_export_onnx(tmp_dir)
         model_path = step_quantize(onnx_dir, tmp_dir)
         tokenizer_path = step_get_tokenizer(onnx_dir, tmp_dir)
-        dll_path = step_get_onnxruntime_dll(tmp_dir)
-        step_package_zip(model_path, tokenizer_path, dll_path)
+        lib_paths = step_get_onnxruntime_libs(tmp_dir)
+        step_package_os_zips(model_path, tokenizer_path, lib_paths)
 
 
 if __name__ == "__main__":

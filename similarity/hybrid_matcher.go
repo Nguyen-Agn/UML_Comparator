@@ -27,7 +27,11 @@ func NewHybridMatcher(zipPath string) (*HybridMatcher, error) {
 	semanticMatcher, err := NewMiniLMSemanticMatcher(zipPath)
 	if err != nil {
 		fmt.Println("fail to load model: ", err)
-		return nil, nil
+		return &HybridMatcher{
+			levenshtein:    NewLevenshteinMatcher(),
+			semantic:       nil,
+			levenThreshold: 0.8,
+		}, nil
 	}
 
 	return &HybridMatcher{

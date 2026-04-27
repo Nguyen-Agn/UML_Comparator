@@ -4,28 +4,40 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"uml_compare/domain"
 )
 
 func findFileAI() string {
-	filename := "minilm.ai"
-	//check if file exists and is executable
-	if _, err := os.Stat(filename); err != nil {
-		// find file extends with .ai
-		files, _ := os.ReadDir(".")
-
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-			if filepath.Ext(file.Name()) == ".ai" {
-				return file.Name()
-			}
-		}
-
-		return ""
+	var preferredFile string
+	switch runtime.GOOS {
+	case "windows":
+		preferredFile = "minilm_win.ai"
+	case "darwin":
+		preferredFile = "minilm_mac.ai"
+	default: // linux, freebsd, etc.
+		preferredFile = "minilm_linux.ai"
 	}
-	return filename
+
+	// 1. Prioritize OS-specific AI file
+	if _, err := os.Stat(preferredFile); err == nil {
+		return preferredFile
+	}
+
+	// 2. Fallback to legacy generic name
+	if _, err := os.Stat("minilm.ai"); err == nil {
+		return "minilm.ai"
+	}
+
+	// 3. Fallback to any available .ai file
+	files, _ := os.ReadDir(".")
+	for _, file := range files {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".ai" {
+			return file.Name()
+		}
+	}
+
+	return ""
 }
 
 func GetHybridMatcher() (domain.IHybridMatcher, error) {
