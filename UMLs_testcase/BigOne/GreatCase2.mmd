@@ -40,7 +40,7 @@ classDiagram
     }
 
     BaseEntity <|-- Product : Extends
-    ICalculatable <|.. Product : Implements
+    InterfaceCalculatable <|.. Product : Implements
     Order~T~ *-- Product : Composition
     Category o-- Product : Aggregation
     Product --> PaymentStatus : Association

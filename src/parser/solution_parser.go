@@ -8,7 +8,7 @@ import (
 	"uml_compare/domain"
 )
 
-const solutionHeader = "SOLUTION_V1\n"
+const solutionHeader = "SOLUTION_V1"
 
 // defaultSolutionKey is the built-in key — same constant as cipher.defaultKey.
 // Must stay in sync. Both encrypt (cipher pkg) and decrypt (here) use the same value.

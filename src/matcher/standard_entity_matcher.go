@@ -9,9 +9,9 @@ import (
 )
 
 type StandardEntityMatcher struct {
-	fuzzyMatcher     domain.IHybridMatcher
-	archAnalyzer     IArchAnalyzer
-	identValidator   IIdentityValidator
+	fuzzyMatcher domain.IHybridMatcher
+	archAnalyzer IArchAnalyzer
+	//	identValidator   IIdentityValidator
 	similarityThresh float64
 }
 
@@ -20,9 +20,9 @@ var _ IEntityMatcher = (*StandardEntityMatcher)(nil)
 // NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher, architecture analyzer, and identity validator.
 func NewStandardEntityMatcher(threshold float64, hybridMatcher domain.IHybridMatcher) *StandardEntityMatcher {
 	return &StandardEntityMatcher{
-		fuzzyMatcher:     hybridMatcher,
-		archAnalyzer:     NewStandardArchAnalyzer(),
-		identValidator:   NewStandardIdentityValidator(NewAntonymDetector()),
+		fuzzyMatcher: hybridMatcher,
+		archAnalyzer: NewStandardArchAnalyzer(),
+		//	identValidator:   NewStandardIdentityValidator(NewAntonymDetector()),
 		similarityThresh: threshold,
 	}
 }
@@ -59,9 +59,9 @@ func (m *StandardEntityMatcher) Match(solution *domain.SolutionProcessedUMLGraph
 				if !studentAssigned[stuNode.ID] {
 
 					// Semantic Identity Check (Filter out antonyms early)
-					if m.identValidator != nil && !m.identValidator.IsValid(solNode.Name, stuNode.Name) {
-						continue
-					}
+					// if m.identValidator != nil && !m.identValidator.IsValid(solNode.Name, stuNode.Name) {
+					// 	continue
+					// }
 
 					simScore := m.fuzzyMatcher.Compare(solNode.Name, stuNode.Name)
 					exactMatch := solNode.Type == stuNode.Type &&

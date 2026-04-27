@@ -38,22 +38,26 @@ func NewHybridMatcher(zipPath string) (*HybridMatcher, error) {
 // using Levenshtein for typos and Semantic for synonyms.
 func (h *HybridMatcher) Compare(s1, s2 string) float64 {
 	// Step 1: Fast Levenshtein check
-	levenScore := h.levenshtein.Compare(s1, s2)
+	// levenScore := h.levenshtein.Compare(s1, s2)
 
-	// If Levenshtein already says they're similar enough, it's a typo — no need for ML.
-	if levenScore >= h.levenThreshold {
-		return levenScore
-	}
+	// // If Levenshtein already says they're similar enough, it's a typo — no need for ML.
+	// if levenScore >= h.levenThreshold {
+	// 	return levenScore
+	// }
 
-	// Step 2: If semantic matcher is available, check for synonym
+	// // Step 2: If semantic matcher is available, check for synonym
+	// if h.semantic != nil {
+	// 	semanticScore := h.semantic.Compare(s1, s2)
+	// 	if semanticScore > levenScore {
+	// 		return semanticScore
+	// 	}
+	// }
+
 	if h.semantic != nil {
-		semanticScore := h.semantic.Compare(s1, s2)
-		if semanticScore > levenScore {
-			return semanticScore
-		}
+		return h.semantic.Compare(s1, s2)
 	}
 
-	return levenScore
+	return h.levenshtein.Compare(s1, s2)
 }
 
 func (h *HybridMatcher) CompareMultiple(candidate string, optionals []string) (float64, string) {

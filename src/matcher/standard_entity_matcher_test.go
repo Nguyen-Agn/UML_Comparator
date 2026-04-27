@@ -4,6 +4,7 @@ package matcher
 // 	"testing"
 
 // 	"uml_compare/domain"
+// 	"uml_compare/similarity"
 // )
 
 // // buildSolGraph is a helper that creates a SolutionProcessedUMLGraph
@@ -30,24 +31,29 @@ package matcher
 // 	return domain.ProcessedNode{ID: id, Name: name, Type: nodeType, ArchWeight: archWeight}
 // }
 
-// // func TestFuzzyMatcher(t *testing.T) {
-// // 	fz := ()
+// func TestFuzzyMatcher(t *testing.T) {
+// 	similar_component, err := similarity.GetHybridMatcher()
+// 	if err != nil {
+// 		t.Errorf("fail to load model: %v", err)
+// 	}
+// 	defer similar_component.Close()
+// 	fz := NewStandardEntityMatcher(0.8,similar_component)
 
-// // 	score := fz.Compare("Account", "Acount")
-// // 	if score < 0.8 {
-// // 		t.Errorf("Expected score > 0.8 for typo, got %.2f", score)
-// // 	}
+// 	score := fz.Compare("Account", "Acount")
+// 	if score < 0.8 {
+// 		t.Errorf("Expected score > 0.8 for typo, got %.2f", score)
+// 	}
 
-// // 	scoreExact := fz.Compare("UserService", "userservice") // case-insensitive
-// // 	if scoreExact != 1.0 {
-// // 		t.Errorf("Expected score 1.0 for exact, got %.2f", scoreExact)
-// // 	}
+// 	scoreExact := fz.Compare("UserService", "userservice") // case-insensitive
+// 	if scoreExact != 1.0 {
+// 		t.Errorf("Expected score 1.0 for exact, got %.2f", scoreExact)
+// 	}
 
-// // 	scoreDiff := fz.Compare("Animal", "Vehicle")
-// // 	if scoreDiff > 0.5 {
-// // 		t.Errorf("Expected low score for completely different strings, got %.2f", scoreDiff)
-// // 	}
-// // }
+// 	scoreDiff := fz.Compare("Animal", "Vehicle")
+// 	if scoreDiff > 0.5 {
+// 		t.Errorf("Expected low score for completely different strings, got %.2f", scoreDiff)
+// 	}
+// }
 
 // func TestStandardEntityMatcher(t *testing.T) {
 // 	matcher := NewStandardEntityMatcher(0.75)

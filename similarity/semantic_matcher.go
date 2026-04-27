@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -31,7 +32,7 @@ type MiniLMSemanticMatcher struct {
 }
 
 // NewMiniLMSemanticMatcher extracts the zip and initializes the model.
-// The zip must contain: model.onnx, tokenizer.json, and onnxruntime.dll (on Windows).
+// The zip must contain: model.onnx, tokenizer.json, and the onnxruntime shared library.
 func NewMiniLMSemanticMatcher(zipPath string) (*MiniLMSemanticMatcher, error) {
 	tempDir, err := os.MkdirTemp("", "uml_nlp_")
 	if err != nil {
@@ -57,7 +58,15 @@ func NewMiniLMSemanticMatcher(zipPath string) (*MiniLMSemanticMatcher, error) {
 	}
 
 	// --- ONNX Runtime (package-level init) ---
-	ort.SetSharedLibraryPath(filepath.Join(tempDir, "onnxruntime.dll"))
+	var libName string
+	if runtime.GOOS == "windows" {
+		libName = "onnxruntime.dll"
+	} else if runtime.GOOS == "darwin" {
+		libName = "libonnxruntime.dylib"
+	} else {
+		libName = "libonnxruntime.so"
+	}
+	ort.SetSharedLibraryPath(filepath.Join(tempDir, libName))
 	err = ort.InitializeEnvironment()
 	if err != nil {
 		os.RemoveAll(tempDir)
