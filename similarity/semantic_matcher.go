@@ -59,11 +59,12 @@ func NewMiniLMSemanticMatcher(zipPath string) (*MiniLMSemanticMatcher, error) {
 
 	// --- ONNX Runtime (package-level init) ---
 	var libName string
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		libName = "onnxruntime.dll"
-	} else if runtime.GOOS == "darwin" {
+	case "darwin":
 		libName = "libonnxruntime.dylib"
-	} else {
+	default:
 		libName = "libonnxruntime.so"
 	}
 	ort.SetSharedLibraryPath(filepath.Join(tempDir, libName))

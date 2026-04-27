@@ -1,6 +1,9 @@
 package similarity
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 // HybridMatcher combines Levenshtein (typo detection) with Semantic (synonym detection).
 // It implements matcher.IFuzzyMatcher so it can be a drop-in replacement.
@@ -80,6 +83,10 @@ func (h *HybridMatcher) CompareField(s1, s2 string) float64 {
 // Close releases resources held by the semantic matcher.
 func (h *HybridMatcher) Close() error {
 	if h.semantic != nil {
+		v := reflect.ValueOf(h.semantic)
+		if v.Kind() == reflect.Ptr && v.IsNil() {
+			return nil
+		}
 		return h.semantic.Close()
 	}
 	return nil
