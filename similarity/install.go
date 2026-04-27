@@ -40,9 +40,19 @@ func findFileAI() string {
 	return ""
 }
 
+func logToFile(message string) {
+	f, err := os.OpenFile("debug_log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	f.WriteString(fmt.Sprintf("[%s] %s\n", runtime.GOOS, message))
+}
+
 func GetHybridMatcher() (domain.IHybridMatcher, error) {
 	filename := findFileAI()
 	if filename == "" {
+		logToFile("AI file not found, falling back to Levenshtein")
 		// Fallback an toàn: Trả về Levenshtein thuần túy thay vì nil
 		fallback := &HybridMatcher{
 			levenshtein:    NewLevenshteinMatcher(),
@@ -52,10 +62,13 @@ func GetHybridMatcher() (domain.IHybridMatcher, error) {
 		return fallback, nil
 	}
 
+	logToFile(fmt.Sprintf("Found AI file: %s. Attempting to load...", filename))
 	similar_component, err := NewHybridMatcher("./" + filename)
 	if err != nil {
+		logToFile(fmt.Sprintf("FAILED to load AI model: %v", err))
 		return nil, fmt.Errorf("fail to load model: %v", err)
 	}
 
+	logToFile("SUCCESS: AI model loaded successfully")
 	return similar_component, nil
 }

@@ -1,0 +1,11 @@
+classDiagram
+    class Teacher {
+        -String identifier
+        -double remuneration
+        +instruct(Pupil person)
+    }
+    class Pupil {
+        -String fullName
+        -int birthYear
+    }
+    Teacher "1" *-- "many" Pupil : educates
