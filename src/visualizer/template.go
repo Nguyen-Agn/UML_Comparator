@@ -12,12 +12,11 @@ const htmlTemplate = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UML Grading Report — {{.Percent}}%</title>
 <style>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* ── Reset & Base ─────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
     background: #f8fafc;
     color: #16202b;
     line-height: 1.6;
@@ -279,7 +278,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
 <!-- ═══ HEADER ═══ -->
 <div class="report-header">
-  <h1>📊 UML Grading Report</h1>
+  <h1>&#x1F4CA; UML Grading Report</h1>
   <div class="score-display {{.ScoreClass}}">
     {{printf "%.2f" .Score}} / {{printf "%.2f" .MaxScore}}
   </div>
@@ -291,11 +290,11 @@ const htmlTemplate = `<!DOCTYPE html>
 
 <!-- ═══ NODES SIDE-BY-SIDE ═══ -->
 <div class="section">
-  <div class="section-title">🏗️ Nodes Comparison</div>
+  <div class="section-title">&#x1F3D7; Nodes Comparison</div>
   <div class="columns">
     <!-- Student Column -->
     <div class="col-student">
-      <div class="col-header">📘 Student (bài nộp)</div>
+      <div class="col-header">&#x1F4D8; Student (submitted)</div>
       {{range .StuNodes}}
       <div class="node-card">
         <div class="node-name">
@@ -324,7 +323,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
     <!-- Solution Column -->
     <div class="col-solution">
-      <div class="col-header">📗 Solution (đáp án)</div>
+      <div class="col-header">&#x1F4D7; Solution (reference)</div>
       {{range .SolNodes}}
       <div class="node-card">
         <div class="node-name">
@@ -355,7 +354,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
 <!-- ═══ RELATIONS ═══ -->
 <div class="section">
-  <div class="section-title">🔗 Relations</div>
+  <div class="section-title">&#x1F517; Relations</div>
   {{range .Relations}}
   <div class="relation-row rel-{{.Status}}">
     <span class="rel-icon">
@@ -383,7 +382,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
 <!-- ═══ SUMMARY ═══ -->
 <div class="section">
-  <div class="section-title">📝 Summary</div>
+  <div class="section-title">&#x1F4DD; Summary</div>
   <div class="summary-grid">
     <div class="stat-card card-correct">
       <div class="stat-value">{{.Stats.Correct}}</div>

@@ -89,6 +89,11 @@ func (v *instructorLorcaView) bindFunctions() {
 			v.ShowError(fmt.Errorf("Directory and Output are required"))
 		}
 	})
+	v.ui.Bind("goUpdateConfig", func(th float64, ai bool) {
+		if v.controller != nil {
+			v.controller.OnUpdateConfig(th, ai)
+		}
+	})
 }
 
 // Helpers
@@ -174,6 +179,10 @@ func (v *instructorLorcaView) ShowLiveCompareResult(result *domain.CompareResult
 
 	b64 := base64.StdEncoding.EncodeToString(b)
 	v.ui.Eval(fmt.Sprintf("renderLiveResult('%s')", b64))
+}
+
+func (v *instructorLorcaView) UpdateConfigUI(threshold float64, useAI bool, aiAvailable bool) {
+	v.ui.Eval(fmt.Sprintf("updateConfigUI(%.2f, %v, %v)", threshold, useAI, aiAvailable))
 }
 
 func (v *instructorLorcaView) Wait() {

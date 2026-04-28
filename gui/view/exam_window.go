@@ -217,6 +217,10 @@ func (v *examLorcaMainView) Wait() {
 	<-v.ui.Done()
 }
 
+func (v *examLorcaMainView) ShowAIStatus(available bool) {
+	v.ui.Eval(fmt.Sprintf("showAIStatus(%v)", available))
+}
+
 func (v *examLorcaMainView) Close() {
 	// Clean up temporary solution file
 	if v.solPath != "" {

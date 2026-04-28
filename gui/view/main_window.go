@@ -190,6 +190,10 @@ func (v *lorcaMainView) EnableExport() {
 	v.ui.Eval(`document.getElementById("btnExport").disabled = false`)
 }
 
+func (v *lorcaMainView) ShowAIStatus(available bool) {
+	v.ui.Eval(fmt.Sprintf("showAIStatus(%v)", available))
+}
+
 // Window logic
 func (v *lorcaMainView) Wait() {
 	<-v.ui.Done()

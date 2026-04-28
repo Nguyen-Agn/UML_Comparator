@@ -60,8 +60,26 @@ func (b *GoTaskBuilder) BuildTask(name, output string, sources []string, isGUI b
 // FileAssetCopier implements AssetCopier
 type FileAssetCopier struct{}
 
-func (c *FileAssetCopier) CopyAssets(srcDir string, destDir, filterExt string) error {
+func (c *FileAssetCopier) CopyAssets(srcDir string, destDir, extensions string) error {
 	paths := strings.Split(srcDir, ",")
+	extList := strings.Split(extensions, ",")
+	for i, e := range extList {
+		extList[i] = strings.TrimSpace(e)
+	}
+
+	isMatch := func(name string) bool {
+		if extensions == "" {
+			return true
+		}
+		ext := filepath.Ext(name)
+		for _, e := range extList {
+			if e != "" && ext == e {
+				return true
+			}
+		}
+		return false
+	}
+
 	copied := 0
 
 	for _, p := range paths {
@@ -80,7 +98,7 @@ func (c *FileAssetCopier) CopyAssets(srcDir string, destDir, filterExt string) e
 		}
 
 		if !info.IsDir() {
-			if filterExt == "" || filepath.Ext(info.Name()) == filterExt {
+			if isMatch(info.Name()) {
 				dest := filepath.Join(destDir, info.Name())
 				err := c.copyFile(p, dest)
 				if err != nil {
@@ -97,7 +115,7 @@ func (c *FileAssetCopier) CopyAssets(srcDir string, destDir, filterExt string) e
 
 			for _, entry := range entries {
 				if !entry.IsDir() {
-					if filterExt == "" || filepath.Ext(entry.Name()) == filterExt {
+					if isMatch(entry.Name()) {
 						src := filepath.Join(p, entry.Name())
 						dest := filepath.Join(destDir, entry.Name())
 						err := c.copyFile(src, dest)
@@ -113,7 +131,7 @@ func (c *FileAssetCopier) CopyAssets(srcDir string, destDir, filterExt string) e
 	}
 
 	if copied == 0 {
-		return fmt.Errorf("no files matching '%s' found in the provided paths", filterExt)
+		return fmt.Errorf("no files matching '%s' found in the provided paths", extensions)
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 
 	"uml_compare/domain"
@@ -13,10 +14,20 @@ type instructorController struct {
 }
 
 func NewInstructorController(srv service.InstructorService, v domain.InstructorView) domain.InstructorController {
-	return &instructorController{
+	c := &instructorController{
 		service: srv,
 		view:    v,
 	}
+	// Initial sync
+	th, ai, avail := srv.GetConfig()
+	v.UpdateConfigUI(th, ai, avail)
+	return c
+}
+
+func (c *instructorController) OnUpdateConfig(threshold float64, useAI bool) {
+	c.service.UpdateConfig(threshold, useAI)
+	// No notification needed for silent background update, or we could show success
+	c.view.ShowSuccess(fmt.Sprintf("Global configuration updated: Threshold=%.1f, UseAI=%v", threshold, useAI))
 }
 
 func (c *instructorController) OnEncrypt(inputPath, outputPath string) {

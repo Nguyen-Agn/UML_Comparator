@@ -12,10 +12,13 @@ type defaultMainController struct {
 
 // NewMainController creates a new MainController
 func NewMainController(processor domain.UMLProcessor, view domain.MainView) domain.MainController {
-	return &defaultMainController{
+	ctrl := &defaultMainController{
 		processor: processor,
 		view:      view,
 	}
+	// Sync AI Status
+	view.ShowAIStatus(processor.IsAIAvailable())
+	return ctrl
 }
 
 // OnSubmit handles the file submission from the view

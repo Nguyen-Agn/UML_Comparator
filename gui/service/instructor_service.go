@@ -26,6 +26,8 @@ type InstructorService interface {
 	BuildExamTool(solutionsDir, outputPath string) error
 	GradeBatch(solutionPath, studentDir, outputReport string) (*domain.BatchResult, error)
 	CompareUML(solutionPath, studentPath string, isAdmin bool) (*domain.CompareResult, error)
+	GetConfig() (threshold float64, useAI bool, aiAvailable bool)
+	UpdateConfig(threshold float64, useAI bool)
 }
 
 // StandardInstructorService implements InstructorService.
@@ -36,7 +38,7 @@ type StandardInstructorService struct {
 var _ InstructorService = (*StandardInstructorService)(nil)
 
 func NewStandardInstructorService() *StandardInstructorService {
-	similar_component, _ := similarity.GetHybridMatcher()
+	similar_component, _ := similarity.GetHybridMatcher(domain.DefaultConfig)
 	return &StandardInstructorService{
 		similar_component: similar_component,
 	}
@@ -62,7 +64,7 @@ func (s *StandardInstructorService) BuildExamTool(solutionsDir, outputPath strin
 		return fmt.Errorf("failed clearing embedded dir: %w", err)
 	}
 
-	err := assetCopier.CopyAssets(solutionsDir, embeddedDir, ".drawio")
+	err := assetCopier.CopyAssets(solutionsDir, embeddedDir, ".drawio,.xml,.mmd,.mermaid")
 	if err != nil {
 		return fmt.Errorf("failed copying assets: %w", err)
 	}
@@ -87,7 +89,7 @@ func (s *StandardInstructorService) GradeBatch(solutionPath, studentDir, outputR
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8, s.similar_component)
+	entityMatcher := matcher.NewStandardEntityMatcher(s.similar_component)
 	comp := comparator.NewStandardComparator(s.similar_component)
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}
@@ -187,7 +189,7 @@ func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string,
 	stuProc, _ := stdPM.Process(studentGraph)
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8, s.similar_component)
+	entityMatcher := matcher.NewStandardEntityMatcher(s.similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	comp := comparator.NewStandardComparator(s.similar_component)
@@ -215,6 +217,14 @@ func (s *StandardInstructorService) CompareUML(solutionPath, studentPath string,
 		Mapping:      mapping,
 		DiffReport:   diffReport,
 		GradeResult:  gradeResult,
-		Warnings:     outWarns,
 	}, nil
+}
+
+func (s *StandardInstructorService) GetConfig() (threshold float64, useAI bool, aiAvailable bool) {
+	return domain.DefaultConfig.GetThreshold(), domain.DefaultConfig.UseAI(), s.similar_component.IsAIAvailable()
+}
+
+func (s *StandardInstructorService) UpdateConfig(threshold float64, useAI bool) {
+	domain.DefaultConfig.SetThreshold(threshold)
+	domain.DefaultConfig.SetUseAI(useAI)
 }

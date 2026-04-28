@@ -7,6 +7,9 @@ type UMLProcessor interface {
 
 	// ExportHTML saves the generated report to a specific file path
 	ExportHTML(result *GradeResult, outputPath string) error
+
+	// IsAIAvailable returns true if the AI matcher is ready
+	IsAIAvailable() bool
 }
 
 // MainController interface manages the application flow
@@ -35,6 +38,9 @@ type MainView interface {
 	// EnableExport turns on the export button
 	EnableExport()
 
+	// ShowAIStatus indicates if AI matching is active
+	ShowAIStatus(available bool)
+
 	// Wait blockingly until the window is closed
 	Wait()
 
@@ -45,5 +51,9 @@ type MainView interface {
 type IHybridMatcher interface {
 	Compare(s1, s2 string) float64
 	CompareMultiple(candidate string, optionals []string) (float64, string)
+	// GetThreshold returns the similarity threshold from configuration
+	GetThreshold() float64
+	// IsAIAvailable returns true if the AI model was loaded successfully
+	IsAIAvailable() bool
 	Close() error
 }

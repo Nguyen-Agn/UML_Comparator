@@ -13,6 +13,9 @@ type InstructorController interface {
 
 	// Live Tab
 	OnLiveCompare(solutionPath, studentPath string)
+
+	// Config Tab
+	OnUpdateConfig(threshold float64, useAI bool)
 }
 
 // InstructorView interface abstract the GUI updating logic for the instructor suite.
@@ -25,6 +28,9 @@ type InstructorView interface {
 
 	// Called by controller when live compare finishes
 	ShowLiveCompareResult(result *CompareResult)
+
+	// UpdateConfigUI updates the config tab with current values
+	UpdateConfigUI(threshold float64, useAI bool, aiAvailable bool)
 
 	Wait()
 	Close()

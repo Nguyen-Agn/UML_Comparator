@@ -1,0 +1,11 @@
+classDiagram
+    class Teacher {
+        - identifier: String
+        - remuneration: double
+        +instruct(person: Pupil): void
+    }
+    class Pupil {
+        - fullName: String
+        - birthYear: int
+    }
+    Teacher "1" *-- "many" Pupil : educates

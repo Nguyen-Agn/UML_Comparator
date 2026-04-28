@@ -11,13 +11,31 @@ import (
 	"uml_compare/src/parser"
 	"uml_compare/src/prematcher"
 	"uml_compare/src/visualizer"
+	"sync"
 )
 
-type StandardUMLProcessor struct{}
+type StandardUMLProcessor struct {
+	matcher domain.IHybridMatcher
+	mu      sync.Mutex
+}
 
 // NewStandardUMLProcessor provides a new StandardUMLProcessor
 func NewStandardUMLProcessor() domain.UMLProcessor {
 	return &StandardUMLProcessor{}
+}
+
+func (p *StandardUMLProcessor) getMatcher() (domain.IHybridMatcher, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.matcher != nil {
+		return p.matcher, nil
+	}
+	m, err := similarity.GetHybridMatcher(domain.DefaultConfig)
+	if err != nil {
+		return nil, err
+	}
+	p.matcher = m
+	return p.matcher, nil
 }
 
 // Process takes solution and assignment paths and returns the GradeResult
@@ -44,11 +62,10 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*do
 	// If Parse success
 	// Initialize semantic matcher
 
-	similar_component, err := similarity.GetHybridMatcher()
+	similar_component, err := p.getMatcher()
 	if err != nil {
 		return nil, fmt.Errorf("Initialize semantic matcher error: %v", err)
 	}
-	defer similar_component.Close()
 
 	b := builder.NewStandardModelBuilder()
 	solGraph, err := b.Build(solRaw, solType)
@@ -75,7 +92,7 @@ func (p *StandardUMLProcessor) Process(solutionPath, assignmentPath string) (*do
 	stuProc, _ := stdPM.Process(stuGraph)
 	solForMatch, _ := solPM.ProcessSolution(solGraph)
 
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
+	entityMatcher := matcher.NewStandardEntityMatcher(similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	comp := comparator.NewStandardComparator(similar_component)
@@ -93,4 +110,12 @@ func (p *StandardUMLProcessor) ExportHTML(result *domain.GradeResult, outputPath
 	vis := visualizer.NewHTMLVisualizer()
 	// Using ExportStudentHTML since this offline GUI is for students.
 	return vis.ExportStudentHTML(result, outputPath)
+}
+
+func (p *StandardUMLProcessor) IsAIAvailable() bool {
+	m, err := p.getMatcher()
+	if err != nil {
+		return false
+	}
+	return m.IsAIAvailable()
 }

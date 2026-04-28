@@ -67,14 +67,14 @@ func run(solPath, stuPath string) (*matchResult, error) {
 	}
 
 	// Get model semantic
-	similar_component, err := similarity.GetHybridMatcher()
+	similar_component, err := similarity.GetHybridMatcher(domain.DefaultConfig)
 	if err != nil {
 		return nil, fmt.Errorf("fail to load model: %v", err)
 	}
 	defer similar_component.Close()
 
 	// 3. Match
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
+	entityMatcher := matcher.NewStandardEntityMatcher(similar_component)
 	mapping, err := entityMatcher.Match(solProcessed, stuProcessed)
 	if err != nil {
 		return nil, fmt.Errorf("entity match: %w", err)

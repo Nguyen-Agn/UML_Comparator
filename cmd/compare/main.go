@@ -83,14 +83,14 @@ func run(solutionPath, studentPath string) (*compareResult, error) {
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
 
 	// Get model semantic
-	similar_component, err := similarity.GetHybridMatcher()
+	similar_component, err := similarity.GetHybridMatcher(domain.DefaultConfig)
 	if err != nil {
 		return nil, fmt.Errorf("fail to load model: %v", err)
 	}
 	defer similar_component.Close()
 
 	// 4. Match
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
+	entityMatcher := matcher.NewStandardEntityMatcher(similar_component)
 	mapping, _ := entityMatcher.Match(solForMatch, stuProc)
 
 	// 5. Compare

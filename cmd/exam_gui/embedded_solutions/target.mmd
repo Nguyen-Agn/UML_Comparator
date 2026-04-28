@@ -1,0 +1,11 @@
+classDiagram
+    class Instructor {
+        - serialNumber : String
+        - salary : double
+        + teach(individual: Student) : void
+    }
+    class Student {
+        - completeName : String
+        - yearOfBirth : int
+    }
+    Instructor "1" *-- "many" Student : trains

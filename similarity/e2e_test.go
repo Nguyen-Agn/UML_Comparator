@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 	"time"
+	"uml_compare/domain"
 )
 
 const testZipName = "minilm.ai"
@@ -78,7 +79,7 @@ func TestE2E_HybridMatcher(t *testing.T) {
 		t.Skipf("Skipping E2E test: %s not found.", zipPath)
 	}
 
-	hybrid, err := NewHybridMatcher(zipPath)
+	hybrid, err := NewHybridMatcher(zipPath, domain.DefaultConfig)
 	if err != nil {
 		t.Fatalf("Failed to create hybrid matcher: %v", err)
 	}

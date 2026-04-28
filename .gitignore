@@ -10,8 +10,10 @@ Thumbs.db
 .idea/
 
 # Local logs
-*.log
 test_output.txt
 *.html
 # Key
 key.go
+
+cmd/similarity/*.ai
+**/debug_log.txt

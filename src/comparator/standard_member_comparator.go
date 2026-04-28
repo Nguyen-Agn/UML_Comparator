@@ -67,7 +67,7 @@ func (v *StandardMemberComparator) CompareAttributes(sol domain.SolutionProcesse
 
 				matchedName := false
 				for _, n := range sAttr.Names {
-					if v.fuzzyMatcher.Compare(n, stAttr.Name) >= 0.8 {
+					if v.fuzzyMatcher.Compare(n, stAttr.Name) >= v.fuzzyMatcher.GetThreshold() {
 						matchedName = true
 						break
 					}
@@ -199,7 +199,7 @@ func (v *StandardMemberComparator) CompareMethods(sol domain.SolutionProcessedNo
 				}
 				matchedName := false
 				for _, n := range sMethod.Names {
-					if v.fuzzyMatcher.Compare(n, stMethod.Name) >= 0.8 {
+					if v.fuzzyMatcher.Compare(n, stMethod.Name) >= v.fuzzyMatcher.GetThreshold() {
 						matchedName = true
 						break
 					}
@@ -382,7 +382,7 @@ func (v *StandardMemberComparator) matchMethodName(sol domain.SolutionProcessedM
 		return v.isStudentConstructor(stu, stuClassName)
 	}
 	for _, n := range sol.Names {
-		if v.fuzzyMatcher.Compare(n, stu.Name) >= 0.5 {
+		if v.fuzzyMatcher.Compare(n, stu.Name) >= v.fuzzyMatcher.GetThreshold() {
 			return true
 		}
 	}

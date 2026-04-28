@@ -74,7 +74,7 @@ func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 	}
 
 	// Get model semantic
-	similar_component, err := similarity.GetHybridMatcher()
+	similar_component, err := similarity.GetHybridMatcher(domain.DefaultConfig)
 	if err != nil {
 		return nil, fmt.Errorf("fail to load model: %v", err)
 	}
@@ -84,7 +84,7 @@ func runBatchGrading(solutionPath, studentDir string) (*batchRunResult, error) {
 	stdPM := prematcher.NewStandardPreMatcher()
 	solPM := prematcher.NewUMLSolutionPreMatcher()
 	solForMatch, _ := solPM.ProcessSolution(solutionGraph)
-	entityMatcher := matcher.NewStandardEntityMatcher(0.8, similar_component)
+	entityMatcher := matcher.NewStandardEntityMatcher(similar_component)
 	comp := comparator.NewStandardComparator(similar_component)
 	gr := grader.NewStandardGrader()
 	rules := &grader.GradingRules{}

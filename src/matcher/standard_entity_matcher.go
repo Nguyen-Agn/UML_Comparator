@@ -12,18 +12,16 @@ type StandardEntityMatcher struct {
 	fuzzyMatcher domain.IHybridMatcher
 	archAnalyzer IArchAnalyzer
 	//	identValidator   IIdentityValidator
-	similarityThresh float64
 }
 
 var _ IEntityMatcher = (*StandardEntityMatcher)(nil)
 
 // NewStandardEntityMatcher initializes a default Entity Matcher utilizing a given fuzzy Matcher, architecture analyzer, and identity validator.
-func NewStandardEntityMatcher(threshold float64, hybridMatcher domain.IHybridMatcher) *StandardEntityMatcher {
+func NewStandardEntityMatcher(hybridMatcher domain.IHybridMatcher) *StandardEntityMatcher {
 	return &StandardEntityMatcher{
 		fuzzyMatcher: hybridMatcher,
 		archAnalyzer: NewStandardArchAnalyzer(),
 		//	identValidator:   NewStandardIdentityValidator(NewAntonymDetector()),
-		similarityThresh: threshold,
 	}
 }
 
@@ -137,10 +135,10 @@ func (m *StandardEntityMatcher) Match(solution *domain.SolutionProcessedUMLGraph
 	}
 
 	// 1st Pass: Strict Name (>= Threshold), Lenient Architecture (15% Tolerance)
-	unmappedSol = runPass(unmappedSol, 0.15, m.similarityThresh)
+	unmappedSol = runPass(unmappedSol, 0.15, m.fuzzyMatcher.GetThreshold())
 
 	// 2nd Pass: Lenient Name (>= 0.4), Strict Architecture (10% Tolerance)
-	runPass(unmappedSol, 0.10, 0.4)
+	//	runPass(unmappedSol, 0.10, 0.4)
 
 	return mapping, nil
 }
