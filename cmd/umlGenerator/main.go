@@ -27,7 +27,7 @@ func main() {
 
 	// 3. Wire controller
 	ctrl := controller.NewGeneratorController(svc, v)
-	v.SetController(ctrl)
+	v.SetGeneratorController(ctrl)
 
 	// 4. Block until window is closed
 	v.Wait()
