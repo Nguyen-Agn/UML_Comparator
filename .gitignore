@@ -14,6 +14,7 @@ test_output.txt
 *.html
 # Key
 key.go
+UMLs_testcase/*.exe
 
 cmd/similarity/*.ai
 **/debug_log.txt

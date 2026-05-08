@@ -42,6 +42,7 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 | **GUI Layer** | Lớp giao diện người dùng (Lorca) giúp thao tác chọn file và xem kết quả trực quan. |
 | **AppBuilder** | Module quản lý build theo chuẩn **ISP**, hỗ trợ build nén solutions và các công cụ khác. |
 | **Orchestrator** | Trình điều khiển tập trung giúp giảng viên lựa chọn pipeline build phù hợp. |
+| **UML Generator**| AI Agent tích hợp LLM sinh tự động mã Mermaid từ đề bài text (tích hợp OpenAI/Ollama/Groq). |
 
 ---
 
@@ -59,9 +60,10 @@ Dự án tuân thủ nghiêm ngặt nguyên tắc **SOLID**, chia thành các mo
 
 ## 📜 Tài liệu tham khảo
 - [Hướng dẫn sử dụng chi tiết (GUI & CLI)](USAGE_GUIDE.md)
-- [Quy trình xử lý (Flow)](flow.md)
-- [Chiến lược thiết kế (Morning Dawn)](Stratergy.md)
-- [Sơ đồ kiến trúc (Mermaid)](architecture.mmd)
+- [Tài liệu cho AI Agent (Dành cho Dev)](PROJECT_CONTEXT.md)
+- [Quy trình xử lý (Flow)](description/flow.md)
+- [Chiến lược thiết kế (Morning Dawn)](description/Stratergy.md)
+- [Sơ đồ kiến trúc (Mermaid)](description/architecture.mmd)
 
 ---
 # Review 

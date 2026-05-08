@@ -2,6 +2,7 @@ package view
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,24 +11,34 @@ import (
 	"github.com/ncruces/zenity"
 	"github.com/zserge/lorca"
 
+	_ "embed"
 	"uml_compare/domain"
 	"uml_compare/src/visualizer"
-	_ "embed"
 )
 
 //go:embed instructor_view.html
 var instructorHTMLContent string
 
+//go:embed instructor_style.css
+var instructorCSSContent string
+
+//go:embed instructor_script.js
+var instructorJSContent string
+
 type instructorLorcaView struct {
 	ui         lorca.UI
 	controller domain.InstructorController
+	genCtrl    domain.IGeneratorController
 	dialogBusy bool
 }
 
 func NewInstructorView() (domain.InstructorView, error) {
 	fmt.Println("Initializing Lorca UI for Instructor...")
 
-	b64Content := base64.StdEncoding.EncodeToString([]byte(instructorHTMLContent))
+	html := strings.Replace(instructorHTMLContent, "<!-- INJECT_CSS -->", "<style>"+instructorCSSContent+"</style>", 1)
+	html = strings.Replace(html, "<!-- INJECT_JS -->", "<script>"+instructorJSContent+"</script>", 1)
+
+	b64Content := base64.StdEncoding.EncodeToString([]byte(html))
 	url := "data:text/html;base64," + b64Content
 
 	ui, err := lorca.New("", "", 1150, 800, "--remote-allow-origins=*")
@@ -36,18 +47,22 @@ func NewInstructorView() (domain.InstructorView, error) {
 		return nil, err
 	}
 
-	ui.Load(url)
-
 	v := &instructorLorcaView{
 		ui: ui,
 	}
 
 	v.bindFunctions()
+	ui.Load(url)
+
 	return v, nil
 }
 
 func (v *instructorLorcaView) SetController(c domain.InstructorController) {
 	v.controller = c
+}
+
+func (v *instructorLorcaView) SetGeneratorController(c domain.IGeneratorController) {
+	v.genCtrl = c
 }
 
 func (v *instructorLorcaView) bindFunctions() {
@@ -93,6 +108,68 @@ func (v *instructorLorcaView) bindFunctions() {
 		if v.controller != nil {
 			v.controller.OnUpdateConfig(th, ai)
 		}
+	})
+
+	// ── Generator Bindings ──────────────────────────
+	v.ui.Bind("goExecGenerate", func(problemText string) {
+		fmt.Println("--- Go: goExecGenerate called with prompt length:", len(problemText))
+		if v.genCtrl == nil {
+			fmt.Println("--- Go: Error - genCtrl is NIL!")
+			return
+		}
+		v.genCtrl.OnGenerate(problemText)
+	})
+
+	v.ui.Bind("goExecSave", func(mermaidCode string) string {
+		if v.dialogBusy {
+			return `{"error": "Hộp thoại đang mở"}`
+		}
+		v.dialogBusy = true
+		defer func() { v.dialogBusy = false }()
+
+		path, err := zenity.SelectFileSave(
+			zenity.Title("Lưu sơ đồ Mermaid"),
+			zenity.Filename("diagram.mmd"),
+			zenity.FileFilter{Name: "Mermaid Files (*.mmd)", Patterns: []string{"*.mmd"}},
+		)
+		if err != nil {
+			if err == zenity.ErrCanceled {
+				return `{"error": "Đã hủy lưu"}`
+			}
+			return `{"error": "` + err.Error() + `"}`
+		}
+		if path != "" {
+			if v.genCtrl != nil {
+				v.genCtrl.OnSave(mermaidCode, path)
+			}
+			return `{"success": true}`
+		}
+		return `{"error": "Không có đường dẫn"}`
+	})
+
+	v.ui.Bind("goSaveGenConfig", func(endpoint, model, key string) string {
+		if v.genCtrl == nil {
+			return `{"error": "No controller"}`
+		}
+		cfg := domain.GeneratorConfig{
+			APIEndpoint: endpoint,
+			Model:       model,
+			APIKey:      key,
+		}
+		err := v.genCtrl.OnSaveConfig(cfg)
+		if err != nil {
+			return `{"error": "` + err.Error() + `"}`
+		}
+		return `{"success": true}`
+	})
+
+	v.ui.Bind("goLoadGenConfig", func() string {
+		if v.genCtrl == nil {
+			return `{}`
+		}
+		cfg := v.genCtrl.OnGetConfig()
+		b, _ := json.Marshal(cfg)
+		return string(b)
 	})
 }
 
@@ -191,4 +268,10 @@ func (v *instructorLorcaView) Wait() {
 
 func (v *instructorLorcaView) Close() {
 	v.ui.Close()
+}
+
+// ── Stubs for IGeneratorView ───────────────────────
+func (v *instructorLorcaView) ShowGeneratedUML(code string) {
+	b, _ := json.Marshal(code)
+	v.ui.Eval(fmt.Sprintf(`document.getElementById('gen-mermaid-editor').value = %s; onGenEditorChange();`, string(b)))
 }

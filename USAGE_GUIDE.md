@@ -39,7 +39,23 @@ Từ phiên bản mới nhất, tất cả các công cụ dành cho giảng vi�
    - **Solution Encrypt**: Mã hóa file `.drawio` thành file `.solution` để chia sẻ an toàn cho sinh viên.
    - **Exam Builder**: Nén các file đáp án vào một bản build GUI `exam_student_uml.exe` duy nhất dành riêng cho kỳ thi.
 
-### B. Quản lý Build Cốt lõi (`test_orchestrator.exe`)
+### B. Trình tạo UML bằng AI (UML Generator)
+Đây là công cụ mới giúp giảng viên tự động tạo sơ đồ UML chuẩn Mermaid từ đề bài bằng văn bản thông qua AI (OpenAI, Ollama, Groq, v.v.).
+1. **Mở file** `uml_generator.exe` trong thư mục `portable/`.
+2. **Cấu hình AI**: Nhấn vào nút ⚙️ (Cấu hình API) ở góc trên bên phải:
+   - **API Endpoint**: Địa chỉ của AI provider (VD: `https://api.openai.com/v1`, hoặc `http://localhost:11434/v1` nếu dùng Ollama).
+   - **API Key**: Mã token. Bỏ trống nếu chạy Ollama local.
+   - **Model**: Tên model sử dụng (VD: `gpt-4o-mini`, `gemma3:4b`).
+   - Nhấn **Lưu cấu hình**.
+3. **Tạo UML tự động**: Dán đề bài của sinh viên/bài tập vào cột bên trái, nhấn **🚀 Tạo mẫu UML tự động (AI)**.
+4. **Live Preview (Thời gian thực)**: 
+   - Mã code Mermaid do AI tạo ra sẽ hiển thị ở cột giữa. 
+   - Sơ đồ UML đồ họa sẽ tự động vẽ (render) ngay lập tức ở cột bên phải. 
+   - Bạn có thể **chỉnh sửa code thủ công** và sơ đồ bên cạnh sẽ tự cập nhật ngay lập tức.
+   - Bạn cũng có thể bấm **✍️ Chèn mẫu cơ bản** để tự viết code từ đầu mà không cần gọi API.
+5. **Lưu file**: Nhấn **💾 Lưu file .mmd** để xuất sơ đồ. Bạn có thể nạp tệp này vào công cụ *Solution Encrypt* hoặc chia sẻ trực tiếp.
+
+### C. Quản lý Build Cốt lõi (`test_orchestrator.exe`)
 Nếu bạn muốn tự compile lại hệ thống:
 1. Chạy file `test_orchestrator.exe`.
 2. Chọn **Option [1] Universal Build**: Để build lại toàn bộ bộ tool chuẩn (CLI, GUI, Batch Mode).
@@ -108,6 +124,11 @@ go run ./cmd/visualize/main.go <solution.drawio> <student.drawio>
 ## Instructor Suite
 ```bash
 go build -ldflags="-H windowsgui" -o portable\instructor_suite.exe .\cmd\instructor\main.go
+```
+
+## UML Generator
+```bash
+go build -ldflags="-H windowsgui" -o portable\uml_generator.exe .\cmd\umlGenerator\main.go
 ```
 
 ## Student GUI
