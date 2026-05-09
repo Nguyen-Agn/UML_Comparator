@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Mermaid Editor — Công cụ vẽ biểu đồ</title>
+  <style>
+    :root {
+      --bg-base: #f4f7f6;
+      --bg-card: #ffffff;
+      --accent: #114665;
+      --accent-hover: #08293d;
+      --accent-secondary: #720f32;
+      --text-main: #16202b;
+      --text-dim: #64748b;
+      --border: #d1d1d6;
+      --card-radius: 8px;
+      --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-soft);
+      z-index: 100;
+    }
+    .brand { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+    .brand span { color: var(--accent); }
+    .brand small { font-size: 0.7rem; font-weight: 500; color: var(--text-dim); margin-left: 10px; }
+    .btn { font-family: inherit; font-weight: 600; font-size: 0.875rem; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease; }
+    .btn-outline { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); }
+    .btn-outline:hover { background: #f1f5f9; color: var(--accent); }
+    .btn-success { background: #05464b; color: white; }
+    .btn-success:hover { background: #063d40; }
+    
+    .workspace {
+      flex: 1;
+      display: flex;
+      padding: 24px;
+      gap: 24px;
+      background: var(--bg-base);
+      overflow: hidden;
+    }
+    .card-panel {
+      background: var(--bg-card);
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex: 1;
+    }
+    .card-header {
+      padding: 16px 20px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+    }
+    textarea {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      border: none;
+      padding: 20px;
+      background: #ffffff;
+      color: var(--text-main);
+      resize: none;
+      outline: none;
+      flex: 1;
+    }
+    #notification {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px);
+      padding: 12px 24px; border-radius: 8px; color: white; font-weight: 600; font-size: 0.9rem;
+      box-shadow: var(--shadow-medium); opacity: 0; transition: all 0.3s; z-index: 1000; pointer-events: none;
+    }
+  </style>
+  <script>
+    async function initApp() {
+      try {
+        // 1. Load Mermaid JS (either from Go-embedded or CDN)
+        const jsSource = await goGetMermaidJS();
+        if (jsSource.startsWith("http")) {
+          await new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = jsSource;
+            s.onload = resolve;
+            document.head.appendChild(s);
+          });
+        } else {
+          const s = document.createElement('script');
+          s.text = jsSource;
+          document.head.appendChild(s);
+        }
+
+        // 2. Initialize Mermaid
+        mermaid.initialize({ 
+          startOnLoad: false, 
+          theme: 'base', 
+          themeVariables: { primaryColor: '#ffffff', primaryTextColor: '#16202b', primaryBorderColor: '#114665', lineColor: '#114665', secondaryColor: '#f4f7f6', tertiaryColor: '#ffffff', fontFamily: 'Inter, system-ui, sans-serif' },
+          themeCSS: 'g.classGroup rect { stroke-width: 1.5; rx: 6px !important; ry: 6px !important; } g.classGroup text .classTitle { font-weight: 700; fill: #720f32 !important; } g.classGroup line { stroke: #d1d1d6; stroke-width: 1; } .edgeTerminals, .edgePath .path { stroke-width: 1.5; }',
+          securityLevel: 'loose' 
+        });
+        
+        // 3. Initial render if there's code
+        renderMermaid();
+      } catch (e) {
+        console.error("Failed to init app:", e);
+      }
+    }
+  </script>
+</head>
+<body onload="initApp()">
+  <header>
+    <div class="brand">Mermaid <span>Editor</span><small>Công cụ vẽ và Live-Render</small></div>
+    <div style="display: flex; gap: 12px;">
+      <button class="btn btn-outline" onclick="insertTemplate()">✍️ Chèn mẫu cơ bản</button>
+      <button class="btn btn-success" onclick="saveFile()">💾 Lưu file .mmd</button>
+    </div>
+  </header>
+  <div id="notification"></div>
+  
+  <div class="workspace">
+    <!-- Editor Column -->
+    <div class="card-panel" style="min-width: 300px; resize: horizontal;">
+      <div class="card-header">💻 CODE MERMAID</div>
+      <textarea id="mermaid-editor" spellcheck="false" placeholder="Mermaid code sẽ xuất hiện ở đây..." oninput="onEditorChange()"></textarea>
+    </div>
+    <!-- Preview Column -->
+    <div class="card-panel">
+      <div class="card-header">👁️ LIVE PREVIEW</div>
+      <div id="live-mermaid-render" style="flex: 1; padding: 24px; display: flex; justify-content: center; align-items: center; overflow: auto;">
+        <span style="color:var(--text-dim);font-size:0.8rem;">Kết quả UML sẽ hiển thị ở đây...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let notifTimeout;
+    function showNotification(msg, isError) {
+      const notif = document.getElementById("notification");
+      notif.innerText = msg;
+      notif.style.background = isError ? "var(--error)" : "var(--success)";
+      notif.style.transform = "translateX(-50%) translateY(0)";
+      notif.style.opacity = "1";
+      clearTimeout(notifTimeout);
+      notifTimeout = setTimeout(() => {
+        notif.style.transform = "translateX(-50%) translateY(-20px)";
+        notif.style.opacity = "0";
+      }, 3000);
+    }
+
+    let renderTimeout;
+    function onEditorChange() {
+      clearTimeout(renderTimeout);
+      renderTimeout = setTimeout(renderMermaid, 500);
+    }
+
+    async function renderMermaid() {
+      if (typeof mermaid === 'undefined') return;
+      const code = document.getElementById('mermaid-editor').value.trim();
+      const container = document.getElementById('live-mermaid-render');
+      if (!code) {
+        container.innerHTML = '<span style="color:var(--text-dim);font-size:0.8rem;">Kết quả UML sẽ hiển thị ở đây...</span>';
+        return;
+      }
+      try {
+        const { svg } = await mermaid.render('mermaid-svg', code);
+        container.innerHTML = svg;
+      } catch (err) {
+        // Mute error, user might be typing
+      }
+    }
+
+    function insertTemplate() {
+      const tpl = `classDiagram
+    class User {
+        +String name
+        +login() void
+    }
+    class Admin {
+        +manageUsers() void
+    }
+    User <|-- Admin`;
+      document.getElementById('mermaid-editor').value = tpl;
+      onEditorChange();
+    }
+
+    async function saveFile() {
+      const code = document.getElementById('mermaid-editor').value.trim();
+      if (!code) {
+        showNotification("Code trống, không có gì để lưu!", true);
+        return;
+      }
+      try {
+        const resJSON = await window.goSaveMermaid(code);
+        const res = JSON.parse(resJSON);
+        if (res.error) showNotification(res.error, true);
+        else showNotification("Lưu file thành công!", false);
+      } catch (err) {
+        showNotification("Lưu file thất bại: " + err, true);
+      }
+    }
+  </script>
+</body>
+</html>

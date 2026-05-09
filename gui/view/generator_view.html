@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <title>UML Generator — Tạo mẫu UML tự động</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg-base: #f4f7f6;
+      --bg-card: #ffffff;
+      --accent: #114665;
+      --accent-hover: #08293d;
+      --accent-secondary: #720f32;
+      --text-main: #16202b;
+      --text-dim: #64748b;
+      --border: #d1d1d6;
+      --border-hover: rgba(17, 70, 101, 0.3);
+      --success: #05464b;
+      --error: #720f32;
+      --card-radius: 8px;
+      --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+      --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Top Bar ─────────────────────────────────── */
+    header {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 3px solid var(--accent-secondary);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-soft);
+      z-index: 100;
+      position: relative;
+    }
+
+    .brand {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .brand small {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-left: 10px;
+      letter-spacing: 0.03em;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 10px rgba(17, 70, 101, 0.15);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(17, 70, 101, 0.25);
+    }
+
+    .btn-primary:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-outline {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    .btn-outline:hover {
+      background: #f1f5f9;
+      border-color: var(--border-hover);
+      color: var(--accent);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #063d40;
+      transform: translateY(-1px);
+    }
+
+    .btn-success:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: #f1f5f9;
+      color: var(--accent);
+      border-color: var(--border-hover);
+    }
+
+    /* ── Layout ──────────────────────────────────── */
+    .workspace {
+      flex: 1;
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+      background: var(--bg-base);
+      overflow: hidden;
+    }
+
+    .card-panel {
+      background: var(--bg-card);
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+    }
+
+    /* Left panel: input */
+    .panel-input {
+      width: 320px;
+      min-width: 250px;
+      max-width: 50%;
+      flex-shrink: 0;
+      resize: horizontal;
+    }
+
+    g p {
+      color: var(--accent-secondary);
+    }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 16px;
+      overflow: hidden;
+      background: #fafcff;
+    }
+
+    textarea {
+      font-family: inherit;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    #problem-input {
+      flex: 1;
+    }
+
+    /* ── Notification ─────────────────────────────── */
+    #notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      min-width: 300px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: var(--shadow-medium);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      border-left: 5px solid gray;
+    }
+
+    #notification.show {
+      transform: translateX(0);
+    }
+
+    #notification.success {
+      border-left-color: var(--success);
+    }
+
+    #notification.error {
+      border-left-color: var(--error);
+    }
+
+    #notif-msg {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-main);
+    }
+
+    /* ── Loading overlay ──────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(248, 250, 252, 0.88);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 500;
+      gap: 16px;
+    }
+
+    .overlay.active {
+      display: flex;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(17, 70, 101, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    .spinner-label {
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      font-size: 0.85rem;
+    }
+
+    /* ── Settings modal ───────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 600;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: white;
+      border-radius: var(--card-radius);
+      padding: 30px;
+      width: 480px;
+      box-shadow: var(--shadow-medium);
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal h2 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .field-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-secondary);
+    }
+
+    .field-group input {
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field-group input:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Notification -->
+  <div id="notification"><span id="notif-msg"></span></div>
+
+  <!-- Loading overlay -->
+  <div class="overlay" id="loading">
+    <div class="spinner"></div>
+    <span class="spinner-label">ĐANG TẠO UML...</span>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="modal-backdrop" id="settings-backdrop" onclick="closeSettingsOnBackdrop(event)">
+    <div class="modal" id="settings-modal">
+      <h2>⚙️ Cấu hình API Provider</h2>
+      <div class="field-group">
+        <label>API Endpoint</label>
+        <input type="text" id="cfg-endpoint" placeholder="https://api.openai.com/v1">
+      </div>
+      <div class="field-group">
+        <label>API Key <span style="color:var(--text-dim);font-weight:400;">(để trống nếu dùng Ollama
+            local)</span></label>
+        <input type="password" id="cfg-apikey" placeholder="sk-...">
+      </div>
+      <div class="field-group">
+        <label>Model</label>
+        <input type="text" id="cfg-model" placeholder="gpt-4o-mini">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeSettings()">Huỷ</button>
+        <button class="btn btn-primary" onclick="saveSettings()">Lưu cấu hình</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span>UML</span> Generator
+      <small>Tạo mẫu UML tự động bằng AI</small>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn btn-outline" style="border-color:#114665; color:#114665; background:white"
+        onclick="insertBasicTemplate()">Chèn mẫu cơ bản</button>
+      <button class="btn btn-success" id="btn-save" disabled onclick="goSaveFile()"
+        style="background:#114665; color:white">Lưu file .mmd</button>
+      <button class="btn-icon" id="btn-settings" onclick="openSettings()" title="Cấu hình API">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Main workspace -->
+  <div class="workspace">
+    <!-- Left: Input panel (AI) -->
+    <div class="card-panel panel-input">
+      <div class="card-header" style="color: var(--accent-secondary);">ĐỀ BÀI</div>
+      <div class="panel-body">
+        <textarea id="problem-input"
+          placeholder="Dán đề bài vào đây...&#10;&#10;Ví dụ: Thiết kế hệ thống quản lý thư viện với các lớp Sách, Độc giả, Thủ thư..."></textarea>
+        <button class="btn btn-primary" id="btn-generate" onclick="goGenerate()">
+          Tạo mẫu UML tự động (AI)
+        </button>
+      </div>
+    </div>
+
+    <!-- Middle: Code Editor Column -->
+    <div class="card-panel" style="flex: 1; min-width: 250px; resize: horizontal;">
+      <div class="card-header"> CODE MERMAID</div>
+      <textarea id="mermaid-editor" spellcheck="false" placeholder="Mermaid code sẽ xuất hiện ở đây..."
+        oninput="onEditorChange()"
+        style="flex:1; width:100%; border-radius:0; border:none; font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 0.85rem; line-height: 1.7; padding: 20px;"></textarea>
+    </div>
+
+    <!-- Right: Live Preview Column -->
+    <div class="card-panel" style="flex: 1;">
+      <div class="card-header"> LIVE PREVIEW</div>
+      <div id="live-mermaid-render"
+        style="flex: 1; padding: 24px; display: flex; justify-content: center; align-items: center; overflow: auto; background: var(--bg-card);">
+        <span style="color:var(--text-dim);font-size:0.8rem;">Kết quả UML sẽ hiển thị ở đây...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Mermaid init ──────────────────────────────────
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#ffffff',
+        primaryTextColor: '#16202b',
+        primaryBorderColor: '#114665',
+        lineColor: '#114665',
+        secondaryColor: '#f4f7f6',
+        tertiaryColor: '#ffffff',
+        fontFamily: 'Inter, system-ui, sans-serif'
+      },
+      themeCSS: `
+        g.classGroup rect {
+          stroke-width: 1.5;
+          rx: 6px !important; /* Bo góc class */
+          ry: 6px !important;
+        }
+        g.classGroup text .classTitle {
+          font-weight: 700;
+          fill: #720f32 !important; /* Màu Berry Wine cho tên Class */
+        }
+        g.classGroup line {
+          stroke: #d1d1d6; /* Đường gạch ngang mỏng và nhạt hơn */
+          stroke-width: 1;
+        }
+        .edgeTerminals, .edgePath .path {
+          stroke-width: 1.5;
+        }
+      `,
+      securityLevel: 'loose'
+    });
+
+    let notifTimeout;
+    let lastRenderedCode = '';
+    let renderTimeout;
+
+    // ── Notification ──────────────────────────────────
+    function showNotification(msg, type) {
+      const el = document.getElementById('notification');
+      const msgEl = document.getElementById('notif-msg');
+      clearTimeout(notifTimeout);
+      el.className = '';
+      el.classList.add(type, 'show');
+      msgEl.innerText = msg;
+      notifTimeout = setTimeout(() => el.classList.remove('show'), 4500);
+    }
+
+
+
+    // ── Mermaid rendering ─────────────────────────────
+    async function renderMermaid(code, targetId, placeholderId) {
+      const container = document.getElementById(targetId);
+      const placeholder = placeholderId ? document.getElementById(placeholderId) : null;
+
+      if (!code || !code.trim()) {
+        if (placeholder) placeholder.style.display = 'block';
+        container.innerHTML = '';
+        return;
+      }
+
+      if (placeholder) placeholder.style.display = 'none';
+      container.removeAttribute('data-processed');
+      container.innerHTML = code;
+      lastRenderedCode = code;
+
+      try {
+        await mermaid.run({ nodes: [container] });
+      } catch (e) {
+        container.innerHTML = '<p style="color:var(--error);padding:20px;font-size:0.85rem;">Lỗi cú pháp: ' + e.message + '</p>';
+      }
+    }
+
+    // Called by Go backend after AI generation succeeds
+    function showGeneratedUML(mermaidCode) {
+      document.getElementById('mermaid-editor').value = mermaidCode;
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('btn-save').disabled = false;
+
+      // Auto render
+      renderMermaid(mermaidCode, 'live-mermaid-render', null);
+      showNotification('UML được tạo thành công!', 'success');
+    }
+
+    // Called from editor textarea input (with debounce for live preview)
+    function onEditorChange() {
+      const currentCode = document.getElementById('mermaid-editor').value;
+      const hasDiagram = currentCode.includes('classDiagram');
+      document.getElementById('btn-save').disabled = !hasDiagram;
+
+      clearTimeout(renderTimeout);
+      renderTimeout = setTimeout(() => {
+        renderMermaid(currentCode, 'live-mermaid-render', null);
+      }, 500); // 500ms debounce
+    }
+
+    function insertBasicTemplate() {
+      const tmpl = `classDiagram\n    ClassA <|-- ClassB : __1__\n    \n    class ClassA {\n      + "name" : "String" __1__\n    }\n    \n    class ClassB {\n      + "action()" "void" __1__\n    }`;
+      const editor = document.getElementById('mermaid-editor');
+      if (editor.value.trim() === '' || confirm("Xóa code hiện tại và chèn mẫu cơ bản?")) {
+        editor.value = tmpl;
+        onEditorChange();
+      }
+    }
+
+    // ── Settings modal ────────────────────────────────
+    async function openSettings() {
+      const cfg = await goGetConfig();
+      if (cfg) {
+        // Go struct json tags are snake_case: api_endpoint, api_key, model
+        document.getElementById('cfg-endpoint').value = cfg.api_endpoint || '';
+        document.getElementById('cfg-apikey').value = cfg.api_key || '';
+        document.getElementById('cfg-model').value = cfg.model || '';
+      }
+      document.getElementById('settings-backdrop').classList.add('active');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-backdrop').classList.remove('active');
+    }
+
+    function closeSettingsOnBackdrop(e) {
+      if (e.target === document.getElementById('settings-backdrop')) closeSettings();
+    }
+
+    async function saveSettings() {
+      // Keys must match Go struct json tags: api_endpoint, api_key, model
+      const cfg = {
+        api_endpoint: document.getElementById('cfg-endpoint').value.trim(),
+        api_key: document.getElementById('cfg-apikey').value.trim(),
+        model: document.getElementById('cfg-model').value.trim(),
+      };
+      const err = await goSaveConfig(cfg);
+      if (err) {
+        showNotification('Lỗi lưu cấu hình: ' + err, 'error');
+      } else {
+        closeSettings();
+        showNotification('Cấu hình đã lưu!', 'success');
+      }
+    }
+
+    // ── Event forwarders to Go ────────────────────────
+    function goGenerate() {
+      const problem = document.getElementById('problem-input').value.trim();
+      if (!problem) { showNotification('Vui lòng nhập đề bài.', 'error'); return; }
+      document.getElementById('loading').classList.add('active');
+      document.getElementById('btn-generate').disabled = true;
+      goExecGenerate(problem);
+    }
+
+    function goSaveFile() {
+      const code = document.getElementById('mermaid-editor').value.trim();
+      if (!code) { showNotification('Không có UML để lưu.', 'error'); return; }
+      goExecSave(code);
+    }
+
+    // Called by Go after save completes
+    function onSaveSuccess(path) {
+      showNotification('Đã lưu: ' + path, 'success');
+    }
+
+    // Called by Go on any backend error
+    function showError(msg) {
+      document.getElementById('loading').classList.remove('active');
+      document.getElementById('btn-generate').disabled = false;
+      showNotification(msg, 'error');
+    }
+
+    // Called by Go to restore generate button after generation
+    function enableGenerate() {
+      document.getElementById('btn-generate').disabled = false;
+    }
+  </script>
+</body>
+
+</html>

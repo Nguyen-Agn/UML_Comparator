@@ -23,7 +23,8 @@ type editorLorcaView struct {
 }
 
 // NewMermaidEditorView creates and initialises the Mermaid Editor Lorca window.
-func NewMermaidEditorView() (domain.IGeneratorView, error) {
+// If optionalJS is provided, it is served via a binding to avoid huge data URLs.
+func NewMermaidEditorView(optionalJS string) (domain.IGeneratorView, error) {
 	b64 := base64.StdEncoding.EncodeToString([]byte(editorHTMLContent))
 	url := "data:text/html;base64," + b64
 
@@ -31,6 +32,15 @@ func NewMermaidEditorView() (domain.IGeneratorView, error) {
 	if err != nil {
 		return nil, fmt.Errorf("editor_view: lorca new: %w", err)
 	}
+
+	// Bind the JS content to be fetched by the HTML
+	ui.Bind("goGetMermaidJS", func() string {
+		if optionalJS != "" {
+			return optionalJS
+		}
+		return "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+	})
+
 	ui.Load(url)
 
 	v := &editorLorcaView{ui: ui}

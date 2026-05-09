@@ -57,7 +57,7 @@ build:
 build_linux:
 	GOOS=linux go build -o portable/instructor_suite_linux ./cmd/instructor/main.go
 	GOOS=linux go build -o portable/student_uml_linux ./gui/main.go
-	GOOS=linux go build -o portable/uml_generator_linux ./cmd/umlGenerator/...
+	GOOS=linux go build -o portable/mermaid_editor ./cmd/mermaid_editor/...
 
 build_all:
 	go build -ldflags="-H windowsgui" -o portable/instructor_suite.exe ./cmd/instructor/main.go
