@@ -512,7 +512,12 @@
       el.className = '';
       el.classList.add(type, 'show');
       msgEl.innerText = msg;
-      notifTimeout = setTimeout(() => el.classList.remove('show'), 4500);
+
+      // Log to console for easier debugging
+      if (type === 'error') console.error('[UML Generator Error]', msg);
+      else console.info('[UML Generator]', msg);
+
+      notifTimeout = setTimeout(() => el.classList.remove('show'), 6500);
     }
 
 
@@ -529,13 +534,14 @@
       }
 
       if (placeholder) placeholder.style.display = 'none';
-      container.removeAttribute('data-processed');
-      container.innerHTML = code;
-      lastRenderedCode = code;
 
       try {
-        await mermaid.run({ nodes: [container] });
+        const renderId = 'mermaid-gen-' + Math.random().toString(36).substring(2, 9);
+        const { svg } = await mermaid.render(renderId, code);
+        container.innerHTML = svg;
+        lastRenderedCode = code;
       } catch (e) {
+        console.error("Mermaid Render Error:", e);
         container.innerHTML = '<p style="color:var(--error);padding:20px;font-size:0.85rem;">Lỗi cú pháp: ' + e.message + '</p>';
       }
     }
@@ -544,6 +550,11 @@
     function showGeneratedUML(mermaidCode) {
       document.getElementById('mermaid-editor').value = mermaidCode;
       document.getElementById('loading').classList.remove('active');
+      
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = false;
+      btn.innerText = 'Tạo mẫu UML tự động (AI)';
+      
       document.getElementById('btn-save').disabled = false;
 
       // Auto render
@@ -612,8 +623,12 @@
     function goGenerate() {
       const problem = document.getElementById('problem-input').value.trim();
       if (!problem) { showNotification('Vui lòng nhập đề bài.', 'error'); return; }
+      
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = true;
+      btn.innerText = '⏳ Đang tạo...';
+      
       document.getElementById('loading').classList.add('active');
-      document.getElementById('btn-generate').disabled = true;
       goExecGenerate(problem);
     }
 
@@ -631,7 +646,11 @@
     // Called by Go on any backend error
     function showError(msg) {
       document.getElementById('loading').classList.remove('active');
-      document.getElementById('btn-generate').disabled = false;
+      
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = false;
+      btn.innerText = 'Tạo mẫu UML tự động (AI)';
+      
       showNotification(msg, 'error');
     }
 

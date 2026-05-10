@@ -9,9 +9,26 @@ function showNotification(msg, type) {
     notif.classList.add('show');
     msgEl.innerText = msg;
 
+    // Log to console for easier debugging
+    if (type === 'error') console.error('[Instructor Error]', msg);
+    else console.info('[Instructor]', msg);
+
     notifTimeout = setTimeout(() => {
         notif.classList.remove('show');
-    }, 4000);
+    }, 6000);
+}
+
+function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+
+    // Restore generator button if active
+    const btn = document.getElementById('gen-btn-generate');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = 'Tạo mẫu tự động';
+    }
+
+    showNotification(msg, 'error');
 }
 
 function switchTab(e, tabId) {
@@ -126,13 +143,14 @@ async function renderGenMermaid(code, targetId) {
         return;
     }
 
-    container.removeAttribute('data-processed');
-    container.innerHTML = code;
-    lastRenderedCode = code;
-
     try {
-        await mermaid.run({ nodes: [container] });
+        // Use a unique ID for rendering to avoid ID collisions in the DOM
+        const renderId = 'mermaid-gen-' + Math.random().toString(36).substring(2, 9);
+        const { svg } = await mermaid.render(renderId, code);
+        container.innerHTML = svg;
+        lastRenderedCode = code;
     } catch (e) {
+        console.error("Mermaid Render Error:", e);
         container.innerHTML = '<p style="color:var(--error);padding:20px;font-size:0.85rem;">Lỗi cú pháp: ' + e.message + '</p>';
     }
 }
@@ -141,6 +159,13 @@ async function renderGenMermaid(code, targetId) {
 function showGeneratedUML(mermaidCode) {
     document.getElementById('gen-mermaid-editor').value = mermaidCode;
     onGenEditorChange();
+
+    // Restore UI state
+    document.getElementById('loading').style.display = 'none';
+    const btn = document.getElementById('gen-btn-generate');
+    btn.disabled = false;
+    btn.innerText = 'Tạo mẫu tự động';
+
     showNotification('UML được tạo thành công!', 'success');
 }
 
@@ -191,6 +216,15 @@ async function saveGenConfig() {
 function goGenGenerate() {
     const problem = document.getElementById('gen-problem-input').value.trim();
     if (!problem) { showNotification('Vui lòng nhập đề bài.', 'error'); return; }
+
+    // Prevent multiple clicks
+    const btn = document.getElementById('gen-btn-generate');
+    btn.disabled = true;
+    btn.innerText = "Đang tạo...";
+
+    // Show loading
+    document.getElementById('loading').style.display = 'flex';
+
     goExecGenerate(problem);
 }
 

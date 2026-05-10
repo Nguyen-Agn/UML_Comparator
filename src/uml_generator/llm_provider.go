@@ -106,22 +106,32 @@ func (p *openAICompatibleProvider) ChatComplete(ctx context.Context, messages []
 				Message string `json:"message"`
 			} `json:"error,omitempty"`
 		}
-		if jsonErr := json.Unmarshal(rawBody, &errBody); jsonErr == nil && errBody.Error != nil {
-			return "", fmt.Errorf("llm_provider: api error (status %d): %s", resp.StatusCode, errBody.Error.Message)
+		apiErrorMessage := ""
+		if jsonErr := json.Unmarshal(rawBody, &apiErrorMessage); jsonErr == nil && apiErrorMessage != "" {
+			// Some providers return a plain string for error
+		} else if jsonErr := json.Unmarshal(rawBody, &errBody); jsonErr == nil && errBody.Error != nil {
+			apiErrorMessage = errBody.Error.Message
 		}
-		// Fall back to raw body (plain text or HTML snippet)
-		body := string(rawBody)
-		if len(body) > 200 {
-			body = body[:200] + "..."
-		}
-		if resp.StatusCode == 404 {
+
+		switch resp.StatusCode {
+		case 401:
+			return "", fmt.Errorf("llm_provider: 401 Unauthorized — Sai API Key hoặc không có quyền truy cập. Kiểm tra cấu hình.")
+		case 403:
+			return "", fmt.Errorf("llm_provider: 403 Forbidden — Yêu cầu bị server từ chối. Có thể do model không khả dụng hoặc bị chặn.")
+		case 404:
 			return "", fmt.Errorf(
-				"llm_provider: 404 Not Found — endpoint URL sai.\n"+
-					"URL gọi: %s\n"+
-					"Kiểm tra: endpoint phải là http://localhost:11434/v1 (có /v1)\n"+
-					"Raw: %s", url, body)
+				"llm_provider: 404 Not Found — Sai Endpoint URL hoặc Model không tồn tại.\n"+
+					"URL: %s\nModel: %s\nRaw: %s", url, p.model, string(rawBody))
+		case 429:
+			return "", fmt.Errorf("llm_provider: 429 Too Many Requests — Hết quota hoặc bị giới hạn tần suất gọi API (Rate Limit).")
+		case 500, 502, 503, 504:
+			return "", fmt.Errorf("llm_provider: Lỗi Server (%d) — AI Provider đang gặp sự cố. Thử lại sau.", resp.StatusCode)
+		default:
+			if apiErrorMessage != "" {
+				return "", fmt.Errorf("llm_provider: HTTP %d: %s", resp.StatusCode, apiErrorMessage)
+			}
+			return "", fmt.Errorf("llm_provider: HTTP %d: %s", resp.StatusCode, string(rawBody))
 		}
-		return "", fmt.Errorf("llm_provider: http %d: %s", resp.StatusCode, body)
 	}
 
 	var cr chatResponse

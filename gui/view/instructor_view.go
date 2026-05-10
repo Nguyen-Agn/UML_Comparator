@@ -217,10 +217,8 @@ func sanitizeStr(s string) string {
 }
 
 func (v *instructorLorcaView) ShowError(err error) {
-	v.ui.Eval(`document.getElementById("loading").style.display = "none"`)
-	escapedMsg := strings.ReplaceAll(err.Error(), "'", "\\'")
-	escapedMsg = strings.ReplaceAll(escapedMsg, "\n", " ")
-	v.ui.Eval(fmt.Sprintf(`showNotification('%s', 'error')`, escapedMsg))
+	msgJSON, _ := json.Marshal(err.Error())
+	v.ui.Eval(fmt.Sprintf(`showError(%s)`, string(msgJSON)))
 }
 
 func (v *instructorLorcaView) ShowSuccess(msg string) {
@@ -273,5 +271,5 @@ func (v *instructorLorcaView) Close() {
 // ── Stubs for IGeneratorView ───────────────────────
 func (v *instructorLorcaView) ShowGeneratedUML(code string) {
 	b, _ := json.Marshal(code)
-	v.ui.Eval(fmt.Sprintf(`document.getElementById('gen-mermaid-editor').value = %s; onGenEditorChange();`, string(b)))
+	v.ui.Eval(fmt.Sprintf(`showGeneratedUML(%s)`, string(b)))
 }
