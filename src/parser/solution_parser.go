@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bufio"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -80,10 +81,41 @@ func (p *SolutionParser) Parse(filePath string) (domain.RawModelData, string, er
 		return "", "", fmt.Errorf("SolutionParser.Parse: base64 decode: %w", err)
 	}
 
-	xmlBytes, err := p.decryptor.Decrypt(packed)
+	decryptedBytes, err := p.decryptor.Decrypt(packed)
 	if err != nil {
 		return "", "", fmt.Errorf("SolutionParser.Parse: decrypt: %w", err)
 	}
 
-	return domain.RawModelData(xmlBytes), "drawio", nil
+	decryptedStr := string(decryptedBytes)
+	trimmed := strings.TrimSpace(decryptedStr)
+
+	// Detect type: if it starts with XML tag like `<`, it's a drawio/XML file.
+	if strings.HasPrefix(trimmed, "<") {
+		return domain.RawModelData(decryptedBytes), "drawio", nil
+	}
+
+	// Otherwise, it is a mermaid DSL file. We should clean it just like MermaidParser does.
+	var cleanedLines []string
+	scanner := bufio.NewScanner(strings.NewReader(decryptedStr))
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmedLine := strings.TrimSpace(line)
+
+		// Filter unnecessary information:
+		// 1. Skip empty lines.
+		// 2. Skip Mermaid comments (starting with %%).
+		// 3. Skip header "classDiagram" as it's redundant for the builder.
+		if trimmedLine == "" || strings.HasPrefix(trimmedLine, "%%") || strings.EqualFold(trimmedLine, "classDiagram") {
+			continue
+		}
+
+		cleanedLines = append(cleanedLines, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", "", fmt.Errorf("SolutionParser.Parse: scan decrypted mermaid content: %w", err)
+	}
+
+	cleanedContent := strings.Join(cleanedLines, "\n")
+	return domain.RawModelData(cleanedContent), "mermaid", nil
 }

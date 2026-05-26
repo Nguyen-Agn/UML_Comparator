@@ -80,8 +80,9 @@ func (a *EncryptorApp) PrintBanner() {
 // Run executes the core business logic.
 func (a *EncryptorApp) Run() error {
 	// 1. Validate Input
-	if !strings.HasSuffix(a.InputPath, ".drawio") {
-		return fmt.Errorf("input file must be a .drawio file")
+	ext := strings.ToLower(filepath.Ext(a.InputPath))
+	if ext != ".drawio" && ext != ".xml" && ext != ".mmd" && ext != ".mermaid" {
+		return fmt.Errorf("input file must be a .drawio, .drawio.xml, .mmd, or .mermaid file")
 	}
 
 	if _, err := os.Stat(a.InputPath); os.IsNotExist(err) {
@@ -90,7 +91,7 @@ func (a *EncryptorApp) Run() error {
 
 	// 2. Resolve output path
 	if a.OutputPath == "" {
-		a.OutputPath = strings.TrimSuffix(a.InputPath, ".drawio") + ".solution"
+		a.OutputPath = strings.TrimSuffix(a.InputPath, filepath.Ext(a.InputPath)) + ".solution"
 	}
 	if !strings.HasSuffix(strings.ToLower(a.OutputPath), ".solution") {
 		a.OutputPath += ".solution"

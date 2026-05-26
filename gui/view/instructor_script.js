@@ -62,6 +62,18 @@ function goRunBatch() { goExecBatch(getValue('batch-sol'), getValue('batch-dir')
 function goRunEncrypt() { goExecEncrypt(getValue('sec-in'), getValue('sec-out')); }
 function goRunExamBuild() { goExecExam(getValue('exam-dir'), getValue('exam-out')); }
 
+function toggleLiveInput() {
+    const card = document.getElementById('live-input-card');
+    const btn = document.getElementById('toggle-live-btn');
+    if (card.style.display === 'none') {
+        card.style.display = 'block';
+        btn.innerText = 'Thu gọn';
+    } else {
+        card.style.display = 'none';
+        btn.innerText = 'Mở rộng';
+    }
+}
+
 // Config Tab Logic
 function onThresholdChange(val) {
     document.getElementById('threshold-val').innerText = parseFloat(val).toFixed(2);

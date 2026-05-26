@@ -1,0 +1,60 @@
+classDiagram
+    ParkedCar <.. PoliceOfficer 
+    ParkingMeter <.. PoliceOfficer 
+    PoliceOfficer -- ParkingTicket 
+    ParkingTicket --o ParkedCar 
+    ParkingTicket o-- PoliceOfficer 
+    ParkingTicket ..> Const 
+
+    class ParkedCar {
+        + make: String
+        + type : String
+        + color : String
+        + plateNumber : String
+        + parkedMinutes: int
+        + ParkedCar(make: String, model: String, color: String, licenseNumber: String, parkedMinutes: int) 
+        + getMake() String
+        + setMake(make: String) void 
+        + getModel() String
+        + setModel(model: String) void 
+        + fetchColor() String 
+        + setColor(color: String) void 
+        + fetchLicenseNumber() String 
+        + setLicenseNumber(licenseNumber: String) void 
+        + fetchParkedMinutes() int
+        + updateParkedMinutes(parkedMinutes: int|double) void 
+    }
+
+    class ParkingMeter {
+        + timePurchased :double 
+        + ParkingMeter(purchasedMinutes: double) 
+        + fetchPurchasedMinutes() int
+        + setPurchasedMinutes(purchasedMinutes: int) void 
+    }
+
+    class ParkingTicket {
+        + car: ParkedCar
+        + issuingOfficer : PoliceOfficer 
+        + fineAmount: double 
+        + ParkingTicket(car: ParkedCar, officer: PoliceOfficer, fineAmount: double) 
+        + getCar() ParkedCar 
+        + setCar(car: ParkedCar) void 
+        + getOfficer() PoliceOfficer 
+        + updateOfficer(officer: PoliceOfficer) void 
+        + getFineAmount() double 
+        + setFineAmount(fineAmount: double) void 
+    }
+
+    class PoliceOfficer {
+        + name : String
+        + badgeNumber : String
+        + PoliceOfficer(name: String, badgeNumber: String) 
+        + examine(car: ParkedCar, meter: ParkingMeter) bool
+        + issueTicket(car: ParkedCar, meter: ParkingMeter) ParkingTicket 
+    }
+
+    class Const {
+        <<Enum>>
+        + FIRST_HOUR_FINE|initialFine : int Static ReadOnly
+        + ADDITIONAL_HOUR_FINE|extraFine : int Static ReadOnly 
+    }

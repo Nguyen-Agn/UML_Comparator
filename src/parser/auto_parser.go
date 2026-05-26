@@ -31,7 +31,7 @@ type AutoParser struct {
 var _ IFileParser = (*AutoParser)(nil)
 
 // NewAutoParserDefault returns a ready-to-use AutoParser with supported extensions:
-// .drawio, .solution (type "drawio") and .mmd, .mermaid (type "mermaid").
+// .drawio, .solution (type "drawio" or "mermaid") and .mmd, .mermaid (type "mermaid").
 //
 // Key resolution order for .solution: SOLUTION_KEY env var → built-in default.
 func NewAutoParserDefault() *AutoParser {

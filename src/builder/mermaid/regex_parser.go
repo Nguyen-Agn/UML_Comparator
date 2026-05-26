@@ -99,9 +99,9 @@ func (p *regexParser) parseClasses(text string) []rawClass {
 func (p *regexParser) parseRelations(text string) []rawRelation {
 	var relations []rawRelation
 
-	// Improved regex for relationships: ensures it's a standalone line and supports generics (~).
-	// Regex for relationships like: A <|-- B or A --> B
-	relRegex := regexp.MustCompile(`(?m)^\s*([a-zA-Z0-9_~]+)\s*([<|o\*]*[-.]+([>|o\*|]*))\s*([a-zA-Z0-9_~]+)(?:\s*:\s*(.*))?$`)
+	// Improved regex for relationships: ensures it's a standalone line, supports generics (~),
+	// ignores optional multiplicities in quotes (e.g. "1" or "0..*"), and handles trailing spaces.
+	relRegex := regexp.MustCompile(`(?m)^\s*([a-zA-Z0-9_~]+)\s*(?:".*?"\s*)?([<|o\*]*[-.]+([>|o\*|]*))\s*(?:".*?"\s*)?([a-zA-Z0-9_~]+)(?:\s*:\s*(.*?))?\s*$`)
 	matches := relRegex.FindAllStringSubmatch(text, -1)
 	
 	for _, match := range matches {
@@ -110,7 +110,12 @@ func (p *regexParser) parseRelations(text string) []rawRelation {
 		tgt := p.normalizeGenerics(match[4])
 		// match[5] is the label if present
 		
-		relType := p.mapArrowToRelation(arrow)
+		relType, reverse := p.mapArrowToRelation(arrow)
+		
+		if reverse {
+			src, tgt = tgt, src
+		}
+
 		relations = append(relations, rawRelation{
 			Source: src,
 			Target: tgt,
@@ -121,21 +126,38 @@ func (p *regexParser) parseRelations(text string) []rawRelation {
 	return relations
 }
 
-func (p *regexParser) mapArrowToRelation(arrow string) string {
+func (p *regexParser) mapArrowToRelation(arrow string) (string, bool) {
+	// Returns (RelationType, Reverse)
+	// Reverse is true if the arrow head / diamond is on the left side (e.g., <|--, o--, *--, <.., <--)
+	// which means the left class (match 1) is the Target, and the right class (match 4) is the Source.
 	switch {
-	case strings.Contains(arrow, "<|--") || strings.Contains(arrow, "--|>"):
-		return "Inheritance"
-	case strings.Contains(arrow, "..|>") || strings.Contains(arrow, "<|.."):
-		return "Realization"
-	case strings.Contains(arrow, "*--") || strings.Contains(arrow, "--*"):
-		return "Composition"
-	case strings.Contains(arrow, "o--") || strings.Contains(arrow, "--o"):
-		return "Aggregation"
-	case strings.Contains(arrow, "..>") || strings.Contains(arrow, "<.."):
-		return "Dependency"
-	case strings.Contains(arrow, "-->") || strings.Contains(arrow, "<--") || strings.Contains(arrow, "--"):
-		return "Association"
+	case strings.Contains(arrow, "<|--"):
+		return "Inheritance", true
+	case strings.Contains(arrow, "--|>"):
+		return "Inheritance", false
+	case strings.Contains(arrow, "<|.."):
+		return "Realization", true
+	case strings.Contains(arrow, "..|>"):
+		return "Realization", false
+	case strings.Contains(arrow, "*--"):
+		return "Composition", true
+	case strings.Contains(arrow, "--*"):
+		return "Composition", false
+	case strings.Contains(arrow, "o--"):
+		return "Aggregation", true
+	case strings.Contains(arrow, "--o"):
+		return "Aggregation", false
+	case strings.Contains(arrow, "<.."):
+		return "Dependency", true
+	case strings.Contains(arrow, "..>"):
+		return "Dependency", false
+	case strings.Contains(arrow, "<--"):
+		return "Association", true
+	case strings.Contains(arrow, "-->"):
+		return "Association", false
+	case strings.Contains(arrow, "--"):
+		return "Association", false
 	default:
-		return "Association"
+		return "Association", false
 	}
 }

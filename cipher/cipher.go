@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"uml_compare/src/parser"
 )
@@ -57,7 +58,6 @@ func New() ISolutionCipher {
 func NewWithKey(key []byte) ISolutionCipher {
 	resolved := resolveKey(key)
 	return &solutionCipher{
-		drawioPaser: parser.NewDrawioParser(),
 		encryptor:   newAESEncryptor(resolved),
 	}
 }
@@ -76,7 +76,6 @@ func resolveKey(explicit []byte) []byte {
 // ─── Concrete implementation ──────────────────────────────────────────────────
 
 type solutionCipher struct {
-	drawioPaser parser.IFileParser // DIP: interface, not *DrawioParser
 	encryptor   iAESEncryptor
 }
 
@@ -85,8 +84,8 @@ type iAESEncryptor interface {
 	encrypt(plaintext []byte) ([]byte, error)
 }
 
-// Encrypt reads inputPath (.drawio), encrypts it, and writes to outputPath (.solution).
-// If outputPath is empty, it defaults to <inputPath without .drawio> + ".solution".
+// Encrypt reads inputPath (e.g. .drawio or .mermaid), encrypts it, and writes to outputPath (.solution).
+// If outputPath is empty, it defaults to <inputPath without extension> + ".solution".
 func (c *solutionCipher) Encrypt(inputPath, outputPath string) error {
 	if inputPath == "" {
 		return fmt.Errorf("cipher.Encrypt: inputPath cannot be empty")
@@ -94,17 +93,22 @@ func (c *solutionCipher) Encrypt(inputPath, outputPath string) error {
 
 	// Auto-derive output path if not specified
 	if outputPath == "" {
-		outputPath = strings.TrimSuffix(inputPath, ".drawio") + ".solution"
+		ext := filepath.Ext(inputPath)
+		outputPath = strings.TrimSuffix(inputPath, ext) + ".solution"
 	}
 
-	// Step 1: Parse .drawio → raw XML
-	rawXML, _, err := c.drawioPaser.Parse(inputPath)
+	// Step 1: Parse input file using GetParser
+	p, err := parser.GetParser(inputPath)
 	if err != nil {
-		return fmt.Errorf("cipher.Encrypt: parse drawio: %w", err)
+		return fmt.Errorf("cipher.Encrypt: get parser: %w", err)
+	}
+	rawXML, _, err := p.Parse(inputPath)
+	if err != nil {
+		return fmt.Errorf("cipher.Encrypt: parse input: %w", err)
 	}
 	// RawModelData is a named string type — cast explicitly for strings.TrimSpace
 	if strings.TrimSpace(string(rawXML)) == "" {
-		return fmt.Errorf("cipher.Encrypt: empty diagram — invalid .drawio file")
+		return fmt.Errorf("cipher.Encrypt: empty diagram — invalid input file")
 	}
 
 	// Step 2: Encrypt using AES-256-GCM

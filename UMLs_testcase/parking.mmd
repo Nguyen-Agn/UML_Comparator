@@ -1,0 +1,60 @@
+classDiagram
+    ParkedCar <.. PoliceOfficer : __1__
+    ParkingMeter <.. PoliceOfficer : __1__
+    PoliceOfficer "1" -- "1" ParkingTicket : __1__
+    ParkingTicket o-- ParkedCar : __1__
+    ParkingTicket o-- PoliceOfficer : __1__
+    ParkingTicket ..> Const : __1__
+
+    class ParkedCar {
+        + make|brand : String|char[] __1__
+        + model|type : String|char[] __1__
+        + color|colour : String|char[] __1__
+        + licenseNumber|plateNumber : String|char[] __1__
+        + parkedMinutes|minutesParked : int|double __1__
+        + ParkedCar(make: String|char[], model: String|char[], color: String|char[], licenseNumber: String|char[], parkedMinutes: int|double) __1__
+        + getMake|fetchMake() String|char[] __1__
+        + setMake|updateMake(make: String|char[]) void __1__
+        + getModel|fetchModel() String|char[] __1__
+        + setModel|updateModel(model: String|char[]) void __1__
+        + getColor|fetchColor() String|char[] __1__
+        + setColor|updateColor(color: String|char[]) void __1__
+        + getLicenseNumber|fetchLicenseNumber() String|char[] __1__
+        + setLicenseNumber|updateLicenseNumber(licenseNumber: String|char[]) void __1__
+        + getParkedMinutes|fetchParkedMinutes() int|double __1__
+        + setParkedMinutes|updateParkedMinutes(parkedMinutes: int|double) void __1__
+    }
+
+    class ParkingMeter {
+        + purchasedMinutes|timePurchased : int|double __1__
+        + ParkingMeter(purchasedMinutes: int|double) __1__
+        + getPurchasedMinutes|fetchPurchasedMinutes() int|double __1__
+        + setPurchasedMinutes|updatePurchasedMinutes(purchasedMinutes: int|double) void __1__
+    }
+
+    class ParkingTicket {
+        + car|parkedCar : ParkedCar __1__
+        + officer|issuingOfficer : PoliceOfficer __1__
+        + fineAmount|totalFine : double|float __1__
+        + ParkingTicket(car: ParkedCar, officer: PoliceOfficer, fineAmount: double|float) __1__
+        + getCar|fetchCar() ParkedCar __1__
+        + setCar|updateCar(car: ParkedCar) void __1__
+        + getOfficer|fetchOfficer() PoliceOfficer __1__
+        + setOfficer|updateOfficer(officer: PoliceOfficer) void __1__
+        + getFineAmount|fetchFineAmount() double|float __1__
+        + setFineAmount|updateFineAmount(fineAmount: double|float) void __1__
+    }
+
+    class PoliceOfficer {
+        + name|officerName : String|char[] __1__
+        + badgeNumber|id : String|int __1__
+        + PoliceOfficer(name: String|char[], badgeNumber: String|int) __1__
+        + examine|inspect(car: ParkedCar, meter: ParkingMeter) bool|boolean __1__
+        + issueTicket|createTicket(car: ParkedCar, meter: ParkingMeter) ParkingTicket __1__
+    }
+
+    class Const {
+        <<Enum>>
+        + FIRST_HOUR_FINE|initialFine : int|double Static ReadOnly __1__
+        + ADDITIONAL_HOUR_FINE|extraFine : int|double Static ReadOnly __1__
+    }
