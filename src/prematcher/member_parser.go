@@ -18,7 +18,7 @@ func NewStandardMemberParser() *StandardMemberParser {
 		// Regex for: [Scope] Name : Type [= DefaultValue]
 		attrRegex: regexp.MustCompile(`^([+\-#~])?\s*([^:]+)\s*:\s*(.+)$`),
 		// Regex for: [Scope] Name(params) : ReturnType
-		methodRegex: regexp.MustCompile(`^([+\-#~])?\s*([^\(]+)\s*\((.*?)\)\s*(?::\s*(.+))?$`),
+		methodRegex: regexp.MustCompile(`^([+\-#~])?\s*\s([^\(]+)*\((.*?)\)\s*:?\s*(.+)?$`),
 	}
 }
 
